@@ -1,0 +1,54 @@
+{
+    "name": "katanaui/katana",
+    "description": "The sharpest Laravel Blade component library",
+    "keywords": [
+        "katanaui",
+        "katana"
+    ],
+    "homepage": "https://github.com/katanaui/katana",
+    "license": "MIT",
+    "type": "library",
+    "authors": [
+        {
+            "name": "Tony Lea",
+            "email": "tony@devdojo.com",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^8.0|^8.1|^8.2|^8.3|^8.4",
+        "illuminate/support": "^11.0|^12.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^6.0",
+        "phpunit/phpunit": "^9.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Katanaui\\Katana\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Katanaui\\Katana\\Tests\\": "tests"
+        }
+    },
+    "scripts": {
+        "test": "vendor/bin/phpunit",
+        "test-coverage": "vendor/bin/phpunit --coverage-html coverage"
+
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Katanaui\\Katana\\KatanaServiceProvider"
+            ],
+            "aliases": {
+                "Katana": "Katanaui\\Katana\\KatanaFacade"
+            }
+        }
+    }
+}
