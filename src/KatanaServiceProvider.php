@@ -3,6 +3,7 @@
 namespace Katanaui\Katana;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Blade;
 
 class KatanaServiceProvider extends ServiceProvider
 {
@@ -18,6 +19,8 @@ class KatanaServiceProvider extends ServiceProvider
         // $this->loadViewsFrom(__DIR__.'/../resources/views', 'katana');
         // $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
         // $this->loadRoutesFrom(__DIR__.'/routes.php');
+
+        Blade::anonymousComponentPath(__DIR__.'/../resources/views/components', 'katana');
 
         if ($this->app->runningInConsole()) {
             $this->publishes([

@@ -1,0 +1,78 @@
+@props([
+    'type' => 'button', 
+    'size' => 'md', 
+    'variant' => 'primary', 
+    'href' => null
+])
+
+@php
+switch ($size ?? 'md') {
+    case 'sm':
+        $sizeClasses = 'px-3 py-1.5 leading-4 text-xs';
+        break;
+    case 'md':
+        $sizeClasses = 'px-4 py-2 leading-4 text-xs';
+        break;
+    case 'lg':
+        $sizeClasses = 'px-4 py-2.5 leading-5 text-sm';
+        break;
+    case 'xl':
+        $sizeClasses = 'px-5 py-2.5 leading-6 text-base';
+        break;
+    case '2xl':
+        $sizeClasses = 'px-6 py-3 leading-6 text-base';
+        break;
+    case '3xl':
+        $sizeClasses = 'px-6 py-3.5 leading-7 text-lg';
+        break;
+}
+@endphp
+
+@php
+switch ($variant ?? 'primary') {
+    case 'primary':
+        $typeClasses = 'border-transparent text-white focus:outline-none bg-stone-900 text-stone-100 hover:text-white focus:ring-2 focus:ring-stone-900 focus:ring-offset-2';
+        break;
+    case 'secondary':
+        $typeClasses = 'border-transparent text-stone-700 bg-stone-100 focus:ring-2 focus:ring-stone-100 focus:ring-offset-2';
+        break;
+    case 'destructive':
+        $typeClasses = 'border-transparent text-white focus:outline-none bg-red-900 text-stone-100 hover:text-white focus:ring-2 focus:ring-red-900 focus:ring-offset-2';
+        break;
+    case 'outline':
+        $typeClasses = 'border-transparent text-stone-700 hover:bg-stone-100 focus:ring-2 focus:ring-stone-100 border-stone-200 focus:ring-offset-2';
+        break;
+    case 'ghost':
+        $typeClasses = 'border-transparent text-stone-700 hover:bg-stone-100 focus:ring-2 focus:ring-stone-100 focus:ring-offset-2';
+        break;
+    case 'link':
+        $typeClasses = 'border-transparent text-stone-700 hover:bg-stone-100 focus:ring-2 focus:ring-stone-100 focus:ring-offset-2';
+        break;
+}
+@endphp
+
+@php
+switch ($type ?? 'button') {
+    case 'button':
+        $typeAttr = 'button type="button"';
+        $typeClose = 'button';
+        break;
+    case 'submit':
+        $typeAttr = 'button type="submit"';
+        $typeClose = 'button';
+        break;
+    case 'a':
+        $link = $href ?? '';
+        $typeAttr = 'a  href="' . $link . '"';
+        $typeClose = 'a';
+        break;
+    default:
+        $typeAttr = 'button type="button"';
+        $typeClose = 'button';
+        break;
+}
+@endphp
+
+<{!! $typeAttr !!} {{ $attributes->twMerge($sizeClasses . ' ' . $typeClasses . ' cursor-pointer border  inline-flex rounded-xl items-center w-full justify-center items-center font-medium focus:outline-none ease-out duration-300 hover:scale-[1.03] active:scale-100 active:duration-100 active:transition-all') }}>
+    {{ $slot }}
+</{{ $typeClose }}>
