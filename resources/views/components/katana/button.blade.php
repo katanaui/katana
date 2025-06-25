@@ -31,10 +31,10 @@ switch ($size ?? 'md') {
 @php
 switch ($variant ?? 'primary') {
     case 'primary':
-        $typeClasses = 'border-transparent text-white focus:outline-none bg-stone-900 text-stone-100 hover:text-white focus:ring-2 focus:ring-stone-900 focus:ring-offset-2';
+        $typeClasses = 'border-transparent text-white focus:outline-none bg-stone-900 text-stone-100 hover:text-white inset-shadow-white/20';
         break;
     case 'secondary':
-        $typeClasses = 'border-transparent text-stone-700 bg-stone-100 focus:ring-2 focus:ring-stone-100 focus:ring-offset-2';
+        $typeClasses = 'border-transparent text-stone-700 bg-stone-100';
         break;
     case 'destructive':
         $typeClasses = 'border-transparent text-white focus:outline-none bg-red-900 text-stone-100 hover:text-white focus:ring-2 focus:ring-red-900 focus:ring-offset-2';
@@ -73,6 +73,6 @@ switch ($type ?? 'button') {
 }
 @endphp
 
-<{!! $typeAttr !!} {{ $attributes->twMerge($sizeClasses . ' ' . $typeClasses . ' cursor-pointer border  inline-flex rounded-xl items-center w-full justify-center items-center font-medium focus:outline-none ease-out duration-300 hover:scale-[1.03] active:scale-100 active:duration-100 active:transition-all') }}>
+<{!! $typeAttr !!} {{ $attributes->twMerge($sizeClasses . ' ' . $typeClasses . ' cursor-pointer border inset-shadow-xs inline-flex rounded-xl items-center w-full justify-center items-center font-medium focus:outline-none ease-out duration-300') }}>
     {{ $slot }}
 </{{ $typeClose }}>
