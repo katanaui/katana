@@ -7,6 +7,9 @@
 
 @php
 switch ($size ?? 'md') {
+    case 'xs':
++        $sizeClasses = 'px-2 py-1 leading-4 text-xs';
++        break;
     case 'sm':
         $sizeClasses = 'px-3 py-1.5 leading-4 text-xs';
         break;
@@ -31,7 +34,7 @@ switch ($size ?? 'md') {
 @php
 switch ($variant ?? 'primary') {
     case 'primary':
-        $typeClasses = 'border-transparent text-white focus:outline-none bg-stone-900 text-stone-100 hover:text-white inset-shadow-white/20';
+        $typeClasses = 'border-transparent text-white focus:outline-none inset-shadow-xs bg-stone-900 text-stone-100 hover:text-white inset-shadow-white/20';
         break;
     case 'secondary':
         $typeClasses = 'border-transparent text-stone-700 bg-stone-100';
@@ -73,6 +76,6 @@ switch ($type ?? 'button') {
 }
 @endphp
 
-<{!! $typeAttr !!} {{ $attributes->twMerge($sizeClasses . ' ' . $typeClasses . ' cursor-pointer border inset-shadow-xs inline-flex rounded-xl items-center w-full justify-center items-center font-medium focus:outline-none ease-out duration-300') }}>
+<{!! $typeAttr !!} {{ $attributes->twMerge($sizeClasses . ' ' . $typeClasses . ' cursor-pointer border inline-flex rounded-xl items-center w-full justify-center items-center font-medium focus:outline-none ease-out duration-300') }}>
     {{ $slot }}
 </{{ $typeClose }}>
