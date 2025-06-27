@@ -8,8 +8,8 @@
 @php
 switch ($size ?? 'md') {
     case 'xs':
-+        $sizeClasses = 'px-2 py-1 leading-4 text-xs';
-+        break;
+        $sizeClasses = 'px-2 py-1 leading-4 text-xs';
+        break;
     case 'sm':
         $sizeClasses = 'px-3 py-1.5 leading-4 text-xs';
         break;
