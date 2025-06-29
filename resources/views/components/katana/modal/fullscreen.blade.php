@@ -7,6 +7,7 @@
             console.log('cahnged: ' + value);
         });
     "
+    @close-fullscreen-modal.window="open=false"
     class="relative w-auto h-auto">
     <div @click="open=true">
     {{ $trigger }}
