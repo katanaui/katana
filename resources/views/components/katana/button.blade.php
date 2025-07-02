@@ -34,7 +34,7 @@ switch ($size ?? 'md') {
 @php
 switch ($variant ?? 'primary') {
     case 'primary':
-        $typeClasses = 'border-transparent text-white focus:outline-none inset-shadow-xs bg-stone-900 text-stone-100 hover:text-white inset-shadow-white/20';
+        $typeClasses = 'border-transparent focus:outline-none inset-shadow-xs bg-stone-900 text-stone-100 hover:text-white inset-shadow-white/20';
         break;
     case 'secondary':
         $typeClasses = 'border-transparent text-stone-700 bg-stone-100';

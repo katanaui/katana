@@ -3,10 +3,11 @@
     'leftIcon' => '',
     'leftUrl' => '',
     'rightIcon' => '',
-    'rightUrl' => ''
+    'rightUrl' => '',
+    'bottomBorder' => true
 ])
 
-<div class="flex relative justify-start items-center px-3 w-full h-16 border-b border-gray-200">
+<div class="flex relative z-50 justify-start items-center px-3 w-full h-16 @if($bottomBorder ?? true) border-b border-gray-200 @endif">
     @if($leftIcon && $leftUrl)
         <a href="{{ $leftUrl ?? '' }}" class="relative z-10 p-2">
             <x-dynamic-component :component="$leftIcon" class="w-5 h-5" />
