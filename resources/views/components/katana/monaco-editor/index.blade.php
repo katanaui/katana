@@ -1,8 +1,21 @@
+@props([
+    'content' => '',
+    'placeholder' => 'Start typing here',
+    'theme' => 'dark',
+    'paddingTopClass' => 'pt-3',
+    'tabindex' => null
+])
+
 <div x-data="{
-        monacoContent: '',
+        monacoContent: @js($content),
+        decodeHTMLEntities(html) {
+            const textarea = document.createElement('textarea');
+            textarea.innerHTML = html;
+            return textarea.value;
+        },
         monacoLanguage: 'html',
-        monacoPlaceholder: true,
-        monacoPlaceholderText: 'Start typing here',
+        monacoPlaceholder: false,
+        monacoPlaceholderText: '{{ $placeholder }}',
         monacoLoader: true,
         monacoFontSize: '15px',
         monacoId: $id('monaco-editor'),
@@ -63,35 +76,56 @@
                 require(['vs/editor/editor.main'], function() {
                     
                     monacoTheme = {'base':'vs-dark','inherit':true,'rules':[{'background':'000000','token':''},{'foreground':'aeaeae','token':'comment'},{'foreground':'d8fa3c','token':'constant'},{'foreground':'ff6400','token':'entity'},{'foreground':'fbde2d','token':'keyword'},{'foreground':'fbde2d','token':'storage'},{'foreground':'61ce3c','token':'string'},{'foreground':'61ce3c','token':'meta.verbatim'},{'foreground':'8da6ce','token':'support'},{'foreground':'ab2a1d','fontStyle':'italic','token':'invalid.deprecated'},{'foreground':'f8f8f8','background':'9d1e15','token':'invalid.illegal'},{'foreground':'ff6400','fontStyle':'italic','token':'entity.other.inherited-class'},{'foreground':'ff6400','token':'string constant.other.placeholder'},{'foreground':'becde6','token':'meta.function-call.py'},{'foreground':'7f90aa','token':'meta.tag'},{'foreground':'7f90aa','token':'meta.tag entity'},{'foreground':'ffffff','token':'entity.name.section'},{'foreground':'d5e0f3','token':'keyword.type.variant'},{'foreground':'f8f8f8','token':'source.ocaml keyword.operator.symbol'},{'foreground':'8da6ce','token':'source.ocaml keyword.operator.symbol.infix'},{'foreground':'8da6ce','token':'source.ocaml keyword.operator.symbol.prefix'},{'fontStyle':'underline','token':'source.ocaml keyword.operator.symbol.infix.floating-point'},{'fontStyle':'underline','token':'source.ocaml keyword.operator.symbol.prefix.floating-point'},{'fontStyle':'underline','token':'source.ocaml constant.numeric.floating-point'},{'background':'ffffff08','token':'text.tex.latex meta.function.environment'},{'background':'7a96fa08','token':'text.tex.latex meta.function.environment meta.function.environment'},{'foreground':'fbde2d','token':'text.tex.latex support.function'},{'foreground':'ffffff','token':'source.plist string.unquoted'},{'foreground':'ffffff','token':'source.plist keyword.operator'}],'colors':{'editor.foreground':'#F8F8F8','editor.background':'#000000','editor.selectionBackground':'#253B76','editor.lineHighlightBackground':'#FFFFFF0F','editorCursor.foreground':'#FFFFFFA6','editorWhitespace.foreground':'#FFFFFF40'}};
-                    monaco.editor.defineTheme('blackboard', monacoTheme);
+                    monacoThemeLight = {'base':'vs','inherit':true,'rules':[{'background':'ffffff','token':''},{'foreground':'6a737d','token':'comment'},{'foreground':'005cc5','token':'constant'},{'foreground':'e36209','token':'entity'},{'foreground':'d73a49','token':'keyword'},{'foreground':'d73a49','token':'storage'},{'foreground':'032f62','token':'string'},{'foreground':'032f62','token':'meta.verbatim'},{'foreground':'005cc5','token':'support'},{'foreground':'b31d28','fontStyle':'italic','token':'invalid.deprecated'},{'foreground':'b31d28','background':'ffeef0','token':'invalid.illegal'},{'foreground':'6f42c1','fontStyle':'italic','token':'entity.other.inherited-class'},{'foreground':'22863a','token':'string constant.other.placeholder'},{'foreground':'005cc5','token':'meta.function-call.py'},{'foreground':'22863a','token':'meta.tag'},{'foreground':'22863a','token':'meta.tag entity'},{'foreground':'24292e','token':'entity.name.section'},{'foreground':'24292e','token':'keyword.type.variant'},{'foreground':'24292e','token':'source.ocaml keyword.operator.symbol'},{'foreground':'005cc5','token':'source.ocaml keyword.operator.symbol.infix'},{'foreground':'005cc5','token':'source.ocaml keyword.operator.symbol.prefix'},{'fontStyle':'underline','token':'source.ocaml keyword.operator.symbol.infix.floating-point'},{'fontStyle':'underline','token':'source.ocaml keyword.operator.symbol.prefix.floating-point'},{'fontStyle':'underline','token':'source.ocaml constant.numeric.floating-point'},{'background':'f6f8f8','token':'text.tex.latex meta.function.environment'},{'background':'f6f8f8','token':'text.tex.latex meta.function.environment meta.function.environment'},{'foreground':'d73a49','token':'text.tex.latex support.function'},{'foreground':'24292e','token':'source.plist string.unquoted'},{'foreground':'24292e','token':'source.plist keyword.operator'}],'colors':{'editor.foreground':'#24292e','editor.background':'#ffffff','editor.selectionBackground':'#c8c8fa','editor.lineHighlightBackground':'#f5f5f6','editorCursor.foreground':'#24292e','editorWhitespace.foreground':'#e1e4e8'}};
+                    monaco.editor.defineTheme('light', monacoThemeLight);
+                    monaco.editor.defineTheme('dark', monacoTheme);
+                    console.log('maker');
                     document.getElementById(monacoId).editor = monaco.editor.create($refs.monacoEditorElement, {
-                        value: monacoContent,
-                        theme: 'blackboard',
+                        value: decodeHTMLEntities(monacoContent),
+                        theme: '{{ $theme }}',
                         fontSize: monacoFontSize,
                         lineNumbersMinChars: 3,
                         automaticLayout: true,
                         language: 'markdown',
+                        lineDecorationsWidth: '20px',
                         minimap: { enabled: false },
+                        tabIndex: {{ $tabindex ?? 0 }} // Set tabIndex directly in Monaco configuration
                     });
+                    
+                    // Monaco's built-in tabIndex option will handle the tab order
                     monacoEditor(document.getElementById(monacoId).editor);
                     document.getElementById(monacoId).addEventListener('monaco-editor-focused', function(event){
                         document.getElementById(monacoId).editor.focus();
                     });
                     updatePlaceholder(document.getElementById(monacoId).editor.getValue());
+                    {{-- monaco.editor.getModel().onDidChangeContent((event) => {
+                        console.log('we here');
+                    }); --}}
+                    document.getElementById(monacoId).editor.getModel().onDidChangeContent(function(event){ 
+                        content = document.getElementById(monacoId).editor.getValue();
+                    });
                     
+
                 });
 
                 clearInterval(monacoLoaderInterval);
                 monacoLoader = false;
             }
         }, 5);
-    " :id="monacoId" class="flex flex-col items-center relative justify-start w-full bg-black min-h-[250px] pt-3 h-full">
+    " :id="monacoId" class="flex flex-col items-center relative justify-start w-full min-h-[250px] h-full {{ $paddingTopClass }}">
+    <style type="text/css">
+    .monaco-editor .margin {
+        margin-left:10px !important;
+    }
+    </style>
     <div x-show="monacoLoader" class="flex absolute inset-0 z-20 justify-center items-center w-full h-full duration-1000 ease-out">
-        <svg class="w-4 h-4 text-gray-400 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+        <svg class="w-4 h-4 animate-spin text-stone-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
     </div>
 
     <div x-show="!monacoLoader" class="relative z-10 w-full h-full">
         <div x-ref="monacoEditorElement" class="w-full h-full text-lg"></div>
-        <div x-ref="monacoPlaceholderElement" x-show="monacoPlaceholder" @click="monacoEditorFocus()" :style="'font-size: ' + monacoFontSize" class="absolute top-0 left-0 z-50 mt-0.5 ml-14 w-full font-mono text-sm text-gray-500 -translate-x-0.5" x-text="monacoPlaceholderText"></div>
+        <div x-ref="monacoPlaceholderElement" x-show="monacoPlaceholder" @click="monacoEditorFocus()" :style="'font-size: ' + monacoFontSize" class="absolute top-0 left-0 z-50 mt-0.5 ml-16 w-full font-mono text-sm -translate-x-0.5 text-stone-500" x-text="monacoPlaceholderText"></div>
     </div>
+    
+
 </div>

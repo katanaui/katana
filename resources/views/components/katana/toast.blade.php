@@ -84,7 +84,7 @@
             addToast(toast.message, toast.type, toast.description);
         @endif
     "
-    @pop-toast.window="addToast($event.detail.message, $event.detail.type, $event.detail.description)"
+    @pop-toast.window="console.log('made yo'); addToast($event.detail.message, $event.detail.type, $event.detail.description)"
     x-show="toasts.length" x-transition:enter="transition ease-in-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in-out duration-300" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" x-cloak>
     <template x-for="toast in toasts" :key="toast.id">
         <div :id="'katana-toast-' + toast.id" class="flex overflow-hidden relative flex-col items-start p-3.5 space-y-0.5 text-sm text-white rounded-2xl opacity-100 duration-300 ease-out translate-y-0 starting:opacity-0 starting:-translate-y-full ending:-translate-y-full ending:opacity-0 backdrop-blur-xs group bg-black/60" role="alert">
