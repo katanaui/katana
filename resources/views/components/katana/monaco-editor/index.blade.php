@@ -3,7 +3,9 @@
     'placeholder' => 'Start typing here',
     'theme' => 'dark',
     'paddingTopClass' => 'pt-3',
-    'tabindex' => null
+    'paddingTop' => 0,
+    'tabindex' => null,
+    'lineNumbers' => true
 ])
 
 <div x-data="{
@@ -20,7 +22,7 @@
         monacoFontSize: '15px',
         monacoId: $id('monaco-editor'),
         editor: null,
-        monacoEditor(editor){
+         monacoEditor(editor){
             editor.onDidChangeModelContent((e) => {
                 this.monacoContent = editor.getValue();
                 this.updatePlaceholder(editor.getValue());
@@ -33,6 +35,141 @@
             editor.onDidFocusEditorWidget(() => {
                 this.updatePlaceholder(editor.getValue());
             });
+
+            editor.onDropIntoEditor((drop) => {
+                console.log('Image drop detected');
+                let { event: e, position } = drop;
+                e.preventDefault();
+                
+                // Get the file from the drop event
+                const file = e.dataTransfer.files[0];
+                if (file && file.type.startsWith('image/')) {
+                    const fileName = file.name;
+                    
+                    // Create a placeholder text for the uploading image
+                    const placeholderText = '<!-- Uploading ' + fileName + ' -->';
+                    
+                    // Insert the placeholder at the drop position
+                    const range = new monaco.Range(
+                        position.lineNumber,
+                        position.column,
+                        position.lineNumber,
+                        position.column
+                    );
+                    
+                    // Insert the placeholder text
+                    editor.executeEdits('', [{
+                        range: range,
+                        text: placeholderText,
+                        forceMoveMarkers: true
+                    }]);
+                    
+                    // Create FormData for the file upload
+                    const formData = new FormData();
+                    formData.append('image', file);
+                    
+                    // Get CSRF token from meta tag
+                    const csrfToken = document.querySelector('meta[name=csrf-token]').getAttribute('content');
+                    
+                    // Upload the image to the server
+                    fetch('/api/image/upload', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken
+                        },
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 1) {
+                            // Find the placeholder in the editor content
+                            const model = editor.getModel();
+                            const content = model.getValue();
+                            const placeholderIndex = content.indexOf(placeholderText);
+                            
+                            if (placeholderIndex !== -1) {
+                                // Create a range that encompasses the placeholder
+                                const startPos = model.getPositionAt(placeholderIndex);
+                                const endPos = model.getPositionAt(placeholderIndex + placeholderText.length);
+                                const replaceRange = new monaco.Range(
+                                    startPos.lineNumber,
+                                    startPos.column,
+                                    endPos.lineNumber,
+                                    endPos.column
+                                );
+                                
+                                // Get alt text from filename (without extension)
+                                const altText = data.imgAlt || fileName.split('.').slice(0, -1).join('.');
+                                
+                                // Replace the placeholder with the actual image markdown
+                                const imageMarkdown = '![' + altText + '](' + data.path + ')';
+                                editor.executeEdits('', [{
+                                    range: replaceRange,
+                                    text: imageMarkdown,
+                                    forceMoveMarkers: true
+                                }]);
+                                
+                                // Alert when the image is successfully uploaded
+                                console.log('Image uploaded successfully:', data.path);
+                            }
+                        } else {
+                            // Handle upload error
+                            console.error('Image upload failed:', data.message);
+                            alert('Image upload failed: ' + data.message);
+                            
+                            // Remove the placeholder if upload fails
+                            const model = editor.getModel();
+                            const content = model.getValue();
+                            const placeholderIndex = content.indexOf(placeholderText);
+                            
+                            if (placeholderIndex !== -1) {
+                                const startPos = model.getPositionAt(placeholderIndex);
+                                const endPos = model.getPositionAt(placeholderIndex + placeholderText.length);
+                                const replaceRange = new monaco.Range(
+                                    startPos.lineNumber,
+                                    startPos.column,
+                                    endPos.lineNumber,
+                                    endPos.column
+                                );
+                                
+                                editor.executeEdits('', [{
+                                    range: replaceRange,
+                                    text: '',
+                                    forceMoveMarkers: true
+                                }]);
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error uploading image:', error);
+                        alert('Error uploading image: ' + error.message);
+                        
+                        // Remove the placeholder if upload fails
+                        const model = editor.getModel();
+                        const content = model.getValue();
+                        const placeholderIndex = content.indexOf(placeholderText);
+                        
+                        if (placeholderIndex !== -1) {
+                            const startPos = model.getPositionAt(placeholderIndex);
+                            const endPos = model.getPositionAt(placeholderIndex + placeholderText.length);
+                            const replaceRange = new monaco.Range(
+                                startPos.lineNumber,
+                                startPos.column,
+                                endPos.lineNumber,
+                                endPos.column
+                            );
+                            
+                            editor.executeEdits('', [{
+                                range: replaceRange,
+                                text: '',
+                                forceMoveMarkers: true
+                            }]);
+                        }
+                    });
+                }
+            });
+
+
         },
         updatePlaceholder: function(value) {
             if (value == '') {
@@ -68,10 +205,33 @@
         monacoLoaderInterval = setInterval(function(){
             if(typeof _amdLoaderGlobal !== 'undefined'){
 
+            if (document.getElementById(monacoId)) {
+                // Create global registry for Monaco instances if it doesn't exist
+                if (!window.monacoInstances) {
+                    window.monacoInstances = {};
+                }
+            }
+
+            window.monacoInstances[monacoId] = {
+                editor: document.getElementById(monacoId).editor,
+                element: document.getElementById(monacoId)
+            };
+
                 // Based on https://jsfiddle.net/developit/bwgkr6uq/ which works without needing service worker. Provided by loader.min.js.
                 require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs' }});
                 let proxy = URL.createObjectURL(new Blob([` self.MonacoEnvironment = { baseUrl: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min' }; importScripts('https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs/base/worker/workerMain.min.js');`], { type: 'text/javascript' }));
                 window.MonacoEnvironment = { getWorkerUrl: () => proxy };
+                let lineNumberAttributes = {
+                    lineNumbers: false,
+                    lineNumberMinChars: 0,
+                    glyphMargin: false,  
+                };
+                @if($lineNumbers)
+                    lineNumberAttributes = {
+                        lineNumbersMinChars: 3,
+                        lineDecorationsWidth: '12px',
+                    }
+                @endif
 
                 require(['vs/editor/editor.main'], function() {
                     
@@ -82,14 +242,16 @@
                     console.log('maker');
                     document.getElementById(monacoId).editor = monaco.editor.create($refs.monacoEditorElement, {
                         value: decodeHTMLEntities(monacoContent),
+                        padding: {
+                            top: parseInt('{{ $paddingTop ?? 0 }}')
+                        },
                         theme: '{{ $theme }}',
                         fontSize: monacoFontSize,
-                        lineNumbersMinChars: 3,
                         automaticLayout: true,
                         language: 'markdown',
-                        lineDecorationsWidth: '20px',
                         minimap: { enabled: false },
-                        tabIndex: {{ $tabindex ?? 0 }} // Set tabIndex directly in Monaco configuration
+                        tabIndex: {{ $tabindex ?? 0 }},
+                        ...lineNumberAttributes
                     });
                     
                     // Monaco's built-in tabIndex option will handle the tab order
@@ -103,7 +265,17 @@
                     }); --}}
                     document.getElementById(monacoId).editor.getModel().onDidChangeContent(function(event){ 
                         content = document.getElementById(monacoId).editor.getValue();
+                        window.dispatchEvent(new CustomEvent('monaco-content-changed', {
+                            detail: {
+                                id: monacoId,
+                                content: content
+                            }
+                        }));
                     });
+
+                    window.addEventListener('monaco-editor-height-update', function(event){
+                        $refs.monacoEditorElement.style.height=event.detail.height;
+                    })
                     
 
                 });
@@ -112,11 +284,19 @@
                 monacoLoader = false;
             }
         }, 5);
-    " :id="monacoId" class="flex flex-col items-center relative justify-start w-full min-h-[250px] h-full {{ $paddingTopClass }}">
+    " :id="monacoId" class="flex flex-col items-center relative justify-start w-full min-h-[250px] h-full {{ $paddingTopClass }}"
+    @update-placeholder-text.window="monacoPlaceholderText=$event.detail.placeholderText; console.log($event.detail)"
+    @focus-editor.window="monacoEditorFocus()"
+    >
     <style type="text/css">
     .monaco-editor .margin {
-        margin-left:10px !important;
+        margin-left:0px !important;
     }
+    @if(!$lineNumbers)
+    .monaco-scrollable-element {
+        left:16px !important;
+    }
+    @endif
     </style>
     <div x-show="monacoLoader" class="flex absolute inset-0 z-20 justify-center items-center w-full h-full duration-1000 ease-out">
         <svg class="w-4 h-4 animate-spin text-stone-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
@@ -124,7 +304,7 @@
 
     <div x-show="!monacoLoader" class="relative z-10 w-full h-full">
         <div x-ref="monacoEditorElement" class="w-full h-full text-lg"></div>
-        <div x-ref="monacoPlaceholderElement" x-show="monacoPlaceholder" @click="monacoEditorFocus()" :style="'font-size: ' + monacoFontSize" class="absolute top-0 left-0 z-50 mt-0.5 ml-16 w-full font-mono text-sm -translate-x-0.5 text-stone-500" x-text="monacoPlaceholderText"></div>
+        <div x-ref="monacoPlaceholderElement" x-show="monacoPlaceholder" @click="monacoEditorFocus()" :style="'font-size: ' + monacoFontSize + '; margin-top: {{ $paddingTop }}px'" class="absolute pointer-events-none top-0 left-0 z-50 mt-0.5 @if($lineNumbers) ml-16 @else ml-8 @endif w-full font-mono text-sm -translate-x-0.5 text-stone-500" x-text="monacoPlaceholderText"></div>
     </div>
     
 
