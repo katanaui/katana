@@ -245,6 +245,7 @@
                         padding: {
                             top: parseInt('{{ $paddingTop ?? 0 }}')
                         },
+                        wordWrap: true,
                         theme: '{{ $theme }}',
                         fontSize: monacoFontSize,
                         automaticLayout: true,
