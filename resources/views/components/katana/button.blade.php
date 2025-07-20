@@ -32,24 +32,28 @@ switch ($size ?? 'md') {
 @endphp
 
 @php
+$primaryTypeClasses = 'border-transparent focus:outline-none inset-shadow-xs bg-stone-900 text-stone-100 hover:text-white inset-shadow-white/20';
 switch ($variant ?? 'primary') {
     case 'primary':
-        $typeClasses = 'border-transparent focus:outline-none inset-shadow-xs bg-stone-900 text-stone-100 hover:text-white inset-shadow-white/20';
+        $typeClasses = $primaryTypeClasses;
         break;
     case 'secondary':
         $typeClasses = 'border-transparent text-stone-700 bg-stone-100';
         break;
     case 'destructive':
-        $typeClasses = 'border-transparent text-white focus:outline-none bg-red-900 text-stone-100 hover:text-white focus:ring-2 focus:ring-red-900 focus:ring-offset-2';
+        $typeClasses = 'border-transparent text-white/90 focus:outline-none bg-red-600 hover:text-white';
         break;
     case 'outline':
-        $typeClasses = 'border-transparent text-stone-700 hover:bg-stone-100 focus:ring-2 focus:ring-stone-100 border-stone-200 focus:ring-offset-2';
+        $typeClasses = 'border-transparent text-stone-700 hover:bg-stone-100 border-stone-200';
         break;
     case 'ghost':
-        $typeClasses = 'border-transparent text-stone-700 hover:bg-stone-100 focus:ring-2 focus:ring-stone-100 focus:ring-offset-2';
+        $typeClasses = 'border-transparent text-stone-700 hover:bg-stone-100';
         break;
     case 'link':
-        $typeClasses = 'border-transparent text-stone-700 hover:bg-stone-100 focus:ring-2 focus:ring-stone-100 focus:ring-offset-2';
+        $typeClasses = 'border-transparent text-stone-700 hover:bg-stone-100';
+        break;
+    default:
+        $typeClasses = $primaryTypeClasses;
         break;
 }
 @endphp

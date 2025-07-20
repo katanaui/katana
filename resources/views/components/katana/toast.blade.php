@@ -84,14 +84,14 @@
             addToast(toast.message, toast.type, toast.description);
         @endif
     "
-    @pop-toast.window="addToast($event.detail.message, $event.detail.type, $event.detail.description)"
+    @pop-toast.window="if(typeof(event.detail[0]) != undefined){ addToast(event.detail[0].message, event.detail[0].type, event.detail[0].description) } else { addToast($event.detail.message, $event.detail.type, $event.detail.description); }"
     x-show="toasts.length" x-transition:enter="transition ease-in-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in-out duration-300" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" x-cloak>
     <template x-for="toast in toasts" :key="toast.id">
         <div :id="'katana-toast-' + toast.id" class="flex overflow-hidden relative flex-col items-start p-3.5 space-y-0.5 text-sm text-white rounded-2xl opacity-100 duration-300 ease-out translate-y-0 starting:opacity-0 starting:-translate-y-full ending:-translate-y-full ending:opacity-0 backdrop-blur-xs group bg-black/60" role="alert">
             <!-- Progress Bar -->
             <div class="absolute inset-0 z-10 h-full duration-100 ease-in-out bg-black/70" :style="`width: ${toastsProgress[toast.id]}%;`"></div>
-            <span class="flex relative z-20 items-center space-x-2 w-full">
-                <span :class="'w-5 h-5 ' + types[toast.type].colorClass" x-html="icons[types[toast.type].icon]"></span>
+            <span class="flex relative z-20 items-start space-x-2 w-full">
+                <span :class="'w-5 h-5 flex-shrink-0 ' + types[toast.type].colorClass" x-html="icons[types[toast.type].icon]"></span>
                 <span x-text="toast.message"></span>
                 <span x-on:click="removeToast(toast.id)" 
                     class="flex absolute right-0 top-1/2 justify-center items-center w-6 h-6 rounded-lg opacity-0 duration-100 ease-out scale-50 -translate-y-1/2 cursor-pointer group-hover:scale-100 group-hover:opacity-50 group-hover:hover:opacity-100 group-hover:text-white hover:opacity-100 bg-black/50"
