@@ -1,6 +1,7 @@
 @props([
     'drawer' => false,
-    'side' => 'right'
+    'side' => 'right',
+    'parent' => null
 ])
 
 <style>
@@ -70,8 +71,17 @@ dialog[open]::backdrop{
         $watch('open', function(value) {
             if (value) {
                 $refs.dialog.showModal();
+                // If this dialog has a parent, scale it down
+                if ('{{ $parent }}') {
+                    document.querySelector('{{ $parent }}').classList.add('scale-[0.98]', 'brightness-[0.95]', 'ease-out', 'sm:duration-500', 'delay-200', 'duration-300', '-translate-x-5');
+                    setTimeout(() =>  document.querySelector('{{ $parent }}').classList.remove('delay-200'), 200);
+                }
             } else {
                 $refs.dialog.close();
+                if ('{{ $parent }}') {
+                    setTimeout(() =>  document.querySelector('{{ $parent }}').classList.remove('ease-out', 'sm:duration-500', 'duration-300'), 300)
+                    document.querySelector('{{ $parent }}').classList.remove('scale-[0.98]', 'brightness-[0.95]', '-translate-x-5');
+                }
             }
         });
     "
@@ -80,7 +90,7 @@ dialog[open]::backdrop{
 
     <dialog 
         x-ref="dialog"
-        class="flex overflow-hidden m-auto w-screen h-screen bg-transparent"
+        class="flex overflow-hidden m-auto w-screen h-screen bg-transparent rounded-xl"
         @close="open = false;"
     >
         <div @click="clickedBackground($event, $el)" class="block overflow-hidden absolute inset-0 p-3 w-full h-full">
@@ -88,10 +98,10 @@ dialog[open]::backdrop{
                 <div 
                     x-show="open" 
                     @click.away="open = false"
-                    x-transition:enter="transform transition ease-in-out duration-500 sm:duration-700" 
+                    x-transition:enter="transform transition ease-in-out duration-300 sm:duration-500" 
                     x-transition:enter-start="translate-x-full" 
                     x-transition:enter-end="translate-x-0" 
-                    x-transition:leave="transform transition ease-in-out duration-500 sm:duration-700" 
+                    x-transition:leave="transform transition ease-in-out duration-300 sm:duration-500" 
                     x-transition:leave-start="translate-x-0" 
                     x-transition:leave-end="translate-x-full" 
                     {{ $attributes->twMerge($classes) }}>
