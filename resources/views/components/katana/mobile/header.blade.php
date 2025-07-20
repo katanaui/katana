@@ -14,7 +14,7 @@
     ]);
 @endphp
 
-<div {{ $attributes->twMerge($classes) }}">
+<div {{ $attributes->twMerge($classes) }}>
     @if($leftIcon && $leftUrl)
         <a href="{{ $leftUrl ?? '' }}" class="relative z-10 p-2">
             <x-dynamic-component :component="$leftIcon" class="w-5 h-5" />
