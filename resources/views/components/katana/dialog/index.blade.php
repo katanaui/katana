@@ -113,7 +113,7 @@ dialog[open]::backdrop {
 
     <dialog 
         x-ref="dialog"
-        class="flex overflow-hidden m-auto w-screen h-screen bg-transparent outline-none"
+        class="flex overflow-hidden m-auto w-screen bg-transparent outline-none h-dvh"
         @close="open = false;"
         wire:ignore.self
         :class="{ 'closing' : closing }"
@@ -151,8 +151,8 @@ dialog[open]::backdrop {
                             <svg class="w-5 h-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256"><path fill="none" d="M0 0h256v256H0z"/><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" d="M200 56 56 200M200 200 56 56"/></svg>
                         </button>
                     </div>
-                    <div class="overflow-scroll px-8 py-16 @if(isset($footer)) pb-24 @endif w-full h-full">
-                      <div class="w-full h-auto">
+                    <div class="overflow-scroll px-8 py-16 w-full h-full">
+                      <div class="w-full h-auto @if(isset($footer)) pb-20 @endif">
                         {{ $content }}
                       </div>
                     </div>
