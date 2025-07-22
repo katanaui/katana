@@ -1,4 +1,4 @@
-<div {{ $attributes->twMerge('fixed top-0 left-1/2 px-2 pb-4 space-y-2 w-full max-w-sm z-[99999999] -translate-x-1/2') }}
+<div {{ $attributes->twMerge('fixed inset-0 px-2 pb-4 space-y-2 w-screen h-screen max-w-sm z-[99999999] -translate-x-1/2') }}
     x-data="{ 
         toasts: [],
         toastsProgress: [],
@@ -11,7 +11,7 @@
         ],
         closeInterval: 5000,
         addToast(message, type, description = '') {
-            const id = this.toasts.length + 1;
+            const id = Date.now() + Math.random();
             const toast = { id, type, message, description, startTime: null, rafId: null };
             this.toasts.push(toast);
             this.toastsProgress[id] = 0;
@@ -87,7 +87,7 @@
     @pop-toast.window="if(typeof(event.detail[0]) != 'undefined'){ console.log('why make'); addToast(event.detail[0].message, event.detail[0].type, event.detail[0].description) } else { addToast(event.detail.message, event.detail.type, event.detail.description); }"
     x-show="toasts.length" x-transition:enter="transition ease-in-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in-out duration-300" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" x-cloak>
     <template x-for="toast in toasts" :key="toast.id">
-        <div :id="'katana-toast-' + toast.id" class="flex overflow-hidden relative flex-col items-start p-3.5 space-y-0.5 text-sm text-white rounded-2xl opacity-100 duration-300 ease-out translate-y-0 starting:opacity-0 starting:-translate-y-full ending:-translate-y-full ending:opacity-0 backdrop-blur-xs group bg-black/60" role="alert">
+        <div :id="'katana-toast-' + toast.id" x-data x-init="$el.showPopover()" popover="manual" class="flex overflow-hidden fixed top-0 flex-col items-start p-3.5 space-y-0.5 w-full max-w-sm text-sm text-white rounded-2xl opacity-100 duration-300 ease-out translate-y-0 starting:opacity-0 starting:-translate-y-full ending:-translate-y-full ending:opacity-0 backdrop-blur-xs group bg-black/60" role="alert">
             <!-- Progress Bar -->
             <div class="absolute inset-0 z-10 h-full duration-100 ease-in-out bg-black/70" :style="`width: ${toastsProgress[toast.id]}%;`"></div>
             <span class="flex relative z-20 items-start space-x-2 w-full">
