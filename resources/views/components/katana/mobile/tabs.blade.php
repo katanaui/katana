@@ -46,7 +46,7 @@
             <span class="text-xs font-medium leading-tight">Contact</span>
         </a>
 
-        <a href="/profile"
+        <a href="/tour/profile"
             @class([
                 'flex-1 flex flex-col items-center justify-center py-2 px-1 space-y-1 text-gray-500 min-h-[60px]',
                 'text-indigo-500' => $active == 'profile',
