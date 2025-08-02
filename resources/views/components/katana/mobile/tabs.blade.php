@@ -36,14 +36,14 @@
         </a>
         </div>
 
-        <a href="/tour/contact"
+        <a href="/tour/chat"
             @class([
                 'flex-1 flex flex-col items-center justify-center py-2 px-1 space-y-1 text-gray-500 min-h-[60px]',
-                'text-indigo-500' => $active == 'contact',
-                'text-gray-500' => $active != 'contact'
+                'text-indigo-500' => $active == 'chat',
+                'text-gray-500' => $active != 'chat'
             ])>
             <x-phosphor-chat-text-duotone class="w-7 h-7" />
-            <span class="text-xs font-medium leading-tight">Contact</span>
+            <span class="text-xs font-medium leading-tight">Chat</span>
         </a>
 
         <a href="/tour/profile"
