@@ -25,7 +25,7 @@
         </a>
 
         <div class="relative flex-1 px-2 w-auto h-auto">
-        <a href="/tour/begin" 
+        <a href="{{ route('property.tour') }}" 
             @class([
                 'flex-1 flex flex-col items-center w-full shadow-xl border border-gray-200 rounded-t-xl -translate-y-1 bg-white justify-center py-2 pb-3 absolute px-1 space-y-1 transition-colors min-h-[58px]',
                 'text-indigo-500' => $active == 'tour',
