@@ -9,7 +9,7 @@
         </div>
     </div>
     <div x-show="Object.keys(fileTabs).length === 0" class="flex justify-center items-center w-full h-full text-white">
-        <x-no-file-selected />
+        {{-- <x-no-file-selected /> --}}
     </div>
 </div>
 
