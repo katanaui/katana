@@ -17,13 +17,9 @@
         open: {{ $open ? 'true' : 'false' }},
         closeDrawer() {
             this.open = false;
-            if ('{{ $parent }}') {
-                setTimeout(() =>  document.querySelector('{{ $parent }}').classList.remove('ease-out', 'sm:duration-500', 'duration-300'), 300)
-                document.querySelector('{{ $parent }}').classList.remove('scale-[0.98]', 'brightness-[0.95]', '-translate-x-5');
-            }
         }
     }"
-    {{ $attributes }}
+    {{ $attributes->except('id') }}
     x-init="
         $watch('open', function(value) {
             if (value) {
@@ -34,14 +30,15 @@
                     setTimeout(() =>  document.querySelector('{{ $parent }}').classList.remove('delay-200'), 200);
                 }
             } else {
+                if ('{{ $parent }}') {
+                    setTimeout(() =>  document.querySelector('{{ $parent }}').classList.remove('ease-out', 'sm:duration-500', 'duration-300'), 300)
+                    document.querySelector('{{ $parent }}').classList.remove('scale-[0.98]', 'brightness-[0.95]', '-translate-x-5');
+                }
                 document.body.style.overflow = '';
                 window.dispatchEvent(new CustomEvent('drawer-closed', { detail: { 'id' : $refs.container.id }}));
             }
         });
     "
-
-    @open-drawer.window="if($event.detail.id === $el.id) open=true"
-    @close-drawer.window="console.log('gotit'); if($event.detail.id === $el.id) open=false"
     @keydown.escape.window="open = false"
 >
     <div @click="open = true;">{{ $slot ?? 'Open drawer' }}</div>
@@ -76,7 +73,10 @@
                 x-transition:leave-end="translate-x-full"
                 class="fixed inset-y-0 right-0 z-50 p-3 w-full max-w-2xl"
             >
-                <div class="{{ $classes }}">
+                <div
+                    @open-drawer.window="if($event.detail.id === $el.id) open=true"
+                    @close-drawer.window="console.log('gotit'); if($event.detail.id === $el.id) open=false"
+                    class="{{ $classes }}" {{ $attributes->only('id') }}>
                     @if($header ?? false)
                         <div class="flex absolute top-0 z-50 flex-shrink-0 items-center px-8 w-full h-16 rounded-t-xl backdrop-blur-sm bg-white/90">
                             {{ $header }}
