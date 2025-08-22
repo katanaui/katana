@@ -6,7 +6,7 @@
 
 @php
     $classes = \Illuminate\Support\Arr::toCssClasses([
-        'flex overflow-hidden justify-center relative items-center w-full bg-white rounded-xl border starting:opacity-0 opacity-100 shadow-sm border-stone-200',
+        'flex overflow-hidden justify-center relative items-center w-full bg-white sm:rounded-xl border-0 sm:border starting:opacity-0 opacity-100 shadow-sm border-stone-200',
         'ml-auto w-full h-full' => $position == 'right',
         'mr-auto w-full h-full' => $position == 'left',
     ]);
@@ -71,14 +71,14 @@
                 x-transition:leave="transform transition ease-in-out duration-300 sm:duration-500" 
                 x-transition:leave-start="translate-x-0" 
                 x-transition:leave-end="translate-x-full"
-                class="fixed inset-y-0 right-0 z-50 p-3 w-full max-w-2xl"
+                class="fixed inset-y-0 right-0 z-50 w-full max-w-2xl sm:p-3"
             >
                 <div
                     @open-drawer.window="if($event.detail.id === $el.id) open=true"
                     @close-drawer.window="console.log('gotit'); if($event.detail.id === $el.id) open=false"
                     class="{{ $classes }}" {{ $attributes->only('id') }}>
                     @if($header ?? false)
-                        <div class="flex absolute top-0 z-50 flex-shrink-0 items-center px-8 w-full h-16 rounded-t-xl backdrop-blur-sm bg-white/90">
+                        <div class="flex absolute top-0 z-50 flex-shrink-0 items-center px-5 w-full h-16 backdrop-blur-sm sm:px-8 sm:rounded-t-xl bg-white/90">
                             {{ $header }}
                         </div>
                     @endif
@@ -89,14 +89,14 @@
                         </button>
                     </div>
                     
-                    <div class="overflow-y-auto px-8 py-16 w-full h-full">
+                    <div class="overflow-y-auto px-5 py-16 w-full h-full sm:px-8">
                         <div class="w-full h-auto @if(isset($footer)) pb-20 @endif">
                             {{ $content }}
                         </div>
                     </div>
                     
                     @if($footer ?? false)
-                        <div class="flex absolute bottom-0 z-50 flex-shrink-0 justify-between items-center px-8 w-full h-20 rounded-b-xl border-t border-gray-100 backdrop-blur-sm bg-white/70">
+                        <div class="flex absolute bottom-0 z-50 flex-shrink-0 justify-between items-center px-5 w-full h-20 border-t border-gray-100 backdrop-blur-sm sm:px-8 sm:rounded-b-xl bg-white/70">
                             {{ $footer }}
                         </div>
                     @endif
