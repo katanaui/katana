@@ -9,7 +9,8 @@
 <div
     x-data="{ 
         silkInstance: null,
-        resizeHandler: null
+        resizeHandler: null,
+        resizeObserver: null
     }"
     x-init="$nextTick(() => {
         if (window.initSilkShader) {
@@ -20,7 +21,7 @@
                 noiseIntensity: {{ $noiseIntensity }},
                 rotation: {{ $rotation }}
             });
-            
+
             // Add resize handler to ensure canvas stays full size
             resizeHandler = () => {
                 const canvas = $el.querySelector('canvas');
@@ -37,13 +38,22 @@
                 }
             };
             
+            // Window resize for browser window changes
             window.addEventListener('resize', resizeHandler);
+            
+            // ResizeObserver for dev tools and container changes
+            resizeObserver = new ResizeObserver(() => {
+                resizeHandler();
+            });
+            resizeObserver.observe($el);
         }
     })"
-    x-destroy="if (resizeHandler) { window.removeEventListener('resize', resizeHandler); }"
-    class="w-full h-full"
->
-    <canvas class="block w-full h-full" height="100%" width="100%"></canvas>
+    x-destroy="
+        if (resizeHandler) { window.removeEventListener('resize', resizeHandler); }
+        if (resizeObserver) { resizeObserver.disconnect(); }
+    "
+    class="relative w-full h-full">
+    <canvas class="relative w-full h-full" height="100%" width="100%"></canvas>
 </div>
 
 @once
@@ -66,6 +76,7 @@
       } = options;
     
       const canvas = container.querySelector("canvas");
+      
       const renderer = new window.THREE.WebGLRenderer({ canvas, alpha: true });
       renderer.setSize(canvas.clientWidth, canvas.clientHeight);
     
