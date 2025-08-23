@@ -10,50 +10,112 @@
     x-data="{ 
         silkInstance: null,
         resizeHandler: null,
-        resizeObserver: null
-    }"
-    x-init="$nextTick(() => {
-        if (window.initSilkShader) {
-            silkInstance = window.initSilkShader($el, {
-                speed: {{ $speed }},
-                scale: {{ $scale }},
-                color: '{{ $color }}',
-                noiseIntensity: {{ $noiseIntensity }},
-                rotation: {{ $rotation }}
-            });
+        resizeObserver: null,
+        isLoading: true,
+        maxRetries: 3,
+        currentRetry: 0,
+        
+        async initSilk() {
+            try {
+                // First wait for THREE.js to be available
+                await this.waitForTHREE();
+                
+                // Then wait for the shader to be available
+                await this.waitForShader();
+                
+                if (window.initSilkShader) {
+                    this.silkInstance = window.initSilkShader($el, {
+                        speed: {{ $speed }},
+                        scale: {{ $scale }},
+                        color: '{{ $color }}',
+                        noiseIntensity: {{ $noiseIntensity }},
+                        rotation: {{ $rotation }}
+                    });
 
-            // Add resize handler to ensure canvas stays full size
-            resizeHandler = () => {
+                    this.setupResizeHandlers();
+                    this.isLoading = false;
+                }
+            } catch (error) {
+                console.error('Failed to initialize silk shader:', error);
+                if (this.currentRetry < this.maxRetries) {
+                    this.currentRetry++;
+                    setTimeout(() => this.initSilk(), 1000 * this.currentRetry);
+                } else {
+                    this.isLoading = false;
+                }
+            }
+        },
+        
+        async waitForTHREE() {
+            return new Promise((resolve, reject) => {
+                let attempts = 0;
+                const checkTHREE = () => {
+                    if (window.THREE) {
+                        resolve();
+                    } else if (attempts >= this.maxRetries) {
+                        reject(new Error('THREE.js failed to load after maximum retries'));
+                    } else {
+                        attempts++;
+                        setTimeout(checkTHREE, 500);
+                    }
+                };
+                checkTHREE();
+            });
+        },
+        
+        async waitForShader() {
+            return new Promise((resolve, reject) => {
+                let attempts = 0;
+                const checkShader = () => {
+                    if (window.initSilkShader) {
+                        resolve();
+                    } else if (attempts >= this.maxRetries) {
+                        reject(new Error('Shader failed to load after maximum retries'));
+                    } else {
+                        attempts++;
+                        setTimeout(checkShader, 500);
+                    }
+                };
+                checkShader();
+            });
+        },
+        
+        setupResizeHandlers() {
+            this.resizeHandler = () => {
                 const canvas = $el.querySelector('canvas');
-                if (canvas && silkInstance && silkInstance.renderer) {
-                    // Get the actual container dimensions
+                if (canvas && this.silkInstance && this.silkInstance.renderer) {
                     const rect = $el.getBoundingClientRect();
-                    
-                    // Set canvas internal dimensions (drawing surface)
                     canvas.width = rect.width;
                     canvas.height = rect.height;
-                    
-                    // Update the Three.js renderer size
-                    silkInstance.renderer.setSize(rect.width, rect.height);
+                    this.silkInstance.renderer.setSize(rect.width, rect.height);
                 }
             };
             
-            // Window resize for browser window changes
-            window.addEventListener('resize', resizeHandler);
+            window.addEventListener('resize', this.resizeHandler);
             
-            // ResizeObserver for dev tools and container changes
-            resizeObserver = new ResizeObserver(() => {
-                resizeHandler();
+            this.resizeObserver = new ResizeObserver(() => {
+                this.resizeHandler();
             });
-            resizeObserver.observe($el);
+            this.resizeObserver.observe($el);
         }
-    })"
+    }"
+    x-init="$nextTick(() => initSilk())"
     x-destroy="
         if (resizeHandler) { window.removeEventListener('resize', resizeHandler); }
         if (resizeObserver) { resizeObserver.disconnect(); }
     "
     class="relative w-full h-full">
-    <canvas class="relative w-full h-full" height="100%" width="100%"></canvas>
+    <canvas 
+        class="relative w-full h-full" 
+        height="100%" 
+        width="100%"
+        x-show="!isLoading"
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"></canvas>
+    
+    <!-- Loading state -->
+    <div x-show="isLoading" class="absolute inset-0 bg-gray-100 animate-pulse"></div>
 </div>
 
 @once
