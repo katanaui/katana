@@ -106,7 +106,7 @@
     "
     class="relative w-full h-full">
     <canvas 
-        class="relative w-full h-full" 
+        class="relative w-full h-full bg-black" 
         height="100%" 
         width="100%"
         x-show="!isLoading"
@@ -115,7 +115,7 @@
         x-transition:enter-end="opacity-100"></canvas>
     
     <!-- Loading state -->
-    <div x-show="isLoading" class="absolute inset-0 bg-gray-100 animate-pulse"></div>
+    <div x-show="isLoading" class="absolute inset-0 bg-black"></div>
 </div>
 
 @once
