@@ -9,12 +9,12 @@
 
 @php
     $classes = \Illuminate\Support\Arr::toCssClasses([
-        'flex relative z-50 justify-start items-center text-gray-900 px-3 w-full h-16',
+        'flex relative z-50 justify-between items-center text-gray-900 px-3 w-full h-16 flex-shrink-0',
         'border-b border-gray-200' => $bottomBorder
     ]);
 @endphp
 
-<div {{ $attributes->twMerge($classes) }}">
+<div {{ $attributes->twMerge($classes) }}>
     @if($leftIcon && $leftUrl)
         <a href="{{ $leftUrl ?? '' }}" class="relative z-10 p-2">
             <x-dynamic-component :component="$leftIcon" class="w-5 h-5" />
