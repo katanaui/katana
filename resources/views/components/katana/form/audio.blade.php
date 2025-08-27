@@ -3,6 +3,7 @@
     'hint'  => null,
     'src'   => null, // string|Livewire TemporaryUploadedFile|null
     'disk'  => config('filesystems.default'),
+    'nextToLabel' => null
 ])
 
 @php
@@ -49,16 +50,24 @@
     x-on:livewire-upload-error="isUploading = false; progress = 0"
     x-on:livewire-upload-progress="progress = $event.detail.progress"
 >
+    
     @if($label)
-        <x-label>{{ $label }}</x-label>
+        <div class="flex relative items-center mb-2 space-x-1.5 jutify-between">
+            <x-katana.form.label class="flex-shrink-0">{{ $label }}</x-katana.form.label>
+            @if($nextToLabel)
+                {!! $nextToLabel !!}
+            @endif
+        </div>
     @endif
 
     <!-- Audio Preview -->
     @if($previewUrl)
         <div class="flex relative items-center pr-4 mt-3 rounded-lg border border-gray-200" wire:key="audio-preview-{{ $wireModelName }}">
-            <audio controls class="w-full" wire:key="audio-player-{{ $wireModelName }}" src="{{ $previewUrl }}">
-                Your browser does not support the audio element.
-            </audio>
+            <div class="flex items-stretch w-full justify-stretch">
+                <x-katana.audio-player wire:key="audio-player-{{ $wireModelName }}" :src="$previewUrl" class="border-0" />
+            </div>
+            
+            
             @if($wireModelName)
                 <button type="button" class="relative z-10 p-2 rounded-full bg-stone-900" wire:click="$set('{{ $wireModelName }}', null)" title="Remove">
                     <x-phosphor-x-bold class="w-3 h-3 text-white" />

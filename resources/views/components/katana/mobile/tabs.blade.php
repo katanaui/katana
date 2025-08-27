@@ -46,14 +46,14 @@
             <span class="text-xs font-medium leading-tight">Chat</span>
         </a>
 
-        <a href="/tour/profile"
+        <a href="/tour/apply"
             @class([
                 'flex-1 flex flex-col items-center justify-center py-2 px-1 space-y-1 text-gray-500 min-h-[60px]',
-                'text-indigo-500' => $active == 'profile',
-                'text-gray-500' => $active != 'profile'
+                'text-indigo-500' => $active == 'apply',
+                'text-gray-500' => $active != 'apply'
             ])>
-            <x-phosphor-user-circle-duotone class="w-7 h-7" />
-            <span class="text-xs font-medium leading-tight">Profile</span>
+            <x-phosphor-key-duotone class="w-7 h-7" />
+            <span class="text-xs font-medium leading-tight">Apply</span>
         </a>
     </div>
 </nav>

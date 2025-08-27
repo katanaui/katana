@@ -89,7 +89,7 @@
                         </button>
                     </div>
                     
-                    <div class="overflow-y-auto px-5 py-16 w-full h-full sm:px-8">
+                    <div class="block overflow-y-auto px-5 pt-16 pb-24 w-full h-full sm:px-8">
                         <div class="w-full h-auto @if(isset($footer)) pb-20 @endif">
                             {{ $content }}
                         </div>
