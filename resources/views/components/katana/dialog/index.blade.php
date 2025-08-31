@@ -5,10 +5,17 @@
 
 <div x-data="{ modalOpen: '{{ $open }}' }"
     @keydown.escape.window="modalOpen = false"
-    class="relative z-50 w-auto h-auto">
+    class="relative z-50 w-auto h-auto"
+    {{ $attributes->except('id') }}
+    >
     <div @click="modalOpen = true;">{{ $slot ?? 'Open drawer' }}</div>
     <template x-teleport="body">
-        <div x-show="modalOpen" class="fixed top-0 left-0 z-[99] flex items-center justify-center w-screen h-screen" x-cloak>
+        <div x-show="modalOpen" 
+            {{ $attributes->only('id') }}
+            class="fixed top-0 left-0 z-[99] flex items-center justify-center w-screen h-screen"
+            @open-dialog.window="if($event.detail.id === $el.id) modalOpen=true"
+            @close-dialog.window="if($event.detail.id === $el.id) modalOpen=false"
+             x-cloak>
             <div x-show="modalOpen" 
                 x-transition:enter="ease-out duration-300"
                 x-transition:enter-start="opacity-0"
