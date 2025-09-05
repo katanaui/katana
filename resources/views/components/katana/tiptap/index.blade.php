@@ -51,7 +51,7 @@ $toolbarItems = [
             '',
         @endif
         '{{ $id }}'
-    )" x-init="() => init($refs.editor)" wire:ignore class="min-h-[200px] w-full rounded-lg overflow-hidden border relative border-stone-200" {{ $attributes->whereDoesntStartWith('wire:model') }}>
+    )" x-init="() => init($refs.editor)" @update-content="updateContent($event.detail.content)" wire:ignore class="min-h-[200px] w-full rounded-lg overflow-hidden border relative border-stone-200" {{ $attributes->whereDoesntStartWith('wire:model') }}>
     <div class="flex relative z-50 p-1 space-x-1 border-b bg-stone-50 border-stone-200/70">
         @foreach($toolbar_items as $item)
             @if($item == 'divider')
@@ -160,6 +160,9 @@ $toolbarItems = [
                         */
                         this.tiptap.commands.setContent(content, false)
                     })
+                },
+                updateContent(newContent){
+                    window.tiptap[this.elementId].commands.setContent(newContent, false);
                 },
                 linkToggle(){
                     const sel = this.tiptap.state.selection;
