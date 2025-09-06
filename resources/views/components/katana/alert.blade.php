@@ -1,5 +1,5 @@
 @props([
-    'variant' => 'default',
+    'variant' => 'primary',
     'icon' => null,
     'title' => '',
     'description' => '',
@@ -7,11 +7,13 @@
 
 @php
     $classes = \Illuminate\Support\Arr::toCssClasses([
-        'relative w-full rounded-lg border bg-white p-4 [&>svg]:absolute [&>svg]:text-foreground [&>svg]:left-4 [&>svg]:top-4 [&>svg+div]:translate-y-[-3px] [&:has(svg)]:pl-11 text-neutral-900',
-        'text-gray-600 bg-gray-100' => (! $variant) || ($variant === 'secondary'),
-        'text-danger-700 bg-danger-500/10' => $variant === 'destructive',
-        'text-primary-700 bg-primary-500/10' => $variant === 'default',
-        'text-stone-700 border border-stone-200' => $variant === 'outline'
+        'relative w-full rounded-lg border max-w-xl bg-white p-4 [&>svg]:absolute [&>svg]:text-foreground [&>svg]:left-4 [&>svg]:top-4 [&>svg+div]:translate-y-[-3px] [&:has(svg)]:pl-11 text-neutral-900',
+        'text-primary-700 bg-primary-500/10 border-stone-200' => $variant === 'primary',
+        'text-gray-600 bg-gray-100 border-stone-100' => $variant === 'secondary',
+        'text-red-500 border-red-200' => $variant === 'destructive',
+        'text-blue-600 border-blue-200' => $variant === 'info',
+        'text-green-600 border-green-200' => $variant === 'success',
+        'text-amber-600 border-amber-200' => $variant === 'warning',
     ]);
 @endphp
 
@@ -19,7 +21,7 @@
     @if($icon ?? false)
         <x-dynamic-component class="w-4 h-4" :component="$icon" />
     @endif
-    <h5 class="font-medium tracking-tight leading-none">{{ $title }}</h5>
+    <h5 class="font-medium leading-none tracking-tight">{{ $title }}</h5>
     @if($description)
         <div class="mt-1 text-sm opacity-70">{!! $description !!}</div>
     @endif

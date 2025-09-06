@@ -55,7 +55,7 @@
                 x-transition:leave-start="opacity-100"
                 x-transition:leave-end="opacity-0"
                 @click="open = false"
-                class="fixed inset-0 z-40 bg-black bg-opacity-40"
+                class="fixed inset-0 z-40 bg-black/40"
                 style="display: none;"
             ></div>
 
@@ -90,7 +90,7 @@
                     </div>
                     
                     <div class="block overflow-y-auto px-5 pt-16 pb-24 w-full h-full sm:px-8">
-                        <div class="w-full h-auto @if(isset($footer)) pb-20 @endif">
+                        <div class="w-full h-full flex flex-col justify-stretch items-stretch">
                             {{ $content }}
                         </div>
                     </div>
