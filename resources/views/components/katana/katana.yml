@@ -1,0 +1,19 @@
+components:
+  base:
+    - accordion
+    - alert
+    - audio-player
+    - badge
+    - button
+    - command
+    - drawer
+    - separator
+    - toast
+  form:
+    - audio
+    - checkbox
+    - image
+    - label
+  effect_animation:
+    - backgrounds.silk
+    - text-animations.decrypt
