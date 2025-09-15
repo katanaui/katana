@@ -18,7 +18,8 @@
     "require": {
         "php": "^8.0|^8.1|^8.2|^8.3|^8.4",
         "illuminate/support": "^11.0|^12.0",
-        "gehrisandro/tailwind-merge-laravel": "^1.0"
+        "gehrisandro/tailwind-merge-laravel": "^1.0",
+        "symfony/yaml": "^7.0"
     },
     "require-dev": {
         "orchestra/testbench": "^6.0",
@@ -26,7 +27,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Katanaui\\Katana\\": "src"
+            "Katanaui\\": "src"
         }
     },
     "autoload-dev": {
@@ -45,10 +46,10 @@
     "extra": {
         "laravel": {
             "providers": [
-                "Katanaui\\Katana\\KatanaServiceProvider"
+                "Katanaui\\KatanaServiceProvider"
             ],
             "aliases": {
-                "Katana": "Katanaui\\Katana\\KatanaFacade"
+                "Katana": "Katanaui\\KatanaFacade"
             }
         }
     }

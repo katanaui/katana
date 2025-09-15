@@ -1,6 +1,6 @@
 <?php
 
-namespace Katanaui\Katana;
+namespace Katanaui;
 
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;

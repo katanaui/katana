@@ -9,7 +9,7 @@
 @php
 switch ($size ?? 'md') {
     case 'xs':
-        $sizeClasses = 'px-2 py-1 leading-4 text-xs';
+        $sizeClasses = 'px-2.5 py-1 leading-4 text-[11px]';
         $loaderClasses = 'size-3';
         break;
     case 'sm':
@@ -17,7 +17,7 @@ switch ($size ?? 'md') {
         $loaderClasses = 'size-3';
         break;
     case 'md':
-        $sizeClasses = 'px-4 py-2 leading-4 text-xs';
+        $sizeClasses = 'px-3.5 py-2 leading-4 text-xs';
         $loaderClasses = 'size-3.5';
         break;
     case 'lg':
@@ -40,16 +40,17 @@ switch ($size ?? 'md') {
 @endphp
 
 @php
-$primaryTypeClasses = 'border-transparent focus:outline-none inset-shadow-xs bg-stone-900 text-stone-100 hover:text-white inset-shadow-white/20';
+$topHighlight = ' inset-shadow-xs inset-shadow-white/20';
+$primaryTypeClasses = 'border-transparent focus:outline-none bg-primary text-primary-foreground/90 hover:text-primary-foreground';
 switch ($variant ?? 'primary') {
     case 'primary':
-        $typeClasses = $primaryTypeClasses;
+        $typeClasses = $primaryTypeClasses . $topHighlight;
         break;
     case 'secondary':
         $typeClasses = 'border-transparent text-stone-700 bg-stone-100';
         break;
     case 'destructive':
-        $typeClasses = 'border-transparent text-white/90 focus:outline-none bg-red-600 hover:text-white';
+        $typeClasses = 'border-transparent text-white/90 focus:outline-none bg-red-600 hover:text-white' . $topHighlight;
         break;
     case 'outline':
         $typeClasses = 'border-transparent text-stone-700 hover:bg-stone-100 border-stone-200';

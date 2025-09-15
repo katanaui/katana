@@ -1,8 +1,19 @@
 <?php
 
-namespace Katanaui\Katana;
+namespace Katanaui;
+
+use Symfony\Component\Yaml\Yaml;
 
 class Katana
 {
-    // Build your next great package.
+    public static function getComponents(): array
+    {
+        $yamlPath = __DIR__ . '/../resources/views/components/katana/katana.yml';
+        
+        if (!file_exists($yamlPath)) {
+            return [];
+        }
+        
+        return Yaml::parseFile($yamlPath);
+    }
 }
