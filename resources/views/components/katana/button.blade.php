@@ -3,7 +3,8 @@
     'size' => 'md', 
     'variant' => 'primary', 
     'href' => null,
-    'loader' => false
+    'loader' => false,
+    'loading' => false
 ])
 
 @php
@@ -41,7 +42,7 @@ switch ($size ?? 'md') {
 
 @php
 $topHighlight = ' inset-shadow-xs inset-shadow-white/20';
-$primaryTypeClasses = 'border-transparent focus:outline-none bg-primary text-primary-foreground/90 hover:text-primary-foreground';
+$primaryTypeClasses = 'border-transparent focus:outline-none bg-primary text-primary-foreground';
 switch ($variant ?? 'primary') {
     case 'primary':
         $typeClasses = $primaryTypeClasses . $topHighlight;
@@ -50,7 +51,7 @@ switch ($variant ?? 'primary') {
         $typeClasses = 'border-transparent text-stone-700 bg-stone-100';
         break;
     case 'destructive':
-        $typeClasses = 'border-transparent text-white/90 focus:outline-none bg-red-600 hover:text-white' . $topHighlight;
+        $typeClasses = 'border-transparent focus:outline-none bg-red-600 text-white' . $topHighlight;
         break;
     case 'outline':
         $typeClasses = 'border-transparent text-stone-700 hover:bg-stone-100 border-stone-200';
@@ -89,11 +90,8 @@ switch ($type ?? 'button') {
 }
 @endphp
 
-<{!! $typeAttr !!} {{ $attributes->twMerge($sizeClasses . ' ' . $typeClasses . ' cursor-pointer border inline-flex rounded-xl items-center w-full justify-center items-center font-medium focus:outline-none ease-out duration-300') }}>
-    @if($loader ?? false)
-        <span class="flex absolute justify-center items-center w-full h-full" wire:loading.flex wire:target="{{ $attributes->get('wire:click') }}">
-            <svg class="animate-spin {{ $loaderClasses }}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-        </span>
-    @endif
-    <span wire:loading.class="opacity-0" wire:target="{{ $attributes->get('wire:click') }}" class="flex items-center">{{ $slot }}</span>
+<{!! $typeAttr !!} {{ $attributes->twMerge($sizeClasses . ' ' . $typeClasses . ' cursor-pointer border inline-flex rounded-[var(--radius)] items-center justify-center items-center font-medium focus:outline-none ease-out duration-300') }}>
+    @if($loading ?? false) <span class="flex absolute justify-center items-center w-full h-full"><svg class="animate-spin {{ $loaderClasses }}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></span> @endif
+    @if($loader ?? false) <span class="flex absolute justify-center items-center w-full h-full" wire:loading.flex wire:target="{{ $attributes->get('wire:click') }}"><svg class="animate-spin {{ $loaderClasses }}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></span> @endif
+    <span @class(['flex items-center', 'opacity-0' => $loading]) wire:loading.class="opacity-0" wire:target="{{ $attributes->get('wire:click') }}">{{ $slot }}</span>
 </{{ $typeClose }}>

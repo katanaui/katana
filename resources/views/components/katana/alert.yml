@@ -1,0 +1,24 @@
+component: Alert
+props:
+  - name: variant
+    description: The alert variant type
+    type: select
+    default: primary
+    options:
+      - primary
+      - secondary
+      - destructive
+      - outline
+      - ghost
+  - name: icon
+    description: The icon to use in the alert
+    type: image
+    default: null
+  - name: title
+    description: The title for the alert
+    type: text
+    default: ""
+  - name: description
+    description: The description below the alert title
+    type: textarea
+    default: ""

@@ -1,0 +1,45 @@
+component: Button
+props:
+  - name: type
+    description: The button type attribute
+    type: select
+    default: button
+    options:
+      - button
+      - submit
+      - a
+  - name: size
+    description: The size of the button
+    type: select
+    default: md
+    options:
+      - xs
+      - sm
+      - md
+      - lg
+      - xl
+      - 2xl
+      - 3xl
+  - name: variant
+    description: The button variant style
+    type: select
+    default: primary
+    options:
+      - primary
+      - secondary
+      - destructive
+      - outline
+      - ghost
+      - link
+  - name: href
+    description: The URL for link buttons (when type is 'a')
+    type: text
+    default: null
+  - name: loader
+    description: Show loader when wire:target is executing (Livewire)
+    type: boolean
+    default: false
+  - name: loading
+    description: Force show loading state
+    type: boolean
+    default: false
