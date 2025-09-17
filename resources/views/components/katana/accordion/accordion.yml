@@ -1,0 +1,6 @@
+component: Accordion
+props:
+  - name: exclusive
+    description: If true, only allow one accordion item to be open at a time
+    type: boolean
+    default: false
