@@ -90,13 +90,13 @@
                     </div>
                     
                     <div class="block overflow-y-auto px-5 pt-16 pb-24 w-full h-full sm:px-8">
-                        <div class="w-full h-full flex flex-col justify-stretch items-stretch">
+                        <div class="w-full h-100 flex flex-col justify-stretch items-stretch">
                             {{ $content }}
                         </div>
                     </div>
                     
                     @if($footer ?? false)
-                        <div class="flex absolute bottom-0 z-50 flex-shrink-0 justify-between items-center px-5 w-full h-20 border-t border-gray-100 backdrop-blur-sm sm:px-8 sm:rounded-b-xl bg-white/70">
+                        <div class="flex absolute bottom-0 z-[999999] flex-shrink-0 justify-between items-center px-5 w-full h-20 border-t border-gray-100 backdrop-blur-sm sm:px-8 sm:rounded-b-xl bg-white/70">
                             {{ $footer }}
                         </div>
                     @endif
