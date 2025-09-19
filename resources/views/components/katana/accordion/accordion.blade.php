@@ -1,12 +1,12 @@
 @props([
-    'single' => false, // if true, only allow one open at a time
+    'exclusive' => false,
 ])
 
 <div 
     x-data="{
-        activeAccordions: @js($single ? '' : []),
+        activeAccordions: @js($exclusive ? '' : []),
         toggle(id) {
-            if (@js($single)) {
+            if (@js($exclusive)) {
                 this.activeAccordions = (this.activeAccordions === id) ? '' : id;
             } else {
                 if (this.activeAccordions.includes(id)) {
@@ -17,7 +17,7 @@
             }
         },
         isOpen(id) {
-            return @js($single) 
+            return @js($exclusive) 
                 ? this.activeAccordions === id 
                 : this.activeAccordions.includes(id);
         }

@@ -1,0 +1,30 @@
+component: Accordion Item
+props:
+  - name: title
+    description: The accordion item title text displayed in the header button
+    type: text
+    default: ""
+  - name: open
+    description: If true, the accordion item will be open by default
+    type: select
+    default: false
+    options:
+      - true
+      - false
+  - name: icon
+    description: Optional custom icon markup (e.g. inline SVG). When provided, replaces the default caret icon.
+    type: textarea
+    default: null
+
+# twMerge class targets allow you to merge Tailwind classes into specific parts of the component via attributes
+# Example usage: <x-katana.accordion.item class:title="bg-green-300 p-4" class:icon="text-blue-500" class:content="p-6" />
+twMerge:
+  - area: title
+    description: Classes applied to the header button area (the clickable title row)
+    example: class:title="bg-green-300 p-4"
+  - area: icon
+    description: Classes applied to the icon wrapper span in the header
+    example: class:icon="w-5 h-5 text-blue-500"
+  - area: content
+    description: Classes applied to the collapsible content container
+    example: class:content="p-6 text-foreground/80"
