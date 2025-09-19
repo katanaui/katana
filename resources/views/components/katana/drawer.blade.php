@@ -78,7 +78,7 @@
                     @close-drawer.window="console.log('gotit'); if($event.detail.id === $el.id) open=false"
                     class="{{ $classes }}" {{ $attributes->only('id') }}>
                     @if($header ?? false)
-                        <div class="flex absolute top-0 z-50 flex-shrink-0 items-center px-5 w-full h-16 backdrop-blur-sm sm:px-8 sm:rounded-t-xl bg-white/90">
+                        <div class="flex absolute top-0 z-50 flex-shrink-0 items-center px-5 w-full h-16 backdrop-blur-sm text-stone-700 sm:px-8 sm:rounded-t-xl bg-white/90">
                             {{ $header }}
                         </div>
                     @endif
@@ -90,7 +90,7 @@
                     </div>
                     
                     <div class="block overflow-y-auto px-5 pt-16 pb-24 w-full h-full sm:px-8">
-                        <div class="w-full h-full flex flex-col justify-stretch items-stretch">
+                        <div class="flex flex-col items-stretch w-full h-full justify-stretch">
                             {{ $content }}
                         </div>
                     </div>
