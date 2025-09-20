@@ -17,7 +17,6 @@
     <x-katana.input
         id="{{ $id }}"
         x-ref="input"
-        x-model="query"
         {{ $attributes }}
         type="text"
         placeholder="{{ $placeholder ?? 'Start typing an address…' }}"
@@ -26,14 +25,16 @@
     />
 
     <!-- Show selection -->
-    <div x-show="place.formatted" class="text-xs text-gray-600">
-        Selected: <span class="font-medium" x-text="place.formatted"></span>
-        <template x-if="place.lat && place.lng">
-            <span>
-                ( <span x-text="place.lat.toFixed(6)"></span>,
-                  <span x-text="place.lng.toFixed(6)"></span> )
-            </span>
-        </template>
+    <div class="hidden">
+        <div x-show="place.formatted" class="text-xs text-gray-600">
+            Selected: <span class="font-medium" x-text="place.formatted"></span>
+            <template x-if="place.lat && place.lng">
+                <span>
+                    ( <span x-text="place.lat.toFixed(6)"></span>,
+                    <span x-text="place.lng.toFixed(6)"></span> )
+                </span>
+            </template>
+        </div>
     </div>
 </div>
 
@@ -49,7 +50,6 @@
         <script>
             function placesAutocomplete() {
                 return {
-                    query: "",
                     autocomplete: null,
                     place: { formatted: "", lat: null, lng: null, components: {} },
 
@@ -71,74 +71,32 @@
 
                         this.autocomplete.addListener("place_changed", () => {
                             const p = this.autocomplete.getPlace();
-                            
+                            this.place.formatted = p.formatted_address ?? this.$refs.input.value;
+
                             const lat = p.geometry?.location?.lat?.();
                             const lng = p.geometry?.location?.lng?.();
                             this.place.lat = lat ?? null;
                             this.place.lng = lng ?? null;
+
+                            window.dispatchEvent(new CustomEvent('address_automplete_change', {
+                                detail: {
+                                    'id' : '{{ $id }}',
+                                    'lat': lat,
+                                    'long': lng
+                                }
+                            }));
 
                             const comps = {};
                             (p.address_components || []).forEach(c => {
                                 if (c.types && c.types.length) comps[c.types[0]] = c.long_name;
                             });
                             this.place.components = comps;
-                            
-                            // Build custom formatted address WITHOUT country
-                            let customFormatted = '';
-                            const addressParts = [];
-                            
-                            // Add street number and route
-                            if (comps.street_number) addressParts.push(comps.street_number);
-                            if (comps.route) addressParts.push(comps.route);
-                            
-                            // Add locality (city)
-                            if (comps.locality) addressParts.push(comps.locality);
-                            
-                            // Add administrative_area_level_1 (state)
-                            if (comps.administrative_area_level_1) addressParts.push(comps.administrative_area_level_1);
-                            
-                            // Add postal_code
-                            if (comps.postal_code) addressParts.push(comps.postal_code);
-                            
-                            // Join with appropriate separators
-                            if (addressParts.length > 0) {
-                                // Street address
-                                let streetAddress = '';
-                                if (comps.street_number && comps.route) {
-                                    streetAddress = `${comps.street_number} ${comps.route}`;
-                                } else if (comps.route) {
-                                    streetAddress = comps.route;
-                                }
-                                
-                                // City, State ZIP
-                                let cityStateZip = '';
-                                const cityParts = [];
-                                if (comps.locality) cityParts.push(comps.locality);
-                                if (comps.administrative_area_level_1) cityParts.push(comps.administrative_area_level_1);
-                                if (comps.postal_code) cityParts.push(comps.postal_code);
-                                
-                                if (cityParts.length > 0) {
-                                    cityStateZip = cityParts.join(', ');
-                                }
-                                
-                                // Combine street and city parts
-                                const finalParts = [];
-                                if (streetAddress) finalParts.push(streetAddress);
-                                if (cityStateZip) finalParts.push(cityStateZip);
-                                
-                                customFormatted = finalParts.join(', ');
-                            }
-                            
-                            // Use custom formatted address or fallback to original without country
-                            this.place.formatted = customFormatted || p.formatted_address?.replace(/, USA$/, '') || this.query;
-                            
+
                             if (this.place.formatted) {
-                                this.query = this.place.formatted;
-                                
                                 // Update the input value directly
                                 this.$refs.input.value = this.place.formatted;
                                 
-                                // Trigger input event to ensure Livewire's local model is updated
+                                // Trigger input event to ensure Livewire's wire:model is updated
                                 this.$refs.input.dispatchEvent(new Event('input', { bubbles: true }));
                             }
                         });
