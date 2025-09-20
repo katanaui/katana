@@ -6,7 +6,7 @@
 <div 
     x-data="placesAutocomplete()" 
     x-init="init()" 
-    class="space-y-2"
+    class="space-y-2 w-full"
 >
     @if($label ?? false)
         <label for="{{ $id }}" class="block text-sm font-medium">

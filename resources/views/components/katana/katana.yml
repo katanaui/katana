@@ -2,6 +2,8 @@ components:
   Base:
     - id: accordion
       name: Accordion
+    - id: address_autocomplete
+      name: Address Autocomplete
     - id: alert
       name: Alert
     - id: audio-player
