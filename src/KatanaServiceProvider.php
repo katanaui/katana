@@ -21,6 +21,7 @@ class KatanaServiceProvider extends ServiceProvider
         // $this->loadRoutesFrom(__DIR__.'/routes.php');
 
         Blade::anonymousComponentPath(__DIR__.'/../resources/views/components', 'katana');
+        $this->loadViewsFrom(__DIR__.'/../resources/views/components', 'katana');
 
         if ($this->app->runningInConsole()) {
             $this->publishes([
