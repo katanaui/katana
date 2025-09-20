@@ -6,11 +6,8 @@ props:
     default: ""
   - name: open
     description: If true, the accordion item will be open by default
-    type: select
+    type: boolean
     default: false
-    options:
-      - true
-      - false
   - name: icon
     description: Optional custom icon markup (e.g. inline SVG). When provided, replaces the default caret icon.
     type: textarea

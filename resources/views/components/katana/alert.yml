@@ -8,8 +8,9 @@ props:
       - primary
       - secondary
       - destructive
-      - outline
-      - ghost
+      - info
+      - success
+      - warning
   - name: icon
     description: The icon to use in the alert
     type: image
