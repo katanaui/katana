@@ -2,26 +2,38 @@ components:
   Base:
     - id: accordion
       name: Accordion
-    - id: address_autocomplete
+    - id: address-autocomplete
       name: Address Autocomplete
     - id: alert
       name: Alert
     - id: audio-player
       name: Audio Player
+    - id: audio-upload
+      name: Audio Upload
     - id: badge
       name: Badge
     - id: button
       name: Button
+    - id: checkbox
+      name: Checkbox
     - id: command
       name: Command
     - id: dialog
       name: Dialog
     - id: drawer
       name: Drawer
+    - id: image-upload
+      name: Image Upload
+    - id: label
+      name: Label
+    - id: monaco-editor
+      name: Monaco Editor
     - id: separator
       name: Separator
     - id: splitter
       name: Splitter
+    - id: tiptap
+      name: Tiptap
     - id: toast
       name: Toast
   Layouts: 
@@ -29,21 +41,6 @@ components:
       name: Sidebar
     - id: header
       name: header
-  Form_inputs:
-    - id: audio
-      name: Audio
-    - id: checkbox
-      name: Checkbox
-    - id: code-editor
-      name: Code Editor
-    - id: image
-      name: Image
-    - id: label
-      name: Label
-    - id: monaco-editor
-      name: Monaco Editor
-    - id: tiptap
-      name: Tiptap
   Effect/Animations:
     - id: backgrounds.silk
       name: Background Silk Effect
