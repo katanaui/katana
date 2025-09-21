@@ -1,6 +1,7 @@
 @props([
     'src' => '',
-    'autoplay' => false
+    'autoplay' => false,
+    'id' => 'audio-player-' . uniqid()
 ])
  
 {{-- The @click.stop prevents any click events from being sent to the parent --}}
@@ -77,6 +78,7 @@
                 },
                 
                 audioEnded() {
+                    window.dispatchEvent(new CustomEvent('audio-player-complete'));
                     this.isPlaying = false;
                     this.progress = 100;
                 },
