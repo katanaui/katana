@@ -1,10 +1,11 @@
 @props([
+    'label' => null,
     'api_key' => config('katana.api_keys.address_autocomplete'),
     'id' => 'address_autocomplete_' . uniqid()
 ])
 
 <div 
-    x-data="placesAutocomplete()" 
+    x-data="placesAutocomplete" 
     x-init="init()" 
     class="space-y-2 w-full"
 >
@@ -15,13 +16,12 @@
     @endif
 
     <x-katana.input
-        id="{{ $id }}"
         x-ref="input"
         {{ $attributes }}
         type="text"
         placeholder="{{ $placeholder ?? 'Start typing an address…' }}"
         autocomplete="off"
-        @keydown.enter.prevent
+        @keydown.enter.prevent="true"
     />
 
     <!-- Show selection -->
@@ -39,17 +39,18 @@
 </div>
 
 @once
+    @push('scripts')
         <!-- Load Google Maps API only once -->
         <script 
-            src="https://maps.googleapis.com/maps/api/js?key={{ $api_key ?? '' }}&libraries=places" 
+            src="https://maps.googleapis.com/maps/api/js?key={{ $api_key ?? '' }}&libraries=places&loading=async" 
             async 
             defer>
         </script>
 
         <script>
-            console.log('coolio');
-            function placesAutocomplete() {
-                return {
+            (function registerPlacesAutocomplete(){
+                const initAlpineComponent = () => {
+                    Alpine.data('placesAutocomplete', () => ({
                     autocomplete: null,
                     place: { formatted: "", lat: null, lng: null, components: {} },
 
@@ -78,7 +79,7 @@
                             this.place.lat = lat ?? null;
                             this.place.lng = lng ?? null;
 
-                            window.dispatchEvent(new CustomEvent('address_automplete_change', {
+                            window.dispatchEvent(new CustomEvent('address_autocomplete_change', {
                                 detail: {
                                     'id' : '{{ $id }}',
                                     'lat': lat,
@@ -101,7 +102,15 @@
                             }
                         });
                     },
+                    }));
                 };
-            }
+
+                if (window.Alpine && typeof window.Alpine.data === 'function') {
+                    initAlpineComponent();
+                } else {
+                    document.addEventListener('alpine:init', initAlpineComponent, { once: true });
+                }
+            })();
         </script>
+    @endpush
 @endonce

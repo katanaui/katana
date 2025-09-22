@@ -3,9 +3,8 @@
     :field="$field"
 >
     <div>
-        <x-katana.address_autocomplete
+        <x-katana.address-autocomplete
             wire:model="{{ $getStatePath() }}"
-            value="abc"
         />
     </div>
 </x-dynamic-component>
