@@ -1,0 +1,6 @@
+component: Splitter Panel
+props:
+  - name: size
+    description: Initial width/height percentage for this panel (0–100). If omitted, sizes are distributed evenly.
+    type: number
+    default: null

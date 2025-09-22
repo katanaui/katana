@@ -39,7 +39,6 @@
 </div>
 
 @once
-    @push('scripts')
         <!-- Load Google Maps API only once -->
         <script 
             src="https://maps.googleapis.com/maps/api/js?key={{ $api_key ?? '' }}&libraries=places" 
@@ -48,6 +47,7 @@
         </script>
 
         <script>
+            console.log('coolio');
             function placesAutocomplete() {
                 return {
                     autocomplete: null,
@@ -104,5 +104,4 @@
                 };
             }
         </script>
-    @endpush
 @endonce

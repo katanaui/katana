@@ -1,4 +1,4 @@
-# Split Pane Component
+# Splitter Component
 
 The Split Pane component utilizes the SplitJS flex library: https://split.js.org/
 

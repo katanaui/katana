@@ -2,8 +2,14 @@
     'direction' => 'horizontal',
     'gutterSize' => 8,
     'minSize' => 100,
-    'dark' => false,
 ])
+
+@php
+    $classes = \Illuminate\Support\Arr::toCssClasses([
+        'flex w-full h-full items-stretch justify-stretch',
+        'flex-col' => $direction == 'vertical'
+    ]);
+@endphp
 
 <div
     x-init="() => {
@@ -24,7 +30,7 @@
             }
         })
     }"
-    class="split {{ $direction === 'vertical' ? 'flex-col' : 'flex' }} w-full h-full"
+    {{ $attributes->twMerge($classes) }}
 >
     {{ $slot }}
 </div>
@@ -39,19 +45,15 @@
             flex-direction: column;
         }
         .gutter {
-            @if($dark)
-                background-color: #222;
-            @else
-                background-color: #eee;
-            @endif
+            background-color: #ffffff;
             background-repeat: no-repeat;
             background-position: 50%;
         }
-        .gutter:hover{
+        /*.gutter:hover{
             background-color:#2c67f6;
-        }
+        }*/
         .gutter.gutter-horizontal {
-            background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxAGAgYYmwGrIIiDjrELjpo5aiZeMwF+yNnOs5KSvgAAAABJRU5ErkJggg==');
+           /* background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxAGAgYYmwGrIIiDjrELjpo5aiZeMwF+yNnOs5KSvgAAAABJRU5ErkJggg==');*/
             cursor: col-resize;
             width: {{ $gutterSize }}px;
         }

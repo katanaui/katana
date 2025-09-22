@@ -1,0 +1,17 @@
+component: Splitter
+props:
+  - name: direction
+    description: Orientation of the splitter layout
+    type: select
+    default: horizontal
+    options:
+      - horizontal
+      - vertical
+  - name: gutterSize
+    description: Size (in px) of the draggable gutter between panels
+    type: number
+    default: 8
+  - name: minSize
+    description: Minimum size (in px) each panel is allowed to shrink to
+    type: number
+    default: 100

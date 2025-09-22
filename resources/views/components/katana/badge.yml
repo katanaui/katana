@@ -1,0 +1,31 @@
+component: Badge
+props:
+  - name: variant
+    description: The badge variant style
+    type: select
+    default: null
+    options:
+      - default
+      - secondary
+      - destructive
+      - outline
+  - name: icon
+    description: Optional icon component name (e.g., heroicon-s-check)
+    type: text
+    default: null
+  - name: iconPosition
+    description: Position of the icon relative to the text
+    type: select
+    default: before
+    options:
+      - before
+      - after
+  - name: size
+    description: The size of the badge
+    type: select
+    default: md
+    options:
+      - xs
+      - sm
+      - md
+      - lg

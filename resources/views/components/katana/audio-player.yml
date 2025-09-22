@@ -1,0 +1,14 @@
+component: Audio Player
+props:
+  - name: src
+    description: The audio source URL
+    type: text
+    default: ''
+  - name: autoplay
+    description: Whether the audio should start playing automatically
+    type: boolean
+    default: false
+  - name: id
+    description: Optional unique ID for the player. If not provided, one is auto-generated (e.g., audio-player-<uniqid>).
+    type: text
+    default: null

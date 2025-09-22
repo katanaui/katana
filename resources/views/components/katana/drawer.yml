@@ -1,0 +1,29 @@
+component: Drawer
+props:
+  - name: position
+    description: Which side of the screen the drawer should slide from
+    type: select
+    default: right
+    options:
+      - right
+      - left
+  - name: parent
+    description: Optional CSS selector of a parent element to subtly scale/dim when the drawer opens
+    type: text
+    default: null
+  - name: open
+    description: Whether the drawer should be open by default
+    type: boolean
+    default: false
+  - name: header
+    description: Header content of the drawer. Can be provided as a prop or via the named slot `<x-slot:header>`.
+    type: text
+    default: null
+  - name: footer
+    description: Footer content of the drawer. Can be provided as a prop or via the named slot `<x-slot:footer>`.
+    type: text
+    default: null
+  - name: content
+    description: Main content of the drawer. Can be provided as a prop or via the named slot `<x-slot:content>`.
+    type: text
+    default: null
