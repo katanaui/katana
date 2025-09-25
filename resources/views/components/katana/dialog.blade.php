@@ -8,11 +8,13 @@
     @keydown.escape.window="modalOpen = false"
     class="relative z-50 w-auto h-auto"
 >
-    @if($trigger ?? false)
-        {!! $trigger !!}
-    @else
-        <button @click="modalOpen=true" class="inline-flex justify-center items-center px-4 py-2 h-10 text-sm font-medium bg-white rounded-md border transition-colors hover:bg-neutral-100 active:bg-white focus:bg-white focus:outline-none focus:ring-2 focus:ring-neutral-200/60 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none">Open</button>
-    @endif
+    <div @click="modalOpen=true">
+        @if($trigger ?? false)
+            {!! $trigger !!}
+        @else
+            <button class="inline-flex justify-center items-center px-4 py-2 h-10 text-sm font-medium bg-white rounded-md border transition-colors hover:bg-neutral-100 active:bg-white focus:bg-white focus:outline-none focus:ring-2 focus:ring-neutral-200/60 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none">Open</button>
+        @endif
+    </div>
     <template x-teleport="body">
         <div x-show="modalOpen" class="fixed top-0 left-0 z-[99] flex items-center justify-center w-screen h-screen" x-cloak>
             <div x-show="modalOpen" 
