@@ -100,7 +100,7 @@
                         'pb-24' => $footer,
                         'sm:pb-6 pb-5' => !$footer
                     ])>
-                        <div class="w-full h-full flex flex-col justify-stretch items-stretch">
+                        <div class="w-full h-100 min-h-full flex flex-col justify-stretch items-stretch">
                             @if(!$content)
                                 <x-katana.placeholder />
                             @else
