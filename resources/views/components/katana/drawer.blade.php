@@ -9,7 +9,7 @@
 
 @php
     $classes = \Illuminate\Support\Arr::toCssClasses([
-        'flex overflow-hidden justify-center relative items-center w-full bg-white sm:rounded-xl border-0 sm:border starting:opacity-0 opacity-100 shadow-sm border-stone-200',
+        'flex overflow-hidden justify-center relative items-center w-full bg-white sm:rounded-[var(--radius)] border-0 sm:border starting:opacity-0 opacity-100 shadow-sm border-stone-200',
         'ml-auto w-full h-full' => $position == 'right',
         'mr-auto w-full h-full' => $position == 'left',
     ]);
