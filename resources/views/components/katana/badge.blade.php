@@ -12,6 +12,9 @@
         'text-danger-700 bg-danger-500/10' => $variant === 'destructive',
         'text-primary-foreground bg-primary' => $variant === 'default',
         'text-stone-700 border border-stone-200' => $variant === 'outline',
+        'text-blue-600 bg-blue-50 border border-blue-200' => $variant === 'info',
+        'text-green-600 bg-green-50 border border-green-200' => $variant === 'success',
+        'text-yellow-600 bg-yellow-50 border border-yellow-200' => $variant === 'warning',
         '[&>svg]:-ml-1 [&>svg]:mr-1' => $iconPosition === 'before',
         '[&>svg]:-mr-1 [&>svg]:ml-1' => $iconPosition === 'after',
     ]);
