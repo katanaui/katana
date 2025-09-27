@@ -20,10 +20,10 @@ props:
     description: Whether the entire container is clickable (uses label wrapper)
     type: boolean
     default: false
-  - name: checkmarkStrokeWidth
-    description: The stroke width of the checkmark SVG
-    type: number
-    default: 3
+  - name: icon
+    description: The icon to use inside the checkbox
+    type: string
+    default: null
   - name: hideCheckbox
     description: Whether the checkbox is hidden
     type: boolean
