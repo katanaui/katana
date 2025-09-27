@@ -24,3 +24,7 @@ props:
     description: The stroke width of the checkmark SVG
     type: number
     default: 3
+  - name: hideCheckbox
+    description: Whether the checkbox is hidden
+    type: boolean
+    default: false
