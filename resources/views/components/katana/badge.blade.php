@@ -1,13 +1,15 @@
 @props([
     'variant' => 'default',
     'icon' => null,
-    'iconPosition' => 'before',
-    'size' => 'md',
+    'iconPosition' => 'before'
 ])
 
 @php
     $classes = \Illuminate\Support\Arr::toCssClasses([
-        'inline-flex items-center justify-center tracking-tight rounded-[var(--radius)] text-xs [&>svg]:w-4 [&>svg]:h-4 px-2 py-0.5',
+        'inline-flex items-center justify-center tracking-tight rounded-[var(--radius)] text-xs [&>svg]:w-4 [&>svg]:h-4',
+        'px-2 py-0.5' => 'sm',
+        'px-3 py-1' => 'md',
+        'px-4 py-1.5' => 'lg',
         'text-gray-600 bg-gray-100' => (! $variant) || ($variant === 'secondary'),
         'text-danger-700 bg-danger-500/10' => $variant === 'destructive',
         'text-primary-foreground bg-primary' => $variant === 'default',

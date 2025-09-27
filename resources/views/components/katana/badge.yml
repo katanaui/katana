@@ -9,6 +9,9 @@ props:
       - secondary
       - destructive
       - outline
+      - info
+      - success
+      - warning
   - name: icon
     description: Optional icon component name (e.g., heroicon-s-check)
     type: text
@@ -23,9 +26,8 @@ props:
   - name: size
     description: The size of the badge
     type: select
-    default: md
+    default: sm
     options:
-      - xs
       - sm
       - md
       - lg
