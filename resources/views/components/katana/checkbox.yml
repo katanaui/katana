@@ -1,1 +1,26 @@
 component: Checkbox
+props:
+  - name: label
+    description: The label text for the checkbox
+    type: text
+    default: null
+  - name: description
+    description: Additional description text below the label
+    type: text
+    default: null
+  - name: checked
+    description: Whether the checkbox is initially checked
+    type: boolean
+    default: false
+  - name: disabled
+    description: Whether the checkbox is disabled
+    type: boolean
+    default: false
+  - name: clickable
+    description: Whether the entire container is clickable (uses label wrapper)
+    type: boolean
+    default: false
+  - name: checkmarkStrokeWidth
+    description: The stroke width of the checkmark SVG
+    type: number
+    default: 3

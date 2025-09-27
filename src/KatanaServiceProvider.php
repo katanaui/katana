@@ -20,8 +20,19 @@ class KatanaServiceProvider extends ServiceProvider
         // $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
         // $this->loadRoutesFrom(__DIR__.'/routes.php');
 
-        Blade::anonymousComponentPath(__DIR__.'/../resources/views/components', 'katana');
-        $this->loadViewsFrom(__DIR__.'/../resources/views/components', 'katana');
+        // Get the configurable namespace for components
+        $namespace = config('katana.components.namespace', 'katana');
+        
+        if (empty($namespace)) {
+            
+            // No namespace - load components from root (e.g., <x-button>)
+            Blade::anonymousComponentPath(__DIR__.'/../resources/views/components/katana');
+            $this->loadViewsFrom(__DIR__.'/../resources/views/components/katana', '');
+        } else {
+            // Use configured namespace (e.g., <x-katana.button> or <x-ui.button>)
+            Blade::anonymousComponentPath(__DIR__.'/../resources/views/components', $namespace);
+            $this->loadViewsFrom(__DIR__.'/../resources/views/components', $namespace);
+        }
 
         if ($this->app->runningInConsole()) {
             $this->publishes([

@@ -42,10 +42,10 @@ switch ($size ?? 'md') {
 
 @php
 $topHighlight = ' inset-shadow-xs inset-shadow-white/20';
-$primaryTypeClasses = 'border-transparent focus:outline-none bg-primary text-primary-foreground';
+$defaultClasses = 'border-transparent focus:outline-none bg-primary text-primary-foreground select-none';
 switch ($variant ?? 'primary') {
     case 'primary':
-        $typeClasses = $primaryTypeClasses . $topHighlight;
+        $typeClasses = $defaultClasses . $topHighlight;
         break;
     case 'secondary':
         $typeClasses = 'border-transparent text-stone-700 bg-stone-100';
@@ -60,10 +60,10 @@ switch ($variant ?? 'primary') {
         $typeClasses = 'border-transparent text-stone-700 hover:bg-stone-100';
         break;
     case 'link':
-        $typeClasses = 'border-transparent text-stone-700 hover:bg-stone-100';
+        $typeClasses = 'border-transparent text-foreground hover:underline';
         break;
     default:
-        $typeClasses = $primaryTypeClasses;
+        $typeClasses = $defaultClasses;
         break;
 }
 @endphp
