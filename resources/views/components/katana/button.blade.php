@@ -42,28 +42,28 @@ switch ($size ?? 'md') {
 
 @php
 $topHighlight = ' inset-shadow-xs inset-shadow-white/20';
-$primaryTypeClasses = 'border-transparent focus:outline-none bg-primary text-primary-foreground';
+$defaultClasses = 'border-transparent no-underline focus:outline-none bg-primary text-primary-foreground select-none';
 switch ($variant ?? 'primary') {
     case 'primary':
-        $typeClasses = $primaryTypeClasses . $topHighlight;
+        $typeClasses = $defaultClasses . $topHighlight;
         break;
     case 'secondary':
-        $typeClasses = 'border-transparent text-stone-700 bg-stone-100';
+        $typeClasses = 'border-transparent no-underline text-stone-700 bg-stone-100';
         break;
     case 'destructive':
-        $typeClasses = 'border-transparent focus:outline-none bg-red-600 text-white' . $topHighlight;
+        $typeClasses = 'border-transparent no-underline focus:outline-none bg-red-600 text-white' . $topHighlight;
         break;
     case 'outline':
-        $typeClasses = 'border-transparent text-stone-700 hover:bg-stone-100 border-stone-200';
+        $typeClasses = 'border-transparent no-underline text-stone-700 hover:bg-stone-100 border-stone-200';
         break;
     case 'ghost':
-        $typeClasses = 'border-transparent text-stone-700 hover:bg-stone-100';
+        $typeClasses = 'border-transparent no-underline text-stone-700 hover:bg-stone-100';
         break;
     case 'link':
-        $typeClasses = 'border-transparent text-stone-700 hover:bg-stone-100';
+        $typeClasses = 'border-transparent no-underline text-foreground hover:underline';
         break;
     default:
-        $typeClasses = $primaryTypeClasses;
+        $typeClasses = $defaultClasses;
         break;
 }
 @endphp

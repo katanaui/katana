@@ -1,1 +1,30 @@
 component: Checkbox
+props:
+  - name: label
+    description: The label text for the checkbox
+    type: text
+    default: null
+  - name: description
+    description: Additional description text below the label
+    type: text
+    default: null
+  - name: checked
+    description: Whether the checkbox is initially checked
+    type: boolean
+    default: false
+  - name: disabled
+    description: Whether the checkbox is disabled
+    type: boolean
+    default: false
+  - name: clickable
+    description: Whether the entire container is clickable (uses label wrapper)
+    type: boolean
+    default: false
+  - name: icon
+    description: The icon to use inside the checkbox
+    type: string
+    default: null
+  - name: hideCheckbox
+    description: Whether the checkbox is hidden
+    type: boolean
+    default: false

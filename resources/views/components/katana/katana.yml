@@ -26,6 +26,8 @@ components:
       name: Image Upload
     - id: label
       name: Label
+    - id: modal
+      name: Modal
     - id: monaco-editor
       name: Monaco Editor
     - id: separator
