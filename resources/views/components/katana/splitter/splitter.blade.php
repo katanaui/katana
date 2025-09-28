@@ -60,7 +60,11 @@
         .gutter.gutter-vertical {
             background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAFCAYAAABMtWY8AAAALUlEQVQoz2N4c+bMf0YGBgYG+iZkA2QKqIEqsGdoPZkJ6uHj4HkBa6cgFwAANn8IddZTTbYAAAAASUVORK5CYII=');
             cursor: row-resize;
+            background-color:#efeff1;
             height: {{ $gutterSize }}px;
+        }
+        .gutter.gutter-vertical:hover{
+            background-color:#e5e5ec;
         }
     </style>
 @endonce
