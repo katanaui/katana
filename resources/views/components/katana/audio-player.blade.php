@@ -90,7 +90,7 @@
                     const secs = Math.floor(seconds % 60);
                     return `${mins}:${secs.toString().padStart(2, '0')}`;
                 }
-            }" @click.stop="" {{ $attributes->twMerge('flex items-center pr-4 pl-1.5 w-full h-14 bg-gradient-to-b from-white border rounded-md border-gray-200 to-stone-50') }}>
+            }" @click.stop="" {{ $attributes->twMerge('flex items-center pr-4 pl-1.5 w-full h-14 flex-shrink-0 bg-gradient-to-b from-white border rounded-md border-gray-200 to-stone-50') }}>
     <!-- Hidden audio element -->
     <audio 
         x-ref="audio" 

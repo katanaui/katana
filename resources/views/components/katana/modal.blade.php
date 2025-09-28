@@ -34,14 +34,14 @@
                 x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
                 x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                 class="relative px-7 py-6 w-full bg-white sm:max-w-lg sm:rounded-lg">
-                @if($header ?? false)
-                    <div class="flex justify-between items-center pb-2">
-                        <h3 class="text-lg font-semibold">{{ $header }}</h3>
-                        @if($close_button ?? true)
-                            <button @click="modalOpen=false" class="flex absolute top-0 right-0 justify-center items-center mt-5 mr-5 w-8 h-8 text-gray-600 rounded-full hover:text-gray-800 hover:bg-gray-50">
-                                <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>  
-                            </button>
-                        @endif
+                @if($close_button ?? true)
+                    <div class="absolute top-0 right-0 hidden pt-4 pr-4 sm:block">
+                        <button @click="modalOpen=false" type="button" command="close" commandfor="dialog" class="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-2 focus:outline-offset-2 focus:outline-indigo-600 dark:bg-gray-800 dark:hover:text-gray-300 dark:focus:outline-white" aria-expanded="true">
+                            <span class="sr-only">Close</span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" data-slot="icon" aria-hidden="true" class="size-6">
+                                <path d="M6 18 18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"></path>
+                            </svg>
+                        </button>
                     </div>
                 @endif
                 {{ $slot }}
