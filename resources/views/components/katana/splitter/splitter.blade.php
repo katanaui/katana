@@ -12,27 +12,39 @@
 @endphp
 
 <div
-    x-init="() => {
+    x-data="{
+    initailizeSplitter(){
         const panes = [...$el.querySelectorAll('.katana-split-pane')]
-        if (panes.length < 2) return
+            if (panes.length < 2) return
 
-        const sizes = panes.map(p => parseFloat(p.dataset.size) || (100 / panes.length))
+            const sizes = panes.map(p => parseFloat(p.dataset.size) || (100 / panes.length))
 
-        Split(panes, {
-            direction: '{{ $direction }}',
-            sizes: sizes,
-            gutterSize: {{ $gutterSize }},
-            minSize: {{ $minSize }},
-            gutter: (index, direction) => {
-                const gutter = document.createElement('div')
-                gutter.className = `gutter gutter-${direction}`
-                return gutter
-            }
-        })
+            
+
+            Split(panes, {
+                direction: '{{ $direction }}',
+                sizes: sizes,
+                gutterSize: {{ $gutterSize }},
+                minSize: {{ $minSize }},
+                gutter: (index, direction) => {
+                    const gutter = document.createElement('div')
+                    // add wire:ignore to gutter element
+                    gutter.setAttribute('wire:ignore', '')
+                    gutter.className = `gutter gutter-${direction}`
+                    return gutter
+                }
+            })
+        }
     }"
+    x-init="
+        initailizeSplitter()
+    "
+    @splitter-init.window="initailizeSplitter()"
     {{ $attributes->twMerge($classes) }}
+    wire:ignore.self
 >
     {{ $slot }}
+ 
 </div>
 
 @once
