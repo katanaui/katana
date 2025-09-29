@@ -45,4 +45,8 @@ props:
     default: false
 slots:
   - name: slot
-    description: The innerHTML inside the element
+    description: The main button content
+    default: Button
+  - name: icon
+    description: Icon slot for the button
+    default: ''
