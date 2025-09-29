@@ -34,7 +34,7 @@ props:
   - name: href
     description: The URL for link buttons (when type is 'a')
     type: text
-    default: 'asdf'
+    default: ''
   - name: loader
     description: Show loader when wire:target is executing (Livewire)
     type: boolean
@@ -43,3 +43,6 @@ props:
     description: Force show loading state
     type: boolean
     default: false
+slots:
+  - name: slot
+    description: The innerHTML inside the element
