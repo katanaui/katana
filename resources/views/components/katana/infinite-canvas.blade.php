@@ -72,13 +72,13 @@
         });
         }
     }" 
-    class="w-full h-100vh overflow-hidden relative"
+    class="overflow-hidden relative w-full h-100vh"
     >
-    <div x-ref="canvas" class="infinite-canvas origin-center relative">
+    <div x-ref="canvas" class="relative origin-center infinite-canvas">
         @if($grid)
-            <div class="w-full h-full fixed inset-0 bg-grid"></div>
+            <div class="fixed inset-0 w-full h-full bg-grid"></div>
         @endif
-        <div class="absolute left-1/2 top-1/2 transform w-full max-w-7xl h-auto -translate-x-1/2 -translate-y-1/2">
+        <div class="absolute top-1/2 left-1/2 w-full max-w-7xl h-auto transform -translate-x-1/2 -translate-y-1/2">
             {{ $slot }}
         </div>
     </div>
@@ -165,14 +165,14 @@
       return { dx, dy };
     },
   }"
-  class="w-full h-100vh overflow-hidden relative"
+  class="overflow-hidden relative w-full h-full"
   @canvas-zoom-in.window="scale+=0.1; commitTransform()"
   @canvas-zoom-out.window="scale-=0.1; commitTransform()"
 >
-  <div x-ref="canvas" class="infinite-canvas origin-center relative">
+  <div x-ref="canvas" class="absolute inset-0 w-full h-full origin-center infinite-canvas">
     <!-- optional background grid -->
-    <!-- <div class="w-full h-full fixed inset-0 bg-grid"></div> -->
-    <div class="absolute left-1/2 top-1/2 w-full h-auto transform -translate-x-1/2 -translate-y-1/2">
+    <!-- <div class="fixed inset-0 w-full h-full bg-grid"></div> -->
+    <div class="absolute top-1/2 left-1/2 w-full h-auto transform -translate-x-1/2 -translate-y-1/2">
         {{ $slot }}
     </div>
   </div>
