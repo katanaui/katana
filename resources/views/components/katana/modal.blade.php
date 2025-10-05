@@ -35,8 +35,8 @@
                 x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                 class="relative px-7 py-6 w-full bg-white sm:max-w-lg sm:rounded-lg">
                 @if($close_button ?? true)
-                    <div class="absolute top-0 right-0 hidden pt-4 pr-4 sm:block">
-                        <button @click="modalOpen=false" type="button" command="close" commandfor="dialog" class="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-2 focus:outline-offset-2 focus:outline-indigo-600 dark:bg-gray-800 dark:hover:text-gray-300 dark:focus:outline-white" aria-expanded="true">
+                    <div class="hidden absolute top-0 right-0 pt-4 pr-4 sm:block">
+                        <button @click="modalOpen=false" type="button" command="close" commandfor="dialog" class="text-gray-400 bg-white rounded-md hover:text-gray-500 focus:outline-2 focus:outline-offset-2 focus:outline-indigo-600 dark:bg-gray-800 dark:hover:text-gray-300 dark:focus:outline-white" aria-expanded="true">
                             <span class="sr-only">Close</span>
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" data-slot="icon" aria-hidden="true" class="size-6">
                                 <path d="M6 18 18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"></path>
@@ -44,7 +44,7 @@
                         </button>
                     </div>
                 @endif
-                {{ $slot }}
+                {{ $slot }}z
             </div>
         </div>
     </template>
