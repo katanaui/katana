@@ -44,7 +44,7 @@
                         </button>
                     </div>
                 @endif
-                {{ $slot }}z
+                {{ $slot }}
             </div>
         </div>
     </template>
