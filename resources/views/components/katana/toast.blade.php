@@ -1,47 +1,52 @@
 <template x-teleport="body">
-    <div {{ $attributes->twMerge('fixed inset-0 px-2 pb-4 space-y-2 w-screen h-screen max-w-sm z-[99999999]') }}
+    <div {{ $attributes->twMerge('fixed inset-0 px-2 pointer-events-none pb-4 space-y-2 w-screen h-screen max-w-sm z-[99999999]') }}
         x-data="{
             toasts: [],
             toastsProgress: [],
             toast: @js(session('toast')),
-            type: [
-                'success',
-                'error',
-                'warning',
-                'info'
-            ],
-            closeInterval: 50000,
+            type: ['success', 'error', 'warning', 'info'],
+            closeInterval: 5000,
             addToast(message, type, description = '') {
                 const id = Date.now() + Math.random();
-                const toast = { id, type, message, description, startTime: null, rafId: null };
+                const toast = { id, type, message, description, startTime: null, rafId: null, pausedAt: null, totalPausedTime: 0 };
                 this.toasts.push(toast);
                 this.toastsProgress[id] = 0;
-        
                 const duration = this.closeInterval;
                 const animate = (timestamp) => {
                     if (!toast.startTime) toast.startTime = timestamp;
-                    const elapsed = timestamp - toast.startTime;
+                    if (toast.pausedAt !== null) {
+                        toast.rafId = requestAnimationFrame(animate);
+                        return;
+                    }
+                    const elapsed = timestamp - toast.startTime - toast.totalPausedTime;
                     this.toastsProgress[id] = Math.round(Math.min((elapsed / duration) * 100, 100));
-                    // For debugging:
-                    // console.log('looping');
-                    // console.log(this.toastsProgress[id]);
-        
                     if (this.toastsProgress[id] < 100) {
                         toast.rafId = requestAnimationFrame(animate);
                     } else {
                         this.removeToast(id);
                     }
-                    // Force Alpine to update
                     this.toasts = [...this.toasts];
                 };
                 toast.rafId = requestAnimationFrame(animate);
+            },
+            pauseToast(id) {
+                const toast = this.toasts.find(t => t.id === id);
+                if (toast && toast.pausedAt === null) {
+                    toast.pausedAt = performance.now();
+                }
+            },
+            resumeToast(id) {
+                const toast = this.toasts.find(t => t.id === id);
+                if (toast && toast.pausedAt !== null) {
+                    toast.totalPausedTime += performance.now() - toast.pausedAt;
+                    toast.pausedAt = null;
+                }
             },
             removeToast(id) {
                 const idx = this.toasts.findIndex(t => t.id === id);
                 if (idx !== -1) {
                     const toast = this.toasts[idx];
                     if (toast.rafId) cancelAnimationFrame(toast.rafId);
-                    // Animate out
                     const toastToRemoveEl = document.getElementById('katana-toast-' + id);
                     if (toastToRemoveEl) {
                         toastToRemoveEl.classList.remove('translate-y-0');
@@ -56,22 +61,10 @@
                 }
             },
             types: {
-                success: {
-                    icon: 'check-circle',
-                    colorClass: 'text-green-400'
-                },
-                error: {
-                    icon: 'exclamation-circle',
-                    colorClass: 'text-red-400'
-                },
-                warning: {
-                    icon: 'exclamation-triangle',
-                    colorClass: 'text-yellow-400'
-                },
-                info: {
-                    icon: 'information-circle',
-                    colorClass: 'text-blue-400'
-                }
+                success: { icon: 'check-circle', colorClass: 'text-green-400' },
+                error: { icon: 'exclamation-circle', colorClass: 'text-red-400' },
+                warning: { icon: 'exclamation-triangle', colorClass: 'text-yellow-400' },
+                info: { icon: 'information-circle', colorClass: 'text-blue-400' }
             },
             icons: {
                 'check-circle': `<svg xmlns='http://www.w3.org/2000/svg' class='w-full h-full' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M21.801 10A10 10 0 1 1 17 3.335'/><path d='m9 11 3 3L22 4'/></svg>`,
@@ -83,7 +76,6 @@
             @if(session('toast'))
                 addToast(toast.message, toast.type, toast.description);
             @endif
-        
             let toastFunction = function(message, type, description) {
                 addToast(message, type, description);
             }
@@ -96,13 +88,15 @@
         x-transition:leave-end="opacity-0" x-cloak>
         <template x-for="toast in toasts" :key="toast.id">
             <div :id="'katana-toast-' + toast.id" x-data popover="manual"
-                class="flex overflow-hidden fixed top-0 left-1/2 -translate-x-1/2 mt-3 flex-col items-start p-3.5 px-5 w-full max-w-sm text-sm text-white rounded-2xl opacity-100 duration-300 ease-out translate-y-0 starting:opacity-0 starting:-translate-y-full ending:-translate-y-full ending:opacity-0 backdrop-blur-xs group bg-black/60"
+                @mouseenter="pauseToast(toast.id)"
+                @mouseleave="resumeToast(toast.id)"
+                class="flex overflow-hidden fixed top-0 pointer-events-auto left-1/2 -translate-x-1/2 mt-3 flex-col items-start p-3.5 px-5 w-full max-w-sm text-sm text-white rounded-2xl opacity-100 duration-300 ease-out translate-y-0 starting:opacity-0 starting:-translate-y-full ending:-translate-y-full ending:opacity-0 backdrop-blur-xs group bg-black/60"
                 role="alert">
                 <!-- Progress Bar -->
-                <div class="absolute inset-0 z-10 h-full duration-500 ease-linear bg-black/70"
+                <div class="absolute inset-0 z-10 h-full duration-300 ease-linear bg-black/70"
                     :style="`width: ${toastsProgress[toast.id]}%;`"></div>
                 <span class="flex relative z-20 items-start space-x-2 w-full">
-                    <span x-show="toast.type" :class="'w-5 h-5 flex-shrink-0 ' + types[toast.type].colorClass"
+                    <span x-show="toast.type" :class="'w-5 h-5 -ml-1.5 flex-shrink-0 ' + types[toast.type].colorClass"
                         x-html="icons[types[toast.type].icon]"></span>
                     <span x-text="toast.message"></span>
                     <span x-on:click="removeToast(toast.id)"
