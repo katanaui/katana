@@ -38,13 +38,13 @@ components:
       name: Tiptap
     - id: toast
       name: Toast
-  Layouts: 
+  Layouts:
     - id: sidebar
       name: Sidebar
     - id: header
       name: header
   Effect/Animations:
-    - id: backgrounds.silk
+    - id: backgrounds-silk
       name: Background Silk Effect
-    - id: text-animations.decrypt
+    - id: text-animations-decrypt
       name: Text Decrypt Animation
