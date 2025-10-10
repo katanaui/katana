@@ -85,7 +85,8 @@
 </div> */ @endphp
 
 @props([
-    'grid' => false
+    'grid' => false,
+    'centerVertically' => true
 ])
 
 <style>
@@ -122,14 +123,19 @@
         }
       });
 
-      window.addEventListener('resize', () => {
+      {{-- window.addEventListener('resize', () => {
         this.centerCanvas(this.$el.clientWidth, this.$el.clientHeight);
-      });
+      }); --}}
     },
 
     centerCanvas(w, h) {
       this.pos.x = -(50000 - w / 2);
+      @if($centerVertically)
       this.pos.y = -(50000 - h / 2);
+      @else
+      // Position so the top of the content is visible (accounting for the content being centered in the infinite canvas)
+      this.pos.y = -(49700 - h);
+      @endif
       this.commitTransform();
     },
 
