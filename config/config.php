@@ -19,5 +19,5 @@ return [
          */
         'namespace' => 'katana',
     ],
-    
+
 ];

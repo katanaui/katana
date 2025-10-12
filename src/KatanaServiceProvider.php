@@ -22,9 +22,9 @@ class KatanaServiceProvider extends ServiceProvider
 
         // Get the configurable namespace for components
         $namespace = config('katana.components.namespace', 'katana');
-        
+
         if (empty($namespace)) {
-            
+
             // No namespace - load components from root (e.g., <x-button>)
             Blade::anonymousComponentPath(__DIR__.'/../resources/views/components/katana');
             $this->loadViewsFrom(__DIR__.'/../resources/views/components/katana', '');
