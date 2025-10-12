@@ -22,6 +22,8 @@ components:
       name: Dialog
     - id: drawer
       name: Drawer
+    - id: dropdown
+      name: Dropdown
     - id: image-upload
       name: Image Upload
     - id: label
