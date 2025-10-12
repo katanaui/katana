@@ -1,91 +1,7 @@
-@php /*
 @props([
-    'grid' => false
-])
-
-<style>
-    .infinite-canvas {
-        width: 100000px;
-        height: 100000px;
-        will-change: transform;
-        
-    }
-    .bg-grid{
-        background-image: 
-            linear-gradient(rgba(0,0,0,0.1) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(0,0,0,0.1) 1px, transparent 1px);
-        background-size: 100px 100px;
-    }
-</style>
-<div x-data="{
-        position: { x: -50000, y: -50000 },
-        
-        init() {
-        // Center the canvas on load
-        const containerWidth = this.$el.clientWidth;
-        const containerHeight = this.$el.clientHeight;
-        
-        this.centerCanvas(containerWidth, containerHeight);
-        
-        // Handle wheel events for scrolling
-        this.$el.addEventListener('wheel', (e) => {
-            e.preventDefault();
-            const deltaX = e.deltaX;
-            const deltaY = e.deltaY;
-            const scrollSpeed = 1;
-            
-            this.position.x -= deltaX * scrollSpeed;
-            this.position.y -= deltaY * scrollSpeed;
-            
-            this.updatePosition();
-        }, { passive: false });
-
-        // 👇 NEW: Handle messages from iframe
-        window.addEventListener('message', (e) => {
-            if (e.data?.type === 'canvas-scroll') {
-            this.position.x -= e.data.deltaX;
-            this.position.y -= e.data.deltaY;
-            this.updatePosition();
-            }
-        });
-        
-        // Handle window resize
-        window.addEventListener('resize', () => {
-            const containerWidth = this.$el.clientWidth;
-            const containerHeight = this.$el.clientHeight;
-            
-            this.centerCanvas(containerWidth, containerHeight);
-        });
-        },
-        
-        centerCanvas(containerWidth, containerHeight) {
-        // Calculate center position based on container dimensions
-        this.position.x = -(50000 - containerWidth/2);
-        this.position.y = -(50000 - containerHeight/2);
-        
-        this.updatePosition();
-        },
-        
-        updatePosition() {
-        requestAnimationFrame(() => {
-            this.$refs.canvas.style.transform = `translate(${this.position.x}px, ${this.position.y}px)`;
-        });
-        }
-    }" 
-    class="overflow-hidden relative w-full h-100vh"
-    >
-    <div x-ref="canvas" class="relative origin-center infinite-canvas">
-        @if($grid)
-            <div class="fixed inset-0 w-full h-full bg-grid"></div>
-        @endif
-        <div class="absolute top-1/2 left-1/2 w-full max-w-7xl h-auto transform -translate-x-1/2 -translate-y-1/2">
-            {{ $slot }}
-        </div>
-    </div>
-</div> */ @endphp
-
-@props([
-    'grid' => false
+    'grid' => false,
+    'center' => true,
+    'centerCanvasOnResize' => false,
 ])
 
 <style>
@@ -107,7 +23,7 @@
     rafId: null,
 
     init() {
-      this.centerCanvas(this.$el.clientWidth, this.$el.clientHeight);
+      this.centerCanvas();
       this.startLoop();
 
       this.$el.addEventListener('wheel', (e) => {
@@ -122,14 +38,32 @@
         }
       });
 
-      window.addEventListener('resize', () => {
-        this.centerCanvas(this.$el.clientWidth, this.$el.clientHeight);
-      });
+      @if($centerCanvasOnResize)
+        window.addEventListener('resize', () => {
+          this.centerCanvas(this.$el.clientWidth, this.$el.clientHeight);
+        });
+      @endif
     },
 
-    centerCanvas(w, h) {
-      this.pos.x = -(50000 - w / 2);
-      this.pos.y = -(50000 - h / 2);
+    centerCanvas() {
+      let posX = -(50000 - this.$el.clientWidth / 2);
+      let posY = -(50000 - this.$el.clientHeight / 2);
+      this.positionCanvas(posX, posY);
+      
+      @if($center)
+      //this.pos.y = -(50000 - h / 2);
+      @else
+      // Position so the top of the content is visible (accounting for the content being centered in the infinite canvas)
+      //this.pos.y = -(49700 - h);
+      @endif
+    },
+    positionCanvas(w, h) {
+      if(w != null){
+        this.pos.x = w;
+      }
+      if(h != null){
+        this.pos.y = h;
+      }
       this.commitTransform();
     },
 
@@ -168,6 +102,8 @@
   class="overflow-hidden relative w-full h-full"
   @canvas-zoom-in.window="scale+=0.1; commitTransform()"
   @canvas-zoom-out.window="scale-=0.1; commitTransform()"
+  @canvas-center.window="centerCanvas()"
+  @canvas-position.window="positionCanvas($event.detail.x, $event.detail.y)"
 >
   <div x-ref="canvas" class="absolute inset-0 w-full h-full origin-center infinite-canvas">
     <!-- optional background grid -->
