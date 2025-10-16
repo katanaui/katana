@@ -32,6 +32,8 @@ components:
       name: Modal
     - id: monaco-editor
       name: Monaco Editor
+    - id: popover
+      name: Popover
     - id: separator
       name: Separator
     - id: splitter
