@@ -2,6 +2,7 @@
     'grid' => false,
     'center' => true,
     'centerCanvasOnResize' => false,
+    'scale' => 100,
 ])
 
 <style>
@@ -16,13 +17,14 @@
 <div
   x-data="{
     pos: { x: -50000, y: -50000 },
-    scale: 0.75,
+    scale: {{ $scale/100 }},
     vx: 0, vy: 0,
     speed: 0.3,   // 👈 reduce sensitivity
     friction: 0.7,
     rafId: null,
 
     init() {
+    
       this.centerCanvas();
       this.startLoop();
 
@@ -31,6 +33,21 @@
         const { dx, dy } = this.normalizeWheel(e);
         this.applyDelta(dx, dy);
       }, { passive: false });
+
+      {{-- let canvasZoom = scale;
+      window.addEventListener('get-canvas-zoom', function(e){
+      console.log('listener yo');
+    const callback = e.detail?.callback;
+    if (typeof callback === 'function') {
+      const canvasZoom = 1.25; // or however you compute this
+      callback(canvasZoom);
+    }
+      }); --}}
+
+
+      $watch('scale', (value) => {
+        window.dispatchEvent(new CustomEvent('canvas-zoom', { detail: { scale: value } }));
+      });
 
       window.addEventListener('message', (e) => {
         if (e?.data?.type === 'canvas-scroll') {
@@ -100,8 +117,8 @@
     },
   }"
   class="overflow-hidden relative w-full h-full"
-  @canvas-zoom-in.window="scale+=0.1; commitTransform()"
-  @canvas-zoom-out.window="scale-=0.1; commitTransform()"
+  @canvas-zoom-in.window="scale+=0.05; commitTransform()"
+  @canvas-zoom-out.window="scale-=0.05; commitTransform()"
   @canvas-center.window="centerCanvas()"
   @canvas-position.window="positionCanvas($event.detail.x, $event.detail.y)"
 >
