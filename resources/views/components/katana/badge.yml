@@ -3,7 +3,7 @@ props:
   - name: variant
     description: The badge variant style
     type: select
-    default: null
+    default: default
     options:
       - default
       - secondary
@@ -31,3 +31,7 @@ props:
       - sm
       - md
       - lg
+slots:
+  - name: slot
+    description: The main content for the badge
+    default: Badge

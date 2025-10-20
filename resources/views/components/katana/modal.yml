@@ -1,0 +1,20 @@
+component: Modal
+props:
+  - name: open
+    description: Controls the initial open state of the modal
+    type: boolean
+    default: false
+  - name: close_button
+    description: Show or hide the close button in the modal header
+    type: boolean
+    default: true
+slots:
+  - name: slot
+    description: The main modal content
+    default: '<p class="text-sm py-5 text-balance opacity-60">This is where you can add some content in your modal. This can be informative, provide an action, or even a form.</p>'
+  - name: trigger
+    description: Custom trigger element to open the modal
+    default: '<x-katana.button variant="outline">Open</x-katana.button>'
+  - name: title
+    description: The modal title text
+    default: 'Modal Title'

@@ -22,6 +22,8 @@ components:
       name: Dialog
     - id: drawer
       name: Drawer
+    - id: dropdown
+      name: Dropdown
     - id: image-upload
       name: Image Upload
     - id: label
@@ -30,6 +32,8 @@ components:
       name: Modal
     - id: monaco-editor
       name: Monaco Editor
+    - id: popover
+      name: Popover
     - id: separator
       name: Separator
     - id: splitter
@@ -38,13 +42,13 @@ components:
       name: Tiptap
     - id: toast
       name: Toast
-  Layouts: 
+  Layouts:
     - id: sidebar
       name: Sidebar
     - id: header
       name: header
   Effect/Animations:
-    - id: backgrounds.silk
+    - id: backgrounds-silk
       name: Background Silk Effect
-    - id: text-animations.decrypt
+    - id: text-animations-decrypt
       name: Text Decrypt Animation
