@@ -116,7 +116,7 @@
       return { dx, dy };
     },
   }"
-  class="overflow-hidden relative w-full h-full"
+  class="relative w-full h-full overflow-hidden"
   @canvas-zoom-in.window="scale+=0.05; commitTransform()"
   @canvas-zoom-out.window="scale-=0.05; commitTransform()"
   @canvas-center.window="centerCanvas()"
@@ -125,7 +125,7 @@
   <div x-ref="canvas" class="absolute inset-0 w-full h-full origin-center infinite-canvas">
     <!-- optional background grid -->
     <!-- <div class="fixed inset-0 w-full h-full bg-grid"></div> -->
-    <div class="absolute top-1/2 left-1/2 w-full h-auto transform -translate-x-1/2 -translate-y-1/2">
+    <div class="absolute flex items-center justify-center w-full h-auto transform -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2">
         {{ $slot }}
     </div>
   </div>
