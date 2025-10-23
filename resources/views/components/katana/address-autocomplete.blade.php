@@ -4,9 +4,9 @@
     'id' => 'address_autocomplete_' . uniqid()
 ])
 
-<div 
-    x-data="placesAutocomplete" 
-    x-init="init()" 
+<div
+    x-data="placesAutocomplete"
+    x-init="init()"
     class="space-y-2 w-full"
 >
     @if($label ?? false)
@@ -39,11 +39,10 @@
 </div>
 
 @once
-    @push('scripts')
         <!-- Load Google Maps API only once -->
-        <script 
-            src="https://maps.googleapis.com/maps/api/js?key={{ $api_key ?? '' }}&libraries=places&loading=async" 
-            async 
+        <script
+            src="https://maps.googleapis.com/maps/api/js?key={{ $api_key ?? '' }}&libraries=places&loading=async"
+            async
             defer>
         </script>
 
@@ -96,7 +95,7 @@
                             if (this.place.formatted) {
                                 // Update the input value directly
                                 this.$refs.input.value = this.place.formatted;
-                                
+
                                 // Trigger input event to ensure Livewire's wire:model is updated
                                 this.$refs.input.dispatchEvent(new Event('input', { bubbles: true }));
                             }
@@ -112,5 +111,4 @@
                 }
             })();
         </script>
-    @endpush
 @endonce
