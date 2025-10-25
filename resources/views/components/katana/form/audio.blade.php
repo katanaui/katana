@@ -53,7 +53,7 @@
     
     @if($label)
         <div class="flex relative items-center mb-2 space-x-1.5 jutify-between">
-            <x-katana.form.label class="flex-shrink-0">{{ $label }}</x-katana.form.label>
+            <x-katana.form.label class="shrink-0">{{ $label }}</x-katana.form.label>
             @if($nextToLabel)
                 {!! $nextToLabel !!}
             @endif

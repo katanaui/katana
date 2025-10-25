@@ -104,4 +104,4 @@
             </svg></span>
     @endif
     <span @class(['flex items-center', 'opacity-0' => $loading]) wire:loading.class="opacity-0" wire:target="{{ $attributes->get('wire:click') }}">{{ $slot }}</span>
-    </{{ $typeClose }}>
+</{{ $typeClose }}>

@@ -13,16 +13,16 @@
         'text-red-500 border-red-200' => $variant === 'destructive',
         'text-blue-600 border-blue-200' => $variant === 'info',
         'text-green-600 border-green-300' => $variant === 'success',
-        'text-amber-600 border-amber-300' => $variant === 'warning',
+        'text-amber-700 border-amber-300' => $variant === 'warning',
     ]);
 @endphp
 
 <div {{ $attributes->twMerge($classes) }}>
-    @if($icon ?? false)
+    @if ($icon ?? false)
         <x-dynamic-component class="w-4 h-4" :component="$icon" />
     @endif
     <h5 class="font-medium leading-none tracking-tight">{{ $title }}</h5>
-    @if($description)
+    @if ($description)
         <div class="mt-1 opacity-60">{!! $description !!}</div>
     @endif
 </div>

@@ -9,7 +9,7 @@
 
 @php
     $classes = \Illuminate\Support\Arr::toCssClasses([
-        'flex overflow-hidden justify-center relative items-center w-full bg-white sm:rounded-[var(--radius)] border-0 sm:border starting:opacity-0 opacity-100 shadow-sm border-stone-200',
+        'flex overflow-hidden justify-center relative items-center w-full bg-white sm:rounded-(--radius) border-0 sm:border starting:opacity-0 opacity-100 shadow-sm border-stone-200',
         'ml-auto w-full h-full' => $position == 'right',
         'mr-auto w-full h-full' => $position == 'left',
     ]);
@@ -84,12 +84,12 @@
                     @close-drawer.window="console.log('gotit'); if($event.detail.id === $el.id) open=false"
                     class="{{ $classes }}" {{ $attributes->only('id') }}>
                     @if($header ?? false)
-                        <div class="flex absolute font-semibold top-0 z-50 flex-shrink-0 items-center px-5 w-full h-16 backdrop-blur-sm text-stone-700 sm:px-6 sm:rounded-t-xl bg-white/90">
+                        <div class="flex absolute font-semibold top-0 z-50 shrink-0 items-center px-5 w-full h-16 backdrop-blur-sm text-stone-700 sm:px-6 sm:rounded-t-xl bg-white/90">
                             {{ $header }}
                         </div>
                     @endif
                     
-                    <div class="absolute top-0 right-0 z-[51]">
+                    <div class="absolute top-0 right-0 z-51">
                         <button @click="open=false" class="absolute top-0 right-0 p-2 mt-3 mr-3 rounded-full cursor-pointer hover:bg-black/10">
                             <svg class="w-5 h-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256"><path fill="none" d="M0 0h256v256H0z"/><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" d="M200 56 56 200M200 200 56 56"/></svg>
                         </button>
@@ -110,7 +110,7 @@
                     </div>
                     
                     @if($footer ?? false)
-                        <div class="flex absolute bottom-0 z-[999999] flex-shrink-0 justify-between items-center px-5 w-full h-20 border-t border-gray-100 backdrop-blur-sm sm:px-8 sm:rounded-b-xl bg-white/70">
+                        <div class="flex absolute bottom-0 z-999999 shrink-0 justify-between items-center px-5 w-full h-20 border-t border-gray-100 backdrop-blur-sm sm:px-8 sm:rounded-b-xl bg-white/70">
                             {{ $footer }}
                         </div>
                     @endif
