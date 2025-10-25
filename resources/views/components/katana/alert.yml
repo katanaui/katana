@@ -13,13 +13,13 @@ props:
       - warning
   - name: icon
     description: The icon to use in the alert
-    type: image
-    default: null
+    type: text
+    default: "phosphor-bell-duotone"
   - name: title
     description: The title for the alert
     type: text
-    default: ""
+    default: "Alert Title"
   - name: description
     description: The description below the alert title
     type: textarea
-    default: ""
+    default: "A short description here will give them context about the alert."

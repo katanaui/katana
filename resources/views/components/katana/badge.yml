@@ -3,12 +3,23 @@ props:
   - name: variant
     description: The badge variant style
     type: select
-    default: null
+    default: primary
     options:
-      - default
+      - primary
       - secondary
       - destructive
       - outline
+      - info
+      - success
+      - warning
+  - name: size
+    description: The size of the badge
+    type: select
+    default: sm
+    options:
+      - sm
+      - md
+      - lg
   - name: icon
     description: Optional icon component name (e.g., heroicon-s-check)
     type: text
@@ -20,12 +31,7 @@ props:
     options:
       - before
       - after
-  - name: size
-    description: The size of the badge
-    type: select
-    default: md
-    options:
-      - xs
-      - sm
-      - md
-      - lg
+slots:
+  - name: slot
+    description: The main content for the badge
+    default: Badge
