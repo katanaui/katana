@@ -2,7 +2,7 @@
     'active' => 'home'
 ])
 
-<nav class="fixed right-0 bottom-0 left-0 border-t z-[9999] border-gray-200 backdrop-blur-xl bg-white/50">
+<nav class="fixed right-0 bottom-0 left-0 border-t z-9999 border-gray-200 backdrop-blur-xl bg-white/50">
     <div class="flex py-0 mx-auto max-w-3xl">
         <a href="/" 
             @class([

@@ -1,4 +1,4 @@
-<div {{ $attributes->twMerge('fixed inset-0 px-2 pb-4 space-y-2 w-screen h-screen max-w-sm z-[99999999]') }}
+<div {{ $attributes->twMerge('fixed inset-0 px-2 pb-4 space-y-2 w-screen h-screen max-w-sm z-99999999') }}
     x-data="{ 
         toasts: [],
         toastsProgress: [],
@@ -92,7 +92,7 @@
             <!-- Progress Bar -->
             <div class="absolute inset-0 z-10 h-full duration-100 ease-in-out bg-black/70" :style="`width: ${toastsProgress[toast.id]}%;`"></div>
             <span class="flex relative z-20 items-start space-x-2 w-full">
-                <span :class="'w-5 h-5 flex-shrink-0 ' + types[toast.type].colorClass" x-html="icons[types[toast.type].icon]"></span>
+                <span :class="'w-5 h-5 shrink-0 ' + types[toast.type].colorClass" x-html="icons[types[toast.type].icon]"></span>
                 <span x-text="toast.message"></span>
                 <span x-on:click="removeToast(toast.id)" 
                     class="flex absolute right-0 top-1/2 justify-center items-center w-6 h-6 rounded-lg opacity-0 duration-100 ease-out scale-50 -translate-y-1/2 cursor-pointer group-hover:scale-100 group-hover:opacity-50 group-hover:hover:opacity-100 group-hover:text-white hover:opacity-100 bg-black/50"

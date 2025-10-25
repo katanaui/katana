@@ -7,7 +7,7 @@
 
 @php
     $classes = \Illuminate\Support\Arr::toCssClasses([
-        'inline-flex items-center justify-center tracking-tight rounded-[var(--radius)] text-xs [&>svg]:w-4 [&>svg]:h-4 px-2 py-0.5',
+        'inline-flex items-center justify-center tracking-tight rounded-(--radius) text-xs [&>svg]:w-4 [&>svg]:h-4 px-2 py-0.5',
         'text-gray-600 bg-gray-100' => (! $variant) || ($variant === 'secondary'),
         'text-danger-700 bg-danger-500/10' => $variant === 'destructive',
         'text-primary-foreground bg-primary' => $variant === 'default',

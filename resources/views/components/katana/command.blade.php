@@ -93,7 +93,7 @@
     <template x-teleport="body">
         <div
             x-show="commandOpen"
-            class="fixed inset-0 z-[9999] flex items-center justify-center w-screen h-screen"
+            class="fixed inset-0 z-9999 flex items-center justify-center w-screen h-screen"
             x-cloak
         >
             {{-- Backdrop --}}

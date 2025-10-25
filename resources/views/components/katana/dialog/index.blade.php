@@ -12,7 +12,7 @@
     <template x-teleport="body">
         <div x-show="modalOpen" 
             {{ $attributes->only('id') }}
-            class="fixed top-0 left-0 z-[99] flex items-center justify-center w-screen h-screen"
+            class="fixed top-0 left-0 z-99 flex items-center justify-center w-screen h-screen"
             @open-dialog.window="if($event.detail.id === $el.id) modalOpen=true"
             @close-dialog.window="if($event.detail.id === $el.id) modalOpen=false"
              x-cloak>
