@@ -8,7 +8,14 @@
 ])
 
 @php
+<<<<<<< HEAD
     $classes = \Illuminate\Support\Arr::toCssClasses(['flex relative z-50 justify-between items-center text-gray-900 px-3 w-full h-16 shrink-0', 'border-b border-gray-200' => $bottomBorder]);
+=======
+    $classes = \Illuminate\Support\Arr::toCssClasses([
+        'flex relative z-50 justify-between items-center text-gray-900 px-3 w-full h-16 shrink-0',
+        'border-b border-gray-200' => $bottomBorder
+    ]);
+>>>>>>> ce93a45476b2d817eb5e85b2232dd61263b5867d
 @endphp
 
 <div {{ $attributes->twMerge($classes) }}>

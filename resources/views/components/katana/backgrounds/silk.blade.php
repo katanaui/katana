@@ -1,9 +1,9 @@
 @props([
     'speed' => 5,
     'scale' => 1,
-    'color' => '#7B7481',
     'noiseIntensity' => 1.5,
     'rotation' => 0,
+    'color' => '#5227ff',
 ])
 
 <div x-data="{
@@ -97,15 +97,11 @@
         });
         this.resizeObserver.observe($el);
     }
-}" x-init="$nextTick(() => initSilk())"
-    x-destroy="
+}" x-init="$nextTick(() => initSilk())" x-destroy="
         if (resizeHandler) { window.removeEventListener('resize', resizeHandler); }
         if (resizeObserver) { resizeObserver.disconnect(); }
-    "
-    {{ $attributes->twMerge('relative w-full h-full') }}>
-    <canvas class="relative w-full h-full bg-black" height="100%" width="100%" x-show="!isLoading"
-        x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0"
-        x-transition:enter-end="opacity-100"></canvas>
+    " {{ $attributes->twMerge('relative w-full h-full min-h-[360px]') }}>
+    <canvas x-show="!isLoading" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" class="relative h-full w-full bg-black" height="100%" width="100%"></canvas>
 
     <!-- Loading state -->
     <div x-show="isLoading" class="absolute inset-0 bg-black"></div>

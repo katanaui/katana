@@ -12,6 +12,7 @@
     progress: 0,
     autoplay: @if ($autoplay) true @else false @endif,
 
+<<<<<<< HEAD
     init() {
         // Initialize audio element
         this.$refs.audio.load();
@@ -91,6 +92,65 @@
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     }
 }" @click.stop="" {{ $attributes->twMerge('flex items-center pr-4 pl-1.5 w-full h-14 shrink-0 bg-gradient-to-b from-white border rounded-md border-gray-200 to-stone-50') }}>
+=======
+                    if(this.autoplay) {
+                        console.log('autoplaying...');
+                        this.$refs.audio.play();
+                        this.isPlaying = true;
+                    }
+                },
+                
+                togglePlay() {
+                    if (this.isPlaying) {
+                        this.$refs.audio.pause();
+                    } else {
+                        this.$refs.audio.play();
+                    }
+                    this.isPlaying = !this.isPlaying;
+                },
+                
+                rewind(seconds) {
+                    this.$refs.audio.currentTime = Math.max(0, this.$refs.audio.currentTime - seconds);
+                },
+                
+                forward(seconds) {
+                    this.$refs.audio.currentTime = Math.min(this.duration, this.$refs.audio.currentTime + seconds);
+                },
+                
+                seek(event) {
+                    const rect = event.currentTarget.getBoundingClientRect();
+                    const x = event.clientX - rect.left;
+                    const percentage = (x / rect.width) * 100;
+                    const time = (percentage / 100) * this.duration;
+                    this.$refs.audio.currentTime = time;
+                },
+                
+                updateProgress() {
+                    this.currentTime = this.$refs.audio.currentTime;
+                    if (this.duration > 0) {
+                        this.progress = (this.currentTime / this.duration) * 100;
+                    }
+                },
+                
+                audioLoaded() {
+                    this.duration = this.$refs.audio.duration;
+                },
+                
+                audioEnded() {
+                    window.dispatchEvent(new CustomEvent('audio-player-complete'));
+                    this.isPlaying = false;
+                    this.progress = 100;
+                },
+                
+                formatTime(seconds) {
+                    if (isNaN(seconds) || seconds === 0) return '0:00';
+                    
+                    const mins = Math.floor(seconds / 60);
+                    const secs = Math.floor(seconds % 60);
+                    return `${mins}:${secs.toString().padStart(2, '0')}`;
+                }
+            }" @click.stop="" {{ $attributes->twMerge('flex items-center pr-4 pl-1.5 w-full h-14 shrink-0 bg-linear-to-b from-white border rounded-md border-gray-200 to-stone-50') }}>
+>>>>>>> ce93a45476b2d817eb5e85b2232dd61263b5867d
     <!-- Hidden audio element -->
     <audio x-ref="audio" class="hidden" src="{{ $src }}" @timeupdate="updateProgress" @loadedmetadata="audioLoaded" @ended="audioEnded">
     </audio>

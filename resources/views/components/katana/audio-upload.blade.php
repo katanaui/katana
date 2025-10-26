@@ -40,6 +40,7 @@
                 i.dispatchEvent(new Event('change', { bubbles: true }));
             }
         },
+<<<<<<< HEAD
         handleDragOver(e) { e.preventDefault();
             this.isDragOver = true },
         handleDragLeave(e) { e.preventDefault();
@@ -50,6 +51,21 @@
         <div class="jutify-between relative mb-2 flex items-center space-x-1.5">
             <x-katana.form.label class="shrink-0">{{ $label }}</x-katana.form.label>
             @if ($nextToLabel)
+=======
+        handleDragOver(e){ e.preventDefault(); this.isDragOver=true },
+        handleDragLeave(e){ e.preventDefault(); this.isDragOver=false },
+    }"
+    x-on:livewire-upload-start="isUploading = true"
+    x-on:livewire-upload-finish="isUploading = false; progress = 0"
+    x-on:livewire-upload-error="isUploading = false; progress = 0"
+    x-on:livewire-upload-progress="progress = $event.detail.progress"
+>
+    
+    @if($label)
+        <div class="flex relative items-center mb-2 space-x-1.5 jutify-between">
+            <x-katana.form.label class="shrink-0">{{ $label }}</x-katana.form.label>
+            @if($nextToLabel)
+>>>>>>> ce93a45476b2d817eb5e85b2232dd61263b5867d
                 {!! $nextToLabel !!}
             @endif
         </div>

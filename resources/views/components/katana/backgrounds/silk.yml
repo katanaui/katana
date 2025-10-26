@@ -1,0 +1,22 @@
+component: Background Silk Effect
+props:
+  - name: speed
+    description: Animation speed of the silk effect
+    type: number
+    default: 5
+  - name: scale
+    description: Scale factor for the silk effect
+    type: number
+    default: 1
+  - name: noiseIntensity
+    description: Intensity of the noise pattern
+    type: number
+    default: 1.5
+  - name: rotation
+    description: Rotation angle in degrees
+    type: number
+    default: 0
+  - name: color
+    description: Color of the silk effect (hex color)
+    type: text
+    default: "#5227ff"

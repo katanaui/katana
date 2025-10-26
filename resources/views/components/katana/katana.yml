@@ -26,6 +26,8 @@ components:
       name: Dropdown
     - id: image-upload
       name: Image Upload
+    - id: infinite-canvas
+      name: Infinite Canvas
     - id: label
       name: Label
     - id: modal
