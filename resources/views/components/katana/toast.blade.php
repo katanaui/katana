@@ -96,7 +96,7 @@
                 <div class="absolute inset-0 z-10 h-full duration-300 ease-linear bg-black/70"
                     :style="`width: ${toastsProgress[toast.id]}%;`"></div>
                 <span class="flex relative z-20 items-start space-x-2 w-full">
-                    <span x-show="toast.type" :class="'w-5 h-5 -ml-1.5 flex-shrink-0 ' + types[toast.type].colorClass"
+                    <span x-show="toast.type" :class="'w-5 h-5 -ml-1.5 shrink-0 ' + types[toast.type].colorClass"
                         x-html="icons[types[toast.type].icon]"></span>
                     <span x-text="toast.message"></span>
                     <span x-on:click="removeToast(toast.id)"

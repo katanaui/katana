@@ -17,7 +17,7 @@
             x-show="open"
             @keydown.window.escape="open=false"
             class="relative z-999">
-            <div x-show="open" x-transition.opacity.duration.600ms @click="open = false" class="fixed inset-0 bg-black bg-opacity-10"></div>
+            <div x-show="open" x-transition.opacity.duration.600ms @click="open = false" class="fixed inset-0 bg-black/10"></div>
             <div class="overflow-hidden fixed inset-0">
                 <div class="overflow-hidden absolute inset-0">
                     <div class="flex fixed inset-y-0 right-0 max-w-full">
