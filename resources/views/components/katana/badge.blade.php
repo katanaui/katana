@@ -13,10 +13,10 @@
         'px-3 py-1 [&>svg]:w-3.5 [&>svg]:h-3.5' => $size == 'md',
         'px-4 py-1.5 [&>svg]:w-4 [&>svg]:h-4' => $size == 'lg',
         /* Color variants */
-        'text-gray-600 bg-gray-100' => !$variant || $variant === 'secondary',
-        'text-white bg-red-600' => $variant === 'destructive',
         'text-primary-foreground bg-primary' => $variant === 'primary',
-        'text-stone-700 border border-stone-200' => $variant === 'outline',
+        'text-secondary-foreground bg-secondary' => !$variant || $variant === 'secondary',
+        'text-white bg-destructive' => $variant === 'destructive',
+        'text-foreground border border-input/90' => $variant === 'outline',
         'text-white bg-blue-600' => $variant === 'info',
         'text-white bg-green-600' => $variant === 'success',
         'text-white bg-yellow-500' => $variant === 'warning',
