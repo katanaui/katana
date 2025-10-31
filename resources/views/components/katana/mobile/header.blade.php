@@ -9,7 +9,7 @@
 
 @php
     $classes = \Illuminate\Support\Arr::toCssClasses([
-        'flex relative z-50 justify-between items-center text-gray-900 px-3 w-full h-16 flex-shrink-0',
+        'flex relative z-50 justify-between items-center text-gray-900 px-3 w-full h-16 shrink-0',
         'border-b border-gray-200' => $bottomBorder
     ]);
 @endphp

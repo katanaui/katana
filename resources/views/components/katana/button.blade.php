@@ -48,7 +48,7 @@
             $typeClasses = $defaultClasses . $topHighlight;
             break;
         case 'secondary':
-            $typeClasses = 'border-transparent no-underline text-stone-700 bg-stone-100';
+            $typeClasses = 'border-transparent no-underline text-secondary-foreground bg-secondary';
             break;
         case 'destructive':
             $typeClasses = 'border-transparent no-underline focus:outline-none bg-red-600 text-white' . $topHighlight;
@@ -104,4 +104,4 @@
             </svg></span>
     @endif
     <span @class(['flex items-center', 'opacity-0' => $loading]) wire:loading.class="opacity-0" wire:target="{{ $attributes->get('wire:click') }}">{{ $slot }}</span>
-    </{{ $typeClose }}>
+</{{ $typeClose }}>

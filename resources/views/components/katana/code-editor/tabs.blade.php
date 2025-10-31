@@ -1,4 +1,4 @@
-<div class="flex justify-start h-10 bg-gradient-to-br from-stone-900 to-stone-950 items-strech">
+<div class="flex justify-start h-10 bg-linear-to-br from-stone-900 to-stone-950 items-strech">
     <ul x-ref="tabContainer" class="flex overflow-x-scroll items-center w-full">
         <template x-for="([file, content], index) in Object.entries(fileTabs)">
             <li x-on:click="addCodeFromClickedTab(file)" class="relative h-full">

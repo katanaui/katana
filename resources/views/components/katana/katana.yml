@@ -44,6 +44,8 @@ components:
       name: Tiptap
     - id: toast
       name: Toast
+    - id: tooltip
+      name: Tooltip
   Layouts:
     - id: sidebar
       name: Sidebar
