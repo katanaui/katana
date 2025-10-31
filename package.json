@@ -1,0 +1,18 @@
+{
+  "name": "katanaui-build",
+  "version": "1.0.0",
+  "description": "Build system for KatanaUI component JavaScript files",
+  "scripts": {
+    "build": "NODE_ENV=production node esbuild.config.js",
+    "watch": "node esbuild.config.js --watch"
+  },
+  "dependencies": {
+    "@tiptap/core": "^2.0.0",
+    "@tiptap/pm": "^2.0.0",
+    "@tiptap/starter-kit": "^2.0.0",
+    "@tiptap/extension-link": "^2.0.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.19.0"
+  }
+}
