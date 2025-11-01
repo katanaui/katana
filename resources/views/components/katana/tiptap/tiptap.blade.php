@@ -58,12 +58,12 @@
             to: null
         },
         scriptLoaded: false,
-    
+
         async loadScript() {
             if (this.scriptLoaded || window.tipTapEditor) {
                 return Promise.resolve();
             }
-    
+
             return new Promise((resolve, reject) => {
                 const script = document.createElement('script');
                 script.src = '{{ asset('katana/tiptap.js') }}';
@@ -75,7 +75,7 @@
                 document.head.appendChild(script);
             });
         },
-    
+
         async init(element) {
             await this.loadScript();
             console.log('inited');
@@ -97,10 +97,10 @@
                 onUpdate: ({
                     editor
                 }) => {
-                    this.content = this.tiptap.getHTML()
+                    this.content = window.tiptap[this.elementId].tiptap.getHTML()
                 },
             })
-    
+
             // (2) keep Alpine state in sync with TipTap
             const updateMarks = () => {
                 this.tiptap.isActive('bold')
@@ -115,7 +115,7 @@
                 this.tiptap.isActive('heading', {
                     level: 3
                 })
-    
+
                 const href = this.tiptap.getAttributes('link')?.href
                 this.linkHref = href || ''
             }
@@ -123,9 +123,9 @@
             this.tiptap.on('transaction', updateMarks)
             this.tiptap.on('update', updateMarks)
             updateMarks() // initialize once
-    
+
             document.getElementById(this.elementId).tiptap = window.tiptap[this.elementId];
-    
+
             this.$watch('linkModal', (value) => {
                 if (value) {
                     setTimeout(() => {
@@ -136,7 +136,7 @@
             this.$watch('content', (content) => {
                 // If the new content matches Tiptap's then we just skip.
                 if (content === this.tiptap.getHTML()) return
-    
+
                 /*
                 Otherwise, it means that an external source is modifying the data on this Alpine component, which could be Livewire itself.
                 In this case, we only need to update Tiptap's content and we're done. For more information on the `setContent()` method, see: https://www.tiptap.dev/api/commands/set-content
@@ -153,12 +153,12 @@
                 from: sel.from,
                 to: sel.to
             };
-    
+
             // pull the latest href from selection just in case
             const href = this.tiptap.getAttributes('link')?.href
             this.linkHref = href || ''
             this.linkModal = !this.linkModal
-    
+
             if (this.linkModal) {
                 this.$nextTick(() => this.$refs.linkInput?.focus())
             }
