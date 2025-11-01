@@ -25,7 +25,6 @@
 @endphp
 
 @once
-    <script src="{{ asset('katana/tiptap.js') }}"></script>
     <style>
         .tiptap {
             min-height: 200px;
@@ -48,7 +47,9 @@
 <div
     x-data="{
         editor: null,
-        content: '{{ $content }}',
+        content: @if ($attributes->wire('model')->value()) $wire.entangle('{{ $attributes->wire('model')->value() }}'),
+        @else
+            '{{ $content }}', @endif
         elementId: '{{ $id }}',
         linkModal: false,
         linkHref: '',
@@ -56,8 +57,27 @@
             from: null,
             to: null
         },
+        scriptLoaded: false,
     
-        init(element) {
+        async loadScript() {
+            if (this.scriptLoaded || window.tipTapEditor) {
+                return Promise.resolve();
+            }
+    
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = '{{ asset('katana/tiptap.js') }}';
+                script.onload = () => {
+                    this.scriptLoaded = true;
+                    resolve();
+                };
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        },
+    
+        async init(element) {
+            await this.loadScript();
             console.log('inited');
             console.log(this.elementId);
             window.tiptap[this.elementId] = new tipTapEditor({
@@ -157,9 +177,7 @@
         get tiptap() {
             return window.tiptap[this.elementId];
         }
-    }" x-init="setTimeout(function() {
-        init($refs.editor);
-    }, 10);" id="{{ $id }}" class="relative min-h-[200px] w-full overflow-hidden rounded-lg border border-stone-200" @update-content="updateContent($event.detail.content)" wire:ignore {{ $attributes->whereDoesntStartWith('wire:model') }}>
+    }" x-init="init($refs.editor)" id="{{ $id }}" class="relative min-h-[200px] w-full overflow-hidden rounded-lg border border-stone-200" @update-content="updateContent($event.detail.content)" wire:ignore {{ $attributes->whereDoesntStartWith('wire:model') }}>
     <div class="relative z-50 flex space-x-1 border-b border-stone-200/70 bg-stone-50 p-1">
         @foreach ($toolbar_items as $item)
             @if ($item == 'divider')
