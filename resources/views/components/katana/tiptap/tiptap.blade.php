@@ -58,6 +58,19 @@
             to: null
         },
         scriptLoaded: false,
+        activeStates: {
+            bold: false,
+            italic: false,
+            underline: false,
+            code: false,
+            heading_1: false,
+            heading_2: false,
+            heading_3: false,
+            blockquote: false,
+            bulletList: false,
+            orderedList: false,
+            codeBlock: false
+        },
 
         async loadScript() {
             if (this.scriptLoaded || window.tipTapEditor) {
@@ -104,18 +117,23 @@
 
             // (2) keep Alpine state in sync with TipTap
             const updateMarks = () => {
-                window.tiptap[this.elementId].isActive('bold')
-                window.tiptap[this.elementId].isActive('italic')
-                window.tiptap[this.elementId].isActive('code')
-                window.tiptap[this.elementId].isActive('heading', {
+                this.activeStates.bold = window.tiptap[this.elementId].isActive('bold')
+                this.activeStates.italic = window.tiptap[this.elementId].isActive('italic')
+                this.activeStates.underline = window.tiptap[this.elementId].isActive('underline')
+                this.activeStates.code = window.tiptap[this.elementId].isActive('code')
+                this.activeStates.heading_1 = window.tiptap[this.elementId].isActive('heading', {
                     level: 1
                 })
-                window.tiptap[this.elementId].isActive('heading', {
+                this.activeStates.heading_2 = window.tiptap[this.elementId].isActive('heading', {
                     level: 2
                 })
-                window.tiptap[this.elementId].isActive('heading', {
+                this.activeStates.heading_3 = window.tiptap[this.elementId].isActive('heading', {
                     level: 3
                 })
+                this.activeStates.blockquote = window.tiptap[this.elementId].isActive('blockquote')
+                this.activeStates.bulletList = window.tiptap[this.elementId].isActive('bulletList')
+                this.activeStates.orderedList = window.tiptap[this.elementId].isActive('orderedList')
+                this.activeStates.codeBlock = window.tiptap[this.elementId].isActive('codeBlock')
 
                 const href = window.tiptap[this.elementId].getAttributes('link')?.href
                 this.linkHref = href || ''
@@ -149,14 +167,14 @@
             window.tiptap[this.elementId].commands.setContent(newContent, false);
         },
         linkToggle() {
-            const sel = window.tiptap[this.elementId].tiptap.state.selection;
+            const sel = window.tiptap[this.elementId].state.selection;
             this.savedSelection = {
                 from: sel.from,
                 to: sel.to
             };
 
             // pull the latest href from selection just in case
-            const href = window.tiptap[this.elementId].tiptap.getAttributes('link')?.href
+            const href = window.tiptap[this.elementId].getAttributes('link')?.href
             this.linkHref = href || ''
             this.linkModal = !this.linkModal
 

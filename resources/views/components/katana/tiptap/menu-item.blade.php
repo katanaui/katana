@@ -10,11 +10,11 @@ if(str_starts_with($name, 'heading')){
 <button
     @click="{{ $click }}"
     @if(isset($level))
-        :class="{ 'text-black bg-black/5' : (window.tiptap && window.tiptap[elementId] && window.tiptap[elementId].isActive('heading', { level: parseInt('{{ $level }}') })), 'text-gray-700 hover:bg-black/5 hover:text-black' : !window.tiptap || !window.tiptap[elementId] || (window.tiptap && window.tiptap[elementId] && !window.tiptap[elementId].isActive('heading', { level: parseInt('{{ $level }}') })) }"
+        :class="{ 'text-black bg-black/5' : activeStates.heading_{{ $level }}, 'text-gray-700 hover:bg-black/5 hover:text-black' : !activeStates.heading_{{ $level }} }"
     @elseif($name == 'link')
         :class="{ 'text-black bg-black/5' : linkModal, 'text-gray-700 hover:bg-black/5 hover:text-black' : !linkModal }"
     @else
-        :class="{ 'text-black bg-black/5' : (window.tiptap && window.tiptap[elementId].isActive('{{ $name }}')), 'text-gray-700 hover:bg-black/5 hover:text-black' : !window.tiptap || !window.tiptap[elementId] || (window.tiptap && window.tiptap[elementId] && !window.titap[elementId].isActive('{{ $name }}')) }"
+        :class="{ 'text-black bg-black/5' : activeStates.{{ $name }}, 'text-gray-700 hover:bg-black/5 hover:text-black' : !activeStates.{{ $name }} }"
     @endif
     class="flex relative justify-center items-center w-7 h-7 rounded-md group">
     <span class="w-4 h-4"><x-dynamic-component component="tiptap.icons.{{ $name }}" /></span>
