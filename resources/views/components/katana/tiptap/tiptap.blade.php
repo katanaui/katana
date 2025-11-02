@@ -80,6 +80,7 @@
             await this.loadScript();
             console.log('inited');
             console.log(this.elementId);
+            $nextTick(() => {
             window.tiptap[this.elementId] = new tipTapEditor({
                 element: element,
                 extensions: [
@@ -97,35 +98,35 @@
                 onUpdate: ({
                     editor
                 }) => {
-                    this.content = window.tiptap[this.elementId].tiptap.getHTML()
+                    this.content = window.tiptap[this.elementId].getHTML()
                 },
             })
 
             // (2) keep Alpine state in sync with TipTap
             const updateMarks = () => {
-                this.tiptap.isActive('bold')
-                this.tiptap.isActive('italic')
-                this.tiptap.isActive('code')
-                this.tiptap.isActive('heading', {
+                window.tiptap[this.elementId].isActive('bold')
+                window.tiptap[this.elementId].isActive('italic')
+                window.tiptap[this.elementId].isActive('code')
+                window.tiptap[this.elementId].isActive('heading', {
                     level: 1
                 })
-                this.tiptap.isActive('heading', {
+                window.tiptap[this.elementId].isActive('heading', {
                     level: 2
                 })
-                this.tiptap.isActive('heading', {
+                window.tiptap[this.elementId].isActive('heading', {
                     level: 3
                 })
 
-                const href = this.tiptap.getAttributes('link')?.href
+                const href = window.tiptap[this.elementId].getAttributes('link')?.href
                 this.linkHref = href || ''
             }
-            this.tiptap.on('selectionUpdate', updateMarks)
-            this.tiptap.on('transaction', updateMarks)
-            this.tiptap.on('update', updateMarks)
+            window.tiptap[this.elementId].on('selectionUpdate', updateMarks)
+            window.tiptap[this.elementId].on('transaction', updateMarks)
+            window.tiptap[this.elementId].on('update', updateMarks)
             updateMarks() // initialize once
 
             document.getElementById(this.elementId).tiptap = window.tiptap[this.elementId];
-
+            });
             this.$watch('linkModal', (value) => {
                 if (value) {
                     setTimeout(() => {
@@ -135,27 +136,27 @@
             });
             this.$watch('content', (content) => {
                 // If the new content matches Tiptap's then we just skip.
-                if (content === this.tiptap.getHTML()) return
+                if (content === window.tiptap[this.elementId].getHTML()) return
 
                 /*
                 Otherwise, it means that an external source is modifying the data on this Alpine component, which could be Livewire itself.
                 In this case, we only need to update Tiptap's content and we're done. For more information on the `setContent()` method, see: https://www.tiptap.dev/api/commands/set-content
                 */
-                this.tiptap.commands.setContent(content, false)
+                window.tiptap[this.elementId].commands.setContent(content, false)
             })
         },
         updateContent(newContent) {
             window.tiptap[this.elementId].commands.setContent(newContent, false);
         },
         linkToggle() {
-            const sel = this.tiptap.state.selection;
+            const sel = window.tiptap[this.elementId].tiptap.state.selection;
             this.savedSelection = {
                 from: sel.from,
                 to: sel.to
             };
 
             // pull the latest href from selection just in case
-            const href = this.tiptap.getAttributes('link')?.href
+            const href = window.tiptap[this.elementId].tiptap.getAttributes('link')?.href
             this.linkHref = href || ''
             this.linkModal = !this.linkModal
 
