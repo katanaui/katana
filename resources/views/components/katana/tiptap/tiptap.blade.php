@@ -176,7 +176,10 @@
             window.tiptap[this.elementId].chain().focus().setTextSelection(this.savedSelection).unsetLink().run();
         },
         get tiptap() {
-            return window.tiptap[this.elementId];
+            if(window.tiptap && window.tiptap[this.elementId]){
+                return window.tiptap[this.elementId];
+            }
+            return {};
         }
     }" x-init="init($refs.editor)" id="{{ $id }}" class="relative min-h-[200px] w-full overflow-hidden rounded-lg border border-stone-200" @update-content="updateContent($event.detail.content)" wire:ignore {{ $attributes->whereDoesntStartWith('wire:model') }}>
     <div class="relative z-50 flex space-x-1 border-b border-stone-200/70 bg-stone-50 p-1">
