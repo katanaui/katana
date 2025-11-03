@@ -39,15 +39,18 @@ class KatanaServiceProvider extends ServiceProvider
                 __DIR__.'/../config/config.php' => config_path('katana.php'),
             ], 'config');
 
+            // Publishing compiled component JavaScript assets
+            if (config('katana.assets.publish', true)) {
+                $assetPath = config('katana.assets.path', 'katana');
+                $this->publishes([
+                    __DIR__.'/../public/katana' => public_path($assetPath),
+                ], 'katana-assets');
+            }
+
             // Publishing the views.
             /*$this->publishes([
                 __DIR__.'/../resources/views' => resource_path('views/vendor/katana'),
             ], 'views');*/
-
-            // Publishing assets.
-            /*$this->publishes([
-                __DIR__.'/../resources/assets' => public_path('vendor/katana'),
-            ], 'assets');*/
 
             // Publishing the translation files.
             /*$this->publishes([
