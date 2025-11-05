@@ -78,6 +78,7 @@
                             this.place.lat = lat ?? null;
                             this.place.lng = lng ?? null;
 
+
                             window.dispatchEvent(new CustomEvent('address_autocomplete_change', {
                                 detail: {
                                     'id' : '{{ $id }}',
@@ -85,20 +86,6 @@
                                     'long': lng
                                 }
                             }));
-
-                            const comps = {};
-                            (p.address_components || []).forEach(c => {
-                                if (c.types && c.types.length) comps[c.types[0]] = c.long_name;
-                            });
-                            this.place.components = comps;
-
-                            if (this.place.formatted) {
-                                // Update the input value directly
-                                this.$refs.input.value = this.place.formatted;
-
-                                // Trigger input event to ensure Livewire's wire:model is updated
-                                this.$refs.input.dispatchEvent(new Event('input', { bubbles: true }));
-                            }
                         });
                     },
                     }));
