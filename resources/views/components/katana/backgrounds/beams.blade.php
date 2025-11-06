@@ -1,12 +1,12 @@
 @props([
-    'beamWidth' => 2,
-    'beamHeight' => 15,
-    'beamNumber' => 12,
+    'beamWidth' => 3,
+    'beamHeight' => 30,
+    'beamCount' => 12,
     'lightColor' => '#ffffff',
     'speed' => 2,
-    'noiseIntensity' => 1.75,
+    'noiseIntensity' => 2.5,
     'scale' => 0.2,
-    'rotation' => 0,
+    'rotation' => 10,
 ])
 
 <div x-data="{
@@ -26,7 +26,7 @@
                 this.beamsInstance = window.initBeamsShader($el, {
                     beamWidth: {{ $beamWidth }},
                     beamHeight: {{ $beamHeight }},
-                    beamNumber: {{ $beamNumber }},
+                    beamCount: {{ $beamCount }},
                     lightColor: '{{ $lightColor }}',
                     speed: {{ $speed }},
                     noiseIntensity: {{ $noiseIntensity }},
@@ -131,7 +131,7 @@
                 const {
                     beamWidth = 2,
                     beamHeight = 15,
-                    beamNumber = 12,
+                    beamCount = 12,
                     lightColor = '#ffffff',
                     speed = 2,
                     noiseIntensity = 1.75,
@@ -283,7 +283,7 @@ float cnoise(vec3 P){
                     return geometry;
                 }
 
-                const geometry = createStackedPlanesBufferGeometry(beamNumber, beamWidth, beamHeight, 0, 100);
+                const geometry = createStackedPlanesBufferGeometry(beamCount, beamWidth, beamHeight, 0, 100);
 
                 // Convert hex color to RGB (normalized 0-1)
                 function hexToNormalizedRGB(hex) {

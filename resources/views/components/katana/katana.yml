@@ -54,5 +54,7 @@ components:
   Effect/Animations:
     - id: backgrounds-silk
       name: Background Silk Effect
+    - id: backgrounds-beams
+      name: Background Beam Effect
     - id: text-animations-decrypt
       name: Text Decrypt Animation

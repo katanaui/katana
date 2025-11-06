@@ -37,6 +37,10 @@
             $sizeClasses = 'px-6 py-3.5 leading-7 text-lg';
             $loaderClasses = 'size-5';
             break;
+        default:
+            $sizeClasses = 'px-3.5 py-2 leading-4 text-xs';
+            $loaderClasses = 'size-3.5';
+            break;
     }
 @endphp
 
