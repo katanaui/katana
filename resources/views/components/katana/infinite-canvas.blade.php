@@ -32,7 +32,7 @@
         scale: {{ $scale / 100 }},
         vx: 0,
         vy: 0,
-        speed: 0.3, // 👈 reduce sensitivity
+        speed: 0.5, // 👈 reduce sensitivity
         friction: 0.7,
         rafId: null,
     
