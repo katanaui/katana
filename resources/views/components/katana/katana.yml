@@ -18,8 +18,6 @@ components:
       name: Checkbox
     - id: command
       name: Command
-    - id: dialog
-      name: Dialog
     - id: drawer
       name: Drawer
     - id: dropdown
