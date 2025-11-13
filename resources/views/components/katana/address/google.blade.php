@@ -86,6 +86,12 @@
                                     'long': lng
                                 }
                             }));
+
+                            this.$refs.input.value = this.place.formatted;
+
+                            // Trigger input event to ensure Livewire's wire:model is updated
+                            this.$refs.input.dispatchEvent(new Event('input', { bubbles: true }));
+                            this.$refs.input.dispatchEvent(new Event('blur', { bubbles: true }));
                         });
                     },
                     }));
