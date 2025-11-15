@@ -18,7 +18,7 @@ props:
   - name: header
     description: Header content of the drawer. Can be provided as a prop or via the named slot `<x-slot:header>`.
     type: text
-    default: null
+    default: Drawer Title
   - name: footer
     description: Footer content of the drawer. Can be provided as a prop or via the named slot `<x-slot:footer>`.
     type: text
@@ -27,3 +27,7 @@ props:
     description: Main content of the drawer. Can be provided as a prop or via the named slot `<x-slot:content>`.
     type: text
     default: null
+slots:
+  - name: slot
+    description: The main slot of the drawer
+    default: '<x-button>Open Drawer</x-button>'
