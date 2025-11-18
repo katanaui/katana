@@ -12,7 +12,7 @@
     'flex-row' => $position === 'right' || $position === 'left',
 ])>
 
-    <div x-on:click="popoverOpen=true">
+    <div x-ref="trigger" x-on:click="popoverOpen=true">
         @if ($trigger ?? false)
             {!! $trigger !!}
         @else
@@ -22,7 +22,9 @@
         @endif
     </div>
 
-    <div class="relative w-full max-w-md">
+    <template x-teleport="body">
+
+    <div class="absolute top-0 left-0 w-full max-w-md">
         <div x-show="popoverOpen" x-on:click.away="popoverOpen=false" x-transition:enter="ease-out duration-200" x-transition:enter-start="-translate-y-2" x-transition:enter-end="translate-y-0" x-cloak @class([
             'absolute top-0 z-50 w-auto',
             'left-0' => $align === 'left',
@@ -34,4 +36,5 @@
             {{ $slot }}
         </div>
     </div>
+    </template>
 </div>

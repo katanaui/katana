@@ -58,10 +58,10 @@
             $typeClasses = 'border-transparent no-underline focus:outline-none bg-red-600 text-white' . $topHighlight;
             break;
         case 'outline':
-            $typeClasses = 'border-transparent no-underline text-stone-700 hover:bg-stone-100 border-stone-200';
+            $typeClasses = 'border-transparent no-underline text-foreground hover:bg-secondary border-foreground/10';
             break;
         case 'ghost':
-            $typeClasses = 'border-transparent no-underline text-stone-700 hover:bg-stone-100';
+            $typeClasses = 'border-transparent no-underline text-foreground hover:bg-secondary';
             break;
         case 'link':
             $typeClasses = 'border-transparent no-underline text-foreground hover:underline';
