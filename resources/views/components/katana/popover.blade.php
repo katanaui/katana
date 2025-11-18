@@ -38,9 +38,10 @@
             top -= {{ $gap * 4 }};
             transformY = 'translateY(-100%)';
         } else if ('{{ $position }}' === 'right') {
-            left += this.triggerPosition.width + {{ $gap * 4 }};
+            left += this.triggerPosition.width + {{ $gap * 4 }}; 
         } else if ('{{ $position }}' === 'left') {
             left -= {{ $gap * 4 }};
+            transformX = 'translateX(-100%)';
         }
         
         // Align based on the align prop
@@ -50,6 +51,12 @@
         } else if ('{{ $align }}' === 'right' && ('{{ $position }}' === 'top' || '{{ $position }}' === 'bottom')) {
             left += this.triggerPosition.width;
             transformX = 'translateX(-100%)';
+        } else if ('{{ $align }}' === 'center' && ('{{ $position }}' === 'right' || '{{ $position }}' === 'left')) {
+            top += (this.triggerPosition.height / 2);
+            transformY = 'translateY(-50%)';
+        } else if ('{{ $align }}' === 'bottom' && ('{{ $position }}' === 'right' || '{{ $position }}' === 'left')) {
+            top += this.triggerPosition.height;
+            transformY = 'translateY(-100%)';
         }
         
         // Combine transforms
@@ -60,10 +67,8 @@
            transformOrigin = 'top left';
         } else if ('{{ $position }}' === 'top') {
             transformOrigin = 'bottom left';
-        } else if ('{{ $position }}' === 'right') {
-            transformOrigin = 'center left';
-        } else if ('{{ $position }}' === 'left') {
-            transformOrigin = 'center right';
+        } else if ('{{ $position }}' === 'right' || '{{ $position }}' === 'left') {
+            transformOrigin = 'bottom left';
         }
         
         return {
