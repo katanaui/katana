@@ -6,13 +6,65 @@
 
 <div x-data="{
     popoverOpen: false,
-}" @class([
+    triggerPosition: { top: 0, left: 0, width: 0, height: 0 },
+    
+    calculateTriggerPosition() {
+        const triggerRect = this.$refs.trigger.getBoundingClientRect();
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+        
+        this.triggerPosition = {
+            top: triggerRect.top + scrollTop,
+            left: triggerRect.left + scrollLeft,
+            width: triggerRect.width,
+            height: triggerRect.height
+        };
+    },
+    
+    getPopoverStyles() {
+        let top = this.triggerPosition.top;
+        let left = this.triggerPosition.left;
+        
+        // Position based on the position prop
+        if ('{{ $position }}' === 'bottom') {
+            top += this.triggerPosition.height + {{ $gap * 4 }}; // Convert gap to pixels (gap * 4px)
+        } else if ('{{ $position }}' === 'top') {
+            top -= {{ $gap * 4 }};
+        } else if ('{{ $position }}' === 'right') {
+            left += this.triggerPosition.width + {{ $gap * 4 }};
+        } else if ('{{ $position }}' === 'left') {
+            left -= {{ $gap * 4 }};
+        }
+        
+        // Align based on the align prop
+        if ('{{ $align }}' === 'center' && ('{{ $position }}' === 'top' || '{{ $position }}' === 'bottom')) {
+            left += (this.triggerPosition.width / 2);
+        } else if ('{{ $align }}' === 'right' && ('{{ $position }}' === 'top' || '{{ $position }}' === 'bottom')) {
+            left += this.triggerPosition.width;
+        }
+        
+        return {
+            position: 'absolute',
+            top: top + 'px',
+            left: left + 'px',
+            zIndex: 50
+        };
+    },
+    
+    openPopover() {
+        this.calculateTriggerPosition();
+        this.popoverOpen = true;
+    }
+}" 
+@resize.window="if (popoverOpen) calculateTriggerPosition()"
+@scroll.window="if (popoverOpen) calculateTriggerPosition()"
+@class([
     'relative w-auto items-start inline-flex',
     'flex-col' => $position === 'bottom' || $position === 'top',
     'flex-row' => $position === 'right' || $position === 'left',
 ])>
 
-    <div x-ref="trigger" x-on:click="popoverOpen=true">
+    <div x-ref="trigger" x-on:click="openPopover()">
         @if ($trigger ?? false)
             {!! $trigger !!}
         @else
@@ -23,18 +75,20 @@
     </div>
 
     <template x-teleport="body">
-
-    <div class="absolute top-0 left-0 w-full max-w-md">
-        <div x-show="popoverOpen" x-on:click.away="popoverOpen=false" x-transition:enter="ease-out duration-200" x-transition:enter-start="-translate-y-2" x-transition:enter-end="translate-y-0" x-cloak @class([
-            'absolute top-0 z-50 w-auto',
-            'left-0' => $align === 'left',
-            'right-0' => $align === 'right',
-            'left-1/2 -translate-x-1/2' => $align === 'center',
-            'bottom-0' => $position === 'bottom',
-            'top-0' => $position === 'top',
-        ])>
+        <div
+            x-show="popoverOpen"
+            x-on:click.away="popoverOpen=false"
+            x-transition:enter="ease-out duration-200"
+            x-transition:enter-start="opacity-0 -translate-y-2"
+            x-transition:enter-end="opacity-100 translate-y-0"
+            x-transition:leave="ease-in duration-150"
+            x-transition:leave-start="opacity-100 translate-y-0"
+            x-transition:leave-end="opacity-0 -translate-y-2"
+            :style="getPopoverStyles()"
+            x-cloak
+            class="w-auto max-w-sm"
+        >
             {{ $slot }}
         </div>
-    </div>
     </template>
 </div>
