@@ -24,12 +24,19 @@
     getPopoverStyles() {
         let top = this.triggerPosition.top;
         let left = this.triggerPosition.left;
+        let transform = '';
+        let transformOrigin = '';
+        
+        // Build transform components
+        let transformX = '';
+        let transformY = '';
         
         // Position based on the position prop
         if ('{{ $position }}' === 'bottom') {
             top += this.triggerPosition.height + {{ $gap * 4 }}; // Convert gap to pixels (gap * 4px)
         } else if ('{{ $position }}' === 'top') {
             top -= {{ $gap * 4 }};
+            transformY = 'translateY(-100%)';
         } else if ('{{ $position }}' === 'right') {
             left += this.triggerPosition.width + {{ $gap * 4 }};
         } else if ('{{ $position }}' === 'left') {
@@ -39,14 +46,32 @@
         // Align based on the align prop
         if ('{{ $align }}' === 'center' && ('{{ $position }}' === 'top' || '{{ $position }}' === 'bottom')) {
             left += (this.triggerPosition.width / 2);
+            transformX = 'translateX(-50%)';
         } else if ('{{ $align }}' === 'right' && ('{{ $position }}' === 'top' || '{{ $position }}' === 'bottom')) {
             left += this.triggerPosition.width;
+            transformX = 'translateX(-100%)';
+        }
+        
+        // Combine transforms
+        transform = [transformX, transformY].filter(t => t).join(' ');
+        
+        // Set transform origin based on position and alignment
+        if ('{{ $position }}' === 'bottom') {
+           transformOrigin = 'top left';
+        } else if ('{{ $position }}' === 'top') {
+            transformOrigin = 'bottom left';
+        } else if ('{{ $position }}' === 'right') {
+            transformOrigin = 'center left';
+        } else if ('{{ $position }}' === 'left') {
+            transformOrigin = 'center right';
         }
         
         return {
             position: 'absolute',
             top: top + 'px',
             left: left + 'px',
+            transform: transform,
+            transformOrigin: transformOrigin,
             zIndex: 50
         };
     },
@@ -79,11 +104,11 @@
             x-show="popoverOpen"
             x-on:click.away="popoverOpen=false"
             x-transition:enter="ease-out duration-200"
-            x-transition:enter-start="opacity-0 -translate-y-2"
-            x-transition:enter-end="opacity-100 translate-y-0"
+            x-transition:enter-start="opacity-0 -translate-y-2 scale-95"
+            x-transition:enter-end="opacity-100 translate-y-0 scale-100"
             x-transition:leave="ease-in duration-150"
-            x-transition:leave-start="opacity-100 translate-y-0"
-            x-transition:leave-end="opacity-0 -translate-y-2"
+            x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+            x-transition:leave-end="opacity-0 -translate-y-2 scale-95"
             :style="getPopoverStyles()"
             x-cloak
             class="w-auto max-w-sm"
