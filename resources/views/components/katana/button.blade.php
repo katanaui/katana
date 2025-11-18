@@ -10,35 +10,35 @@
 @php
     switch ($size ?? 'md') {
         case 'xs':
-            $sizeClasses = 'px-2.5 py-1 leading-4 text-[11px]';
+            $sizeClasses = 'px-2.5 py-1 leading-4 text-[11px] rounded';
             $loaderClasses = 'size-3';
             break;
         case 'sm':
-            $sizeClasses = 'px-3 py-1.5 leading-4 text-xs';
+            $sizeClasses = 'px-3 py-1.5 leading-4 text-xs rounded';
             $loaderClasses = 'size-3';
             break;
         case 'md':
-            $sizeClasses = 'px-3.5 py-2 leading-4 text-xs';
+            $sizeClasses = 'px-3.5 py-2 leading-4 text-xs rounded';
             $loaderClasses = 'size-3.5';
             break;
         case 'lg':
-            $sizeClasses = 'px-4 py-2.5 leading-5 text-sm';
+            $sizeClasses = 'px-4 py-2.5 leading-5 text-sm rounded';
             $loaderClasses = 'size-4';
             break;
         case 'xl':
-            $sizeClasses = 'px-5 py-2.5 leading-6 text-base';
+            $sizeClasses = 'px-5 py-2.5 leading-6 text-base rounded-medium';
             $loaderClasses = 'size-4';
             break;
         case '2xl':
-            $sizeClasses = 'px-6 py-3 leading-6 text-base';
+            $sizeClasses = 'px-6 py-3 leading-6 text-base rounded-medium';
             $loaderClasses = 'size-5';
             break;
         case '3xl':
-            $sizeClasses = 'px-6 py-3.5 leading-7 text-lg';
+            $sizeClasses = 'px-6 py-3.5 leading-7 text-lg rounded-large';
             $loaderClasses = 'size-5';
             break;
         default:
-            $sizeClasses = 'px-3.5 py-2 leading-4 text-xs';
+            $sizeClasses = 'px-3.5 py-2 leading-4 text-xs rounded-large';
             $loaderClasses = 'size-3.5';
             break;
     }
@@ -58,7 +58,7 @@
             $typeClasses = 'border-transparent no-underline focus:outline-none bg-red-600 text-white' . $topHighlight;
             break;
         case 'outline':
-            $typeClasses = 'border-transparent no-underline text-foreground hover:bg-secondary border-foreground/15';
+            $typeClasses = 'border-transparent no-underline text-foreground hover:bg-secondary border-foreground/10 dark:border-foreground/15';
             break;
         case 'ghost':
             $typeClasses = 'border-transparent no-underline text-foreground hover:bg-secondary';
@@ -94,7 +94,7 @@
     }
 @endphp
 
-<{!! $typeAttr !!} {{ $attributes->twMerge($sizeClasses . ' ' . $typeClasses . ' cursor-pointer border inline-flex rounded-[var(--radius)] items-center justify-center items-center font-medium focus:outline-none') }}>
+<{!! $typeAttr !!} {{ $attributes->twMerge($sizeClasses . ' ' . $typeClasses . ' cursor-pointer border inline-flex items-center justify-center items-center font-medium focus:outline-none') }}>
     @if ($loading ?? false)
         <span class="flex absolute justify-center items-center w-full h-full"><svg xmlns="http://www.w3.org/2000/svg" class="{{ $loaderClasses }} animate-spin" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
