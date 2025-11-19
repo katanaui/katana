@@ -1,3 +1,4 @@
+console.log('running once');
 class KatanaTooltipComponent extends HTMLElement {
     connectedCallback() {
         // Make sure content is preserved
