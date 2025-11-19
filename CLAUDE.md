@@ -33,7 +33,7 @@ npm install
 npm run build
 
 # Watch for changes during development (non-minified with sourcemaps)
-npm watch
+npm run dev
 ```
 
 Build output goes to `public/katana/` (git-ignored). When the package is installed in a Laravel app, these assets can be published:
