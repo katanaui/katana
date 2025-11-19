@@ -7,6 +7,16 @@
 <div x-data="{
     popoverOpen: false,
     triggerPosition: { top: 0, left: 0, width: 0, height: 0 },
+
+    init() {
+        // When popoverOpen becomes true (no matter who changed it),
+        // recalculate the trigger position.
+        this.$watch('popoverOpen', value => {
+            if (value) {
+                this.calculateTriggerPosition();
+            }
+        });
+    },
     
     calculateTriggerPosition() {
         const triggerRect = this.$refs.trigger.getBoundingClientRect();
@@ -82,17 +92,19 @@
     },
     
     openPopover() {
-        this.calculateTriggerPosition();
         this.popoverOpen = true;
     }
-}" 
+}"
+x-modelable="popoverOpen"
 @resize.window="if (popoverOpen) calculateTriggerPosition()"
 @scroll.window="if (popoverOpen) calculateTriggerPosition()"
 @class([
     'relative w-auto items-start inline-flex',
     'flex-col' => $position === 'bottom' || $position === 'top',
     'flex-row' => $position === 'right' || $position === 'left',
-])>
+])
+
+{{ $attributes }}>
 
     <div x-ref="trigger" x-on:click="openPopover()">
         @if ($trigger ?? false)
