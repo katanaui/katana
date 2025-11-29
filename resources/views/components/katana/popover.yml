@@ -1,1 +1,16 @@
 component: Popover
+props:
+  - name: position
+    description: Position of the popover relative to the trigger element
+    type: string
+    default: bottom
+    options: [bottom, top, left, right]
+  - name: align
+    description: Alignment of the popover relative to the trigger element
+    type: string
+    default: left
+    options: [left, right, top, bottom, center]
+  - name: gap
+    description: Space between the trigger and the popover element
+    type: string
+    default: "2"

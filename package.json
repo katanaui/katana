@@ -4,7 +4,7 @@
   "description": "Build system for KatanaUI component JavaScript files",
   "scripts": {
     "build": "NODE_ENV=production node esbuild.config.js",
-    "watch": "node esbuild.config.js --watch"
+    "dev": "node esbuild.config.js --watch"
   },
   "dependencies": {
     "@tiptap/core": "^2.0.0",

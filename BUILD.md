@@ -39,7 +39,7 @@ This creates minified JavaScript files in `public/katana/`:
 ### Development Build (With Sourcemaps)
 
 ```bash
-npm watch
+npm run dev
 ```
 
 This watches for changes and rebuilds when files change:
@@ -226,7 +226,7 @@ The build configuration is defined in `esbuild.config.js`:
 ```
 
 - `npm run build` - Production build (minified, no sourcemaps)
-- `npm watch` - Development watch mode (sourcemaps, non-minified)
+- `npm run dev` - Development watch mode (sourcemaps, non-minified)
 
 ## Troubleshooting
 
@@ -240,7 +240,7 @@ npm install
 
 ### Source Maps Not Working
 
-Ensure you're using `npm watch` instead of `npm run build`. Production builds intentionally exclude sourcemaps.
+Ensure you're using `npm run dev` instead of `npm run build`. Production builds intentionally exclude sourcemaps.
 
 ### Changes Not Reflecting
 
@@ -315,4 +315,4 @@ A: Currently, the dependency is bundled in both files, causing duplication. This
 A: Yes, with additional configuration. TypeScript files would need to be transpiled before esbuild processes them.
 
 **Q: How do I debug minified code?**
-A: Use sourcemaps with `npm watch`. Sourcemaps map minified code back to original source for debugging.
+A: Use sourcemaps with `npm run dev`. Sourcemaps map minified code back to original source for debugging.
