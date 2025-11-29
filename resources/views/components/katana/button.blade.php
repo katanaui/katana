@@ -45,8 +45,9 @@
 @endphp
 
 @php
-    $topHighlight = ' inset-shadow-xs inset-shadow-white/20';
-    $defaultClasses = 'border-transparent no-underline focus:outline-none bg-primary text-primary-foreground select-none';
+    $topHighlight = ' shadow-[inset_0_1px_1px_0_rgba(255,255,255,0.3),inset_0_-1px_1px_0_rgba(0,0,0,0.3)]';
+
+    $defaultClasses = 'border-transparent no-underline focus:outline-none bg-linear-to-b from-primary/90 via-primary/90 to-primary  text-primary-foreground select-none';
     switch ($variant ?? 'primary') {
         case 'primary':
             $typeClasses = $defaultClasses . $topHighlight;
