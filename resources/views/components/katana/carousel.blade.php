@@ -8,7 +8,7 @@
     'showProgress' => true,
 ])
 
-<div class="w-full h-full mb-5 rounded-xl overflow-hidden">
+<div class="w-full h-full rounded-xl overflow-hidden">
     @php
         // If items is empty, try to get from slot content or default structure
         if (empty($items) && isset($block)) {
@@ -130,8 +130,8 @@
                             <div class="flex items-center px-1 space-x-1">
                                 @if($showProgress)
                                     <div :id="'progress-' + index" 
-                                        class="w-3 h-3 translate-x-1.5 rounded-full item-progress opacity-80" 
-                                        :style="'background:conic-gradient(white ' + percent + '%, rgba(255, 255, 255, 0.4) 0);'">
+                                        class="w-3 h-3 translate-x-1.5 rounded-full item-progress opacity-80 transition-all duration-100 ease-linear" 
+                                        :style="'background:conic-gradient(rgba(255, 255, 255, 0.4) ' + percent + '%, rgba(255, 255, 255, 1) 0);'">
                                     </div>
                                 @endif
                                 <p x-text="item.title" class="flex items-center h-full px-2.5 text-xs font-medium"></p>
