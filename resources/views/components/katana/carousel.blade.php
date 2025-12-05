@@ -1,6 +1,6 @@
 @props([
     'items' => [],
-    'height' => 'h-[380px] lg:h-[500px] 2xl:h-[700px]',
+    'height' => 'h-[380px] lg:h-[500px] max-[1400px]:h-[700px]',
     'autoPlay' => true,
     'autoPlayTimeout' => 4000,
     'gap' => 'md:gap-5',
