@@ -44,7 +44,7 @@
 
     @if(!$hideCheckbox)
         <span @if(!$clickable && !$disabled) @click="$refs.checkbox.checked = !$refs.checkbox.checked; $refs.checkbox.dispatchEvent(new Event('change')); $refs.checkbox.focus()" @endif 
-            {{ $attributes->twMergeFor('checkbox', 'w-5 h-5 border border-gray-300 bg-background rounded-md flex items-center justify-center transition group-data-checked:border-primary group-data-checked:bg-primary peer-disabled:opacity-60 peer-focus:ring-2 peer-focus:ring-primary/20') }}>
+            {{ $attributes->twMergeFor('checkbox', 'w-5 h-5 border flex-shrink-0 border-gray-300 bg-background rounded-md flex items-center justify-center transition group-data-checked:border-primary group-data-checked:bg-primary peer-disabled:opacity-60 peer-focus:ring-2 peer-focus:ring-primary/20') }}>
             @if($icon)
                 <x-dynamic-component :component="$icon" {{ $attributes->twMergeFor('checkmark', 'w-3.5 h-3.5 stroke-current duration-150 text-primary-foreground ease group-data-checked:opacity-100 opacity-0 group-data-checked:scale-100 scale-50') }} />
             @else
@@ -63,11 +63,11 @@
             @if($label)
                 <{!! $innerLabelAttribute !!} {{ $attributes->twMergeFor('label', 'text-sm font-medium select-none text-gray-900') }}>
                     {{ $label }}
-                </{!! $innerLabelAttribute !!}
+                </{!! $innerLabelAttribute !!}>
             @endif
 
             @if($description)
-                <span class="{{ $attributes->twMergeFor('description', 'text-sm text-gray-500') }}">
+                <span {{ $attributes->twMergeFor('description', 'text-sm text-gray-500') }}">
                     {{ $description }}
                 </span>
             @endif
