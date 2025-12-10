@@ -23,7 +23,7 @@
                     if (this.toastsProgress[id] < 100) {
                         toast.rafId = requestAnimationFrame(animate);
                     } else {
-                        {{-- this.removeToast(id); --}}
+                        this.removeToast(id);
                     }
                     this.toasts = [...this.toasts];
                 };
