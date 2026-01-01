@@ -106,6 +106,7 @@
                             rel: 'noopener noreferrer nofollow'
                         },
                     }),
+                    tipTapUnderline,
                 ],
                 content: this.content,
                 onUpdate: ({
