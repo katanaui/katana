@@ -213,6 +213,6 @@
             @endif
         @endforeach
     </div>
-    <div x-ref="editor" class="prose prose-sm sm:prose-base lg:prose-md h-[200px] min-h-[200px] w-full overflow-scroll"></div>
+    <div x-ref="editor" class="prose prose-sm sm:prose-base lg:prose-md lg:max-w-full sm:max-w-full max-w-full h-[200px] min-h-[200px] w-full overflow-scroll"></div>
     <x-katana.tiptap.modals.link :elementId="$id" />
 </div>
