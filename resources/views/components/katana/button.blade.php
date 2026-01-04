@@ -47,22 +47,22 @@
 @php
     $topHighlight = ' shadow-[inset_0_1px_1px_0_rgba(255,255,255,0.3),inset_0_-1px_1px_0_rgba(0,0,0,0.3)]';
 
-    $defaultClasses = 'border-transparent no-underline focus:outline-none bg-linear-to-b from-primary/90 via-primary/90 to-primary  text-primary-foreground select-none';
+    $defaultClasses = 'border-transparent no-underline bg-linear-to-b from-primary/90 via-primary/90 to-primary text-primary-foreground select-none focus-visible:ring-2 focus-visible:ring-primary/10 focus-visible:ring-offset-2 focus-visible:ring-offset-background';
     switch ($variant ?? 'primary') {
         case 'primary':
             $typeClasses = $defaultClasses . $topHighlight;
             break;
         case 'secondary':
-            $typeClasses = 'border-transparent no-underline text-secondary-foreground bg-secondary';
+            $typeClasses = 'border-transparent no-underline text-secondary-foreground bg-secondary focus-visible:ring-2 focus-visible:ring-secondary/90 focus-visible:ring-offset-2 focus-visible:ring-offset-background';
             break;
         case 'destructive':
-            $typeClasses = 'border-transparent no-underline focus:outline-none bg-red-600 text-white' . $topHighlight;
+            $typeClasses = 'border-transparent no-underline bg-red-600 focus-visible:ring-2 focus-visible:ring-red-100 focus-visible:ring-offset-2 focus-visible:ring-offset-background text-white' . $topHighlight;
             break;
         case 'outline':
-            $typeClasses = 'border-transparent no-underline text-foreground hover:bg-secondary border-foreground/10 dark:border-foreground/15';
+            $typeClasses = 'border-transparent no-underline text-foreground hover:bg-secondary border-foreground/10 dark:border-foreground/15 focus-visible:ring-2 focus-visible:ring-secondary/90 focus-visible:ring-offset-2 focus-visible:ring-offset-background';
             break;
         case 'ghost':
-            $typeClasses = 'border-transparent no-underline text-foreground hover:bg-secondary';
+            $typeClasses = 'border-transparent no-underline text-foreground hover:bg-secondary focus-visible:ring-2 focus-visible:ring-secondary/90 focus-visible:ring-offset-2 focus-visible:ring-offset-background';
             break;
         case 'link':
             $typeClasses = 'border-transparent no-underline text-foreground hover:underline';
@@ -95,7 +95,7 @@
     }
 @endphp
 
-<{!! $typeAttr !!} {{ $attributes->twMerge($sizeClasses . ' ' . $typeClasses . ' cursor-pointer border inline-flex items-center justify-center items-center font-medium focus:outline-none') }}>
+<{!! $typeAttr !!} {{ $attributes->twMerge($sizeClasses . ' ' . $typeClasses . ' cursor-pointer border inline-flex items-center justify-center items-center font-medium focus-visible:outline-none') }}>
     @if ($loading ?? false)
         <span class="flex absolute justify-center items-center w-full h-full"><svg xmlns="http://www.w3.org/2000/svg" class="{{ $loaderClasses }} animate-spin" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
