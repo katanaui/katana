@@ -90,7 +90,7 @@
                     const secs = Math.floor(seconds % 60);
                     return `${mins}:${secs.toString().padStart(2, '0')}`;
                 }
-            }" @click.stop="" {{ $attributes->twMerge('flex items-center pr-4 pl-1.5 w-full h-14 shrink-0 bg-linear-to-b from-white border rounded-md border-gray-200 to-stone-50') }}>
+            }" @click.stop="" {{ $attributes->twMerge('flex items-center pr-4 pl-1.5 w-full h-14 shrink-0 bg-background border rounded border-accent') }}>
     <!-- Hidden audio element -->
     <audio 
         x-ref="audio" 
@@ -106,8 +106,8 @@
         <!-- Rewind 15 seconds button -->
         <button 
             @click="rewind(15)"
-            class="flex relative justify-center items-center w-10 h-10 rounded-full transition-colors group hover:bg-gray-100">
-            <svg class="w-8 h-8 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256"><path fill="none" d="M0 0h256v256H0z"/><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" d="M24 56v48h48"/><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" d="M67.59 192a88 88 0 1 0-1.82-126.23L24 104"/></svg>
+            class="flex relative justify-center items-center w-10 h-10 rounded-full transition-colors group hover:bg-accent/50">
+            <svg class="w-8 h-8 text-foreground/50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256"><path fill="none" d="M0 0h256v256H0z"/><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" d="M24 56v48h48"/><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" d="M67.59 192a88 88 0 1 0-1.82-126.23L24 104"/></svg>
             <span class="absolute font-medium text-gray-500 text-[10px]" style="top: 50%; left: 50%; transform: translate(-50%, -50%);">15</span>
         </button>
         
@@ -115,7 +115,7 @@
 
         <button 
             @click="togglePlay"
-            class="flex justify-center items-center w-10 h-10 text-white bg-black rounded-full transition-colors">
+            class="flex justify-center items-center w-10 h-10 text-background bg-foreground rounded-full transition-colors">
             <!-- Play icon -->
             <svg x-show="!isPlaying" class="w-5 h-5 translate-x-px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style=""><path d="M8.42737 3.41611C6.46665 2.24586 4.00008 3.67188 4.00007 5.9427L4 18.0572C3.99999 20.329 6.46837 21.7549 8.42907 20.5828L18.5698 14.5207C20.4775 13.3802 20.4766 10.6076 18.568 9.46853L8.42737 3.41611Z" fill="currentColor"></path></svg>
             <!-- Pause icon -->
@@ -125,8 +125,8 @@
         <!-- Forward 15 seconds button -->
         <button 
             @click="forward(15)"
-            class="flex relative justify-center items-center w-10 h-10 rounded-full transition-colors group hover:bg-gray-100">
-            <svg class="w-8 h-8 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256"><path fill="none" d="M0 0h256v256H0z"/><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" d="M184 104h48V56"/><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" d="M188.4 192a88 88 0 1 1 1.83-126.23L232 104"/></svg>
+            class="flex relative justify-center items-center w-10 h-10 rounded-full transition-colors group hover:bg-accent/50">
+            <svg class="w-8 h-8 text-foreground/50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256"><path fill="none" d="M0 0h256v256H0z"/><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" d="M184 104h48V56"/><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" d="M188.4 192a88 88 0 1 1 1.83-126.23L232 104"/></svg>
             <span class="absolute font-medium text-gray-500 text-[10px]" style="top: 50%; left: 50%; transform: translate(-50%, -50%);">15</span>
         </button>
         
@@ -136,22 +136,22 @@
             <div class="relative flex-1">
                 <div 
                     @click="seek($event)"
-                    class="relative h-2 bg-gray-200 rounded-full cursor-pointer group">
+                    class="relative h-2 bg-foreground/15 rounded-full cursor-pointer group">
                     <!-- Progress fill -->
                     <div 
-                        class="absolute h-full bg-black rounded-full transition-all duration-1000 ease-out"
+                        class="absolute h-full bg-foreground/80 rounded-full transition-all duration-1000 ease-out"
                         :style="`width: ${progress}%`">
                     </div>
                     <!-- Scrubber handle -->
                     <div 
-                        class="absolute -top-1 w-4 h-4 bg-black rounded-full shadow-md transition-all duration-1000 ease-out"
+                        class="absolute -top-1 w-4 h-4 bg-foreground rounded-full shadow-md transition-all duration-1000 ease-out"
                         :style="`left: calc(${progress}% - 8px)`">
                     </div>
                 </div>
             </div>
             
             <!-- Time display -->
-            <div class="text-sm font-medium text-gray-600 whitespace-nowrap">
+            <div class="text-sm font-medium text-foreground/60 whitespace-nowrap">
                 <span x-text="formatTime(currentTime)">0:00</span>
                 <span class="mx-1">/</span>
                 <span x-text="formatTime(duration)">0:00</span>
