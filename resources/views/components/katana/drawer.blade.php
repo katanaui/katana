@@ -4,7 +4,8 @@
     'open' => false,
     'header' => null,
     'footer' => null,
-    'content' => null
+    'content' => null,
+    'zIndex' => '50'
 ])
 
 @php
@@ -47,7 +48,7 @@
     <div @click="open = true;">{{ $slot ?? 'Open drawer' }}</div>
 
     <template x-teleport="body">
-        <div x-show="open" class="fixed inset-0 z-50 w-screen h-screen">
+        <div x-show="open" class="fixed inset-0 w-screen h-screen" data-poopstick style="z-index: {{ $zIndex }}"> 
             <!-- Backdrop -->
             <div 
                 x-show="open"
@@ -84,7 +85,7 @@
                     @close-drawer.window="console.log('gotit'); if($event.detail.id === $el.id) open=false"
                     class="{{ $classes }}" {{ $attributes->only('id') }}>
                     @if($header ?? false)
-                        <div class="flex absolute font-semibold top-0 z-50 shrink-0 items-center px-5 w-full h-16 backdrop-blur-sm text-foreground sm:px-6 sm:rounded-t-xl bg-background/90">
+                        <div {{ $attributes->twMergeFor('header', 'flex absolute font-semibold top-0 z-50 shrink-0 items-center px-5 w-full h-16 backdrop-blur-sm text-foreground sm:px-6 sm:rounded-t-xl bg-background/90') }}>
                             {{ $header }}
                         </div>
                     @endif
@@ -110,7 +111,7 @@
                     </div>
                     
                     @if($footer ?? false)
-                        <div class="flex absolute bottom-0 z-999999 shrink-0 justify-between items-center px-5 w-full h-20 border-t border-gray-100 backdrop-blur-sm sm:px-8 sm:rounded-b-xl bg-white/70">
+                        <div {{ $attributes->twMergeFor('footer', 'flex absolute bottom-0 z-999999 shrink-0 justify-end gap-2 items-center px-5 w-full h-20 border-t border-accent backdrop-blur-sm sm:px-8 sm:rounded-b-xl bg-background/70') }}>
                             {{ $footer }}
                         </div>
                     @endif
