@@ -6,6 +6,7 @@
     'gap' => 'md:gap-5',
     'showControls' => true,
     'showProgress' => true,
+    'delay' => 1,
 ])
 
 <div class="w-full h-full rounded-xl overflow-hidden">
@@ -85,7 +86,7 @@
                     document.getElementById('progress-' + activeIndex).dispatchEvent(new CustomEvent('play'));
                 }
                 if(autoPlay) play();
-            }, 1);
+            }, {{  $delay }});
 
             $watch('percent', (value) => {
                 if(value >= 100){
