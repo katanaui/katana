@@ -35,5 +35,13 @@ return [
          */
         'path' => 'katana',
     ],
+    'globals' => [
+        /*
+         * Enable global helper functions like toast().
+         * Set to false if you prefer to use your own implementations
+         * or want to avoid potential naming conflicts.
+         */
+        'enabled' => true,
+    ],
 
 ];

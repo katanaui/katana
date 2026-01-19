@@ -1,0 +1,60 @@
+component: RotatingBorder
+props:
+  - name: color
+    description: The primary border color (hex value)
+    type: text
+    default: '#75a522'
+  - name: colorDark
+    description: The border color for dark mode (falls back to color if not set)
+    type: text
+    default: ''
+  - name: onHover
+    description: Only animate when hovered
+    type: boolean
+    default: false
+  - name: infinite
+    description: Loop animation infinitely (false plays once with fade in/out)
+    type: boolean
+    default: true
+  - name: duration
+    description: Animation duration in seconds
+    type: number
+    default: 3
+  - name: rounded
+    description: Border radius Tailwind class
+    type: select
+    default: rounded-2xl
+    options:
+      - rounded
+      - rounded-md
+      - rounded-lg
+      - rounded-xl
+      - rounded-2xl
+      - rounded-3xl
+      - rounded-full
+  - name: borderWidth
+    description: Border thickness
+    type: select
+    default: 1px
+    options:
+      - 1px
+      - 2px
+      - 3px
+      - 4px
+  - name: autoplay
+    description: Start animation automatically on load
+    type: boolean
+    default: true
+slots:
+  - name: slot
+    description: The content to wrap with the rotating border
+    default: ''
+methods:
+  - name: play
+    description: Start infinite animation
+  - name: playOnce
+    description: Play single loop with fade in/out
+  - name: stop
+    description: Stop and hide the border animation
+  - name: toggle
+    description: Toggle animation on/off

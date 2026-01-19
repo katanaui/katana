@@ -70,6 +70,11 @@ class KatanaServiceProvider extends ServiceProvider
         // Automatically apply the package configuration
         $this->mergeConfigFrom(__DIR__.'/../config/config.php', 'katana');
 
+        // Load global helper functions if enabled
+        if (config('katana.globals.enabled', true)) {
+            require_once __DIR__.'/helpers.php';
+        }
+
         // Register the main class to use with the facade
         $this->app->singleton('katana', function () {
             return new Katana;

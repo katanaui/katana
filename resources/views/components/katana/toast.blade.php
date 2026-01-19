@@ -4,7 +4,7 @@
             toasts: [],
             toastsProgress: [],
             toast: @js(session('toast')),
-            type: ['success', 'error', 'warning', 'info'],
+            type: ['success', 'error', 'warning', 'info', 'blank'],
             closeInterval: 5000,
             addToast(message, type, description = '') {
                 const id = Date.now() + Math.random();
@@ -94,17 +94,17 @@
                 <div :id="'katana-toast-' + toast.id" x-data popover="manual"
                     @mouseenter="pauseToast(toast.id)"
                     @mouseleave="resumeToast(toast.id)"
-                    class="flex overflow-hidden relative top-0 pointer-events-auto left-1/2 -translate-x-1/2 flex-col items-start p-3.5 px-5 w-full max-w-sm text-sm text-white rounded-2xl opacity-100 duration-300 ease-out translate-y-0 starting:opacity-0 starting:-translate-y-full ending:-translate-y-full ending:opacity-0 backdrop-blur-xs group bg-black/60"
+                    class="flex overflow-hidden relative top-0 pointer-events-auto left-1/2 -translate-x-1/2 flex-col items-start p-3.5 px-5 w-full max-w-sm text-sm text-white rounded-2xl opacity-100 duration-300 ease-out translate-y-0 starting:opacity-0 starting:-translate-y-full ending:-translate-y-full ending:opacity-0 backdrop-blur-xs group bg-black/60 dark:border dark:border-accent"
                     role="alert">
                     <!-- Progress Bar -->
-                    <div class="absolute inset-0 z-10 h-full duration-300 ease-linear bg-black/70"
+                    <div class="absolute inset-0 z-10 h-full duration-300 ease-linear bg-black/70 dark:bg-white/10"
                         :style="`width: ${toastsProgress[toast.id]}%;`"></div>
                     <span class="flex relative z-20 items-start space-x-2 w-full">
                         <span x-show="toast.type" :class="'w-5 h-5 -ml-1.5 shrink-0 ' + types[toast.type].colorClass"
                             x-html="icons[types[toast.type].icon]"></span>
                         <span x-text="toast.message"></span>
                         <span x-on:click="removeToast(toast.id)"
-                            class="flex absolute right-0 top-1/2 justify-center items-center translate-x-1.5 w-6 h-6 rounded-lg opacity-0 duration-100 ease-out scale-50 -translate-y-1/2 cursor-pointer group-hover:scale-100 group-hover:opacity-50 group-hover:hover:opacity-100 group-hover:text-white hover:opacity-100 bg-black/50"
+                            class="flex absolute right-0 top-1/2 justify-center items-center translate-x-1.5 w-6 h-6 rounded-lg opacity-0 duration-100 ease-out scale-50 -translate-y-1/2 cursor-pointer group-hover:scale-100 group-hover:opacity-50 group-hover:hover:opacity-100 group-hover:text-white hover:opacity-100 bg-black/50 hover:dark:bg-white/10"
                             :class="{ '-mt-1 -mr-1': toast.description != '' }">
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none"
                                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
