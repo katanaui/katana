@@ -1,5 +1,5 @@
 <template x-teleport="body">
-    <div {{ $attributes->twMerge('fixed top-0 px-2 pointer-events-none pb-4 left-1/2 -translate-x-1/2 w-screen h-auto max-w-sm z-[99999999]') }}
+    <div {{ $attributes->twMerge('fixed top-0 sm:px-2 px-1 pointer-events-none pb-4 left-1/2 -translate-x-1/2 w-screen h-auto sm:max-w-sm z-[99999999]') }}
         x-data="{
             toasts: [],
             toastsProgress: [],
@@ -89,12 +89,12 @@
         x-transition:leave="transition ease-in-out duration-300" 
         x-transition:leave-start="opacity-100"
         x-transition:leave-end="opacity-0" x-cloak>
-        <div class="mt-2 space-y-2">
+        <div class="mt-1 sm:mt-2 space-y-1 sm:space-y-2">
             <template x-for="toast in toasts" :key="toast.id">
                 <div :id="'katana-toast-' + toast.id" x-data popover="manual"
                     @mouseenter="pauseToast(toast.id)"
                     @mouseleave="resumeToast(toast.id)"
-                    class="flex overflow-hidden relative top-0 pointer-events-auto left-1/2 -translate-x-1/2 flex-col items-start p-3.5 px-5 w-full max-w-sm text-sm text-white rounded-2xl opacity-100 duration-300 ease-out translate-y-0 starting:opacity-0 starting:-translate-y-full ending:-translate-y-full ending:opacity-0 backdrop-blur-xs group bg-black/60 dark:border dark:border-accent"
+                    class="flex overflow-hidden relative top-0 pointer-events-auto left-1/2 -translate-x-1/2 flex-col items-start p-3.5 px-5 w-full sm:max-w-sm text-sm text-white rounded sm:rounded-2xl opacity-100 duration-300 ease-out translate-y-0 starting:opacity-0 starting:-translate-y-full ending:-translate-y-full ending:opacity-0 backdrop-blur-xs group bg-black/60 dark:border dark:border-accent"
                     role="alert">
                     <!-- Progress Bar -->
                     <div class="absolute inset-0 z-10 h-full duration-300 ease-linear bg-black/70 dark:bg-white/10"
