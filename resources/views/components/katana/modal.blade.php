@@ -30,7 +30,7 @@
             @close-modal.window="if($event.detail.id === $el.id) modalOpen=false"
             x-init="console.log('Modal component initialized with id:', $el.id);"
             {{ $attributes->withoutTwMergeClasses()->only('id') }}
-            class="fixed left-0 top-0 flex h-screen w-screen items-center justify-center" style="z-index: {{ $zIndex }}">
+            class="fixed left-0 top-0 flex h-dvh w-screen items-center justify-center" style="z-index: {{ $zIndex }}">
             <div class="absolute inset-0 w-full h-full bg-black/60" x-show="modalOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-300" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" @click="modalOpen=false"></div>
             <div x-show="modalOpen" x-trap.inert.noscroll="modalOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="flex justify-center items-center w-full h-full">
                 <div {{  $attributes->twMerge('relative px-7 py-6 w-full dark:border dark:border-accent bg-background text-foreground sm:max-w-lg sm:rounded-medium') }}>

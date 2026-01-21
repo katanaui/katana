@@ -110,7 +110,7 @@ x-modelable="popoverOpen"
         @if ($trigger ?? false)
             {!! $trigger !!}
         @else
-            <div class="relative inline-flex items-center justify-center rounded-md border bg-white p-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-100 focus:bg-white focus:outline-none active:bg-white disabled:pointer-events-none disabled:opacity-50">
+            <div class="relative inline-flex items-center justify-center rounded-md border bg-background p-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-100 focus:bg-background focus:outline-none active:bg-white disabled:pointer-events-none disabled:opacity-50">
                 button
             </div>
         @endif

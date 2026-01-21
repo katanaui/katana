@@ -48,7 +48,7 @@
     <div @click="open = true;">{{ $slot ?? 'Open drawer' }}</div>
 
     <template x-teleport="body">
-        <div x-show="open" class="fixed inset-0 w-screen h-screen" data-poopstick style="z-index: {{ $zIndex }}"> 
+        <div x-show="open" class="fixed inset-0 w-screen h-dvh" data-poopstick style="z-index: {{ $zIndex }}"> 
             <!-- Backdrop -->
             <div 
                 x-show="open"
