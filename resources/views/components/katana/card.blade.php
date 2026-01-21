@@ -19,6 +19,6 @@
     }
 @endphp
 
-<div {{ $attributes->twMerge( $sizeClasses . ' bg-background dark:bg-secondary/50 border border-foreground/10 dark:border-foreground/12 shadow-xs text-foreground/50 w-full h-full flex items-center justify-center') }}>
+<div {{ $attributes->twMerge( $sizeClasses . ' bg-background border border-foreground/10 dark:border-foreground/12 shadow-xs text-foreground/50 w-full h-full flex items-center justify-center') }}>
     {{ $slot }}
 </div>
