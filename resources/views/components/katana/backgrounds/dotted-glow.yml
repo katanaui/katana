@@ -1,0 +1,75 @@
+component: Background Dotted Glow
+description: A canvas-based dotted background that randomly glows and dims. Uses a stable grid of dots where each dot has its own phase and speed, producing organic shimmering effects. Supports dark mode detection and CSS variable-based theming.
+props:
+  - name: gap
+    description: Distance between dot centers in pixels
+    type: number
+    default: 12
+  - name: radius
+    description: Base radius of each dot in CSS pixels
+    type: number
+    default: 2
+  - name: color
+    description: Dot color (will pulse by alpha)
+    type: text
+    default: "rgba(0,0,0,0.7)"
+  - name: darkColor
+    description: Dot color for dark mode
+    type: text
+    default: "#9ca3af"
+  - name: glowColor
+    description: Shadow/glow color for bright dots
+    type: text
+    default: "rgba(0, 170, 255, 0.85)"
+  - name: darkGlowColor
+    description: Glow color for dark mode (subtle gray-blue)
+    type: text
+    default: "rgba(148, 163, 184, 0.9)"
+  - name: colorLightVar
+    description: Optional CSS variable name for light dot color (e.g. --color-zinc-900)
+    type: text
+    default: null
+  - name: colorDarkVar
+    description: Optional CSS variable name for dark dot color (e.g. --color-zinc-100)
+    type: text
+    default: null
+  - name: glowColorLightVar
+    description: Optional CSS variable name for light glow color
+    type: text
+    default: null
+  - name: glowColorDarkVar
+    description: Optional CSS variable name for dark glow color
+    type: text
+    default: null
+  - name: opacity
+    description: Global opacity for the whole layer (0 to 1)
+    type: number
+    default: 0.6
+  - name: backgroundOpacity
+    description: Background radial fade opacity (0 = transparent background)
+    type: number
+    default: 0
+  - name: speedMin
+    description: Minimum per-dot speed in rad/s
+    type: number
+    default: 0.4
+  - name: speedMax
+    description: Maximum per-dot speed in rad/s
+    type: number
+    default: 1.3
+  - name: speedScale
+    description: Global speed multiplier for all dots
+    type: number
+    default: 1
+  - name: mask
+    description: Radial mask/vignette opacity (0 = no mask, 1 = full mask). Creates a spotlight effect with transparent center and solid edges.
+    type: number
+    default: 0
+  - name: maskColor
+    description: Color of the radial mask at the edges for light mode (default white)
+    type: text
+    default: "#ffffff"
+  - name: darkMaskColor
+    description: Color of the radial mask at the edges for dark mode (default black)
+    type: text
+    default: "#000000"
