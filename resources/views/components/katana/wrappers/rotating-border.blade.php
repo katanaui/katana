@@ -62,7 +62,7 @@
         100% { --border-angle: 360deg; opacity: 0; }
     }
 
-    /* Animated border pseudo-element */
+    /* Animated border pseudo-element - base styles, no animation by default */
     .rotating-border-wrapper::before {
         content: '';
         position: absolute;
@@ -72,7 +72,6 @@
         pointer-events: none;
         opacity: 0;
         transition: opacity 0.5s ease;
-        animation: rotating-border-spin var(--rb-duration) linear infinite;
         --rb-current-color: var(--rb-color);
         --rb-current-color-light: var(--rb-color-light);
         background: conic-gradient(
@@ -94,9 +93,10 @@
         --rb-current-color-light: var(--rb-color-dark-light);
     }
 
-    /* Always animate (infinite) */
+    /* Always animate (infinite) - runs on all devices */
     .rotating-border-wrapper[data-mode="always"]::before {
         opacity: 1;
+        animation: rotating-border-spin var(--rb-duration) linear infinite;
     }
 
     /* Always once - plays once on load with fade */
@@ -104,19 +104,29 @@
         animation: rotating-border-spin-fade var(--rb-duration) linear 1 forwards;
     }
 
-    /* Hover infinite - just toggle opacity, animation always runs */
-    .rotating-border-wrapper[data-mode="hover"]:hover::before {
-        opacity: 1;
+    /* Hover styles only for devices that support hover (non-touch) */
+    @media (hover: hover) {
+        /* Hover modes - run animation continuously so position varies */
+        .rotating-border-wrapper[data-mode="hover"]::before,
+        .rotating-border-wrapper[data-mode="hover-once"]::before {
+            animation: rotating-border-spin var(--rb-duration) linear infinite;
+        }
+
+        /* Hover infinite - just toggle opacity, animation always runs */
+        .rotating-border-wrapper[data-mode="hover"]:hover::before {
+            opacity: 1;
+        }
+
+        /* Hover once */
+        .rotating-border-wrapper[data-mode="hover-once"]:hover::before {
+            animation: rotating-border-spin-fade var(--rb-duration) linear 1 forwards;
+        }
     }
 
-    /* Hover once */
-    .rotating-border-wrapper[data-mode="hover-once"]:hover::before {
-        animation: rotating-border-spin-fade var(--rb-duration) linear 1 forwards;
-    }
-
-    /* Alpine-controlled states - just toggle opacity */
+    /* Alpine-controlled states */
     .rotating-border-wrapper[data-playing="true"]::before {
         opacity: 1;
+        animation: rotating-border-spin var(--rb-duration) linear infinite;
     }
 
     .rotating-border-wrapper[data-playing="once"]::before {
