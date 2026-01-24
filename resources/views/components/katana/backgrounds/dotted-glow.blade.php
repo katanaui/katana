@@ -45,6 +45,8 @@ $config = [
     x-data="dottedGlowComponent()"
     x-init="initDottedGlow($el, $refs.canvas, {{ Js::from($config) }})"
     {{ $attributes->twMerge('absolute inset-0') }}>
+    <div class="w-full h-full absolute inset-0" style="background: radial-gradient(circle at center, transparent 0%, white 70%);"></div>
+    
     <canvas x-ref="canvas" class="block w-full h-full"></canvas>
 </div>
 

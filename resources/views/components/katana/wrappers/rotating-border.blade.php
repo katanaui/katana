@@ -1,6 +1,6 @@
 @props([
     'class' => '',
-    'color' => '#75a522',
+    'color' => '#39ff14',
     'colorDark' => null,
     'onHover' => false,
     'infinite' => true,
