@@ -71,7 +71,8 @@
         border-radius: inherit;
         pointer-events: none;
         opacity: 0;
-        --border-angle: 0deg;
+        transition: opacity 0.5s ease;
+        animation: rotating-border-spin var(--rb-duration) linear infinite;
         --rb-current-color: var(--rb-color);
         --rb-current-color-light: var(--rb-color-light);
         background: conic-gradient(
@@ -96,7 +97,6 @@
     /* Always animate (infinite) */
     .rotating-border-wrapper[data-mode="always"]::before {
         opacity: 1;
-        animation: rotating-border-spin var(--rb-duration) linear infinite;
     }
 
     /* Always once - plays once on load with fade */
@@ -104,10 +104,9 @@
         animation: rotating-border-spin-fade var(--rb-duration) linear 1 forwards;
     }
 
-    /* Hover infinite */
+    /* Hover infinite - just toggle opacity, animation always runs */
     .rotating-border-wrapper[data-mode="hover"]:hover::before {
         opacity: 1;
-        animation: rotating-border-spin var(--rb-duration) linear infinite;
     }
 
     /* Hover once */
@@ -115,10 +114,9 @@
         animation: rotating-border-spin-fade var(--rb-duration) linear 1 forwards;
     }
 
-    /* Alpine-controlled states */
+    /* Alpine-controlled states - just toggle opacity */
     .rotating-border-wrapper[data-playing="true"]::before {
         opacity: 1;
-        animation: rotating-border-spin var(--rb-duration) linear infinite;
     }
 
     .rotating-border-wrapper[data-playing="once"]::before {
@@ -127,7 +125,6 @@
 
     .rotating-border-wrapper[data-playing="false"]::before {
         opacity: 0;
-        animation: none;
     }
 </style>
 @endonce
