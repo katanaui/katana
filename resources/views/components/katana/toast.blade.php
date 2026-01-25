@@ -5,7 +5,7 @@
             toastsProgress: [],
             toast: @js(session('toast')),
             type: ['success', 'error', 'warning', 'info', 'blank'],
-            closeInterval: 500000,
+            closeInterval: 5000,
             addToast(message, type, description = '') {
                 const id = Date.now() + Math.random();
                 const toast = { id, type, message, description, startTime: null, rafId: null, pausedAt: null, totalPausedTime: 0 };
