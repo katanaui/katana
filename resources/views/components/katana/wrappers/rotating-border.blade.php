@@ -2,6 +2,7 @@
     'class' => '',
     'color' => '#39ff14',
     'colorDark' => null,
+    'opacity' => 1,
     'onHover' => false,
     'infinite' => true,
     'duration' => 3,
@@ -10,8 +11,23 @@
 ])
 
 @php
-    // Helper function to lighten a hex color
-    $lightenColor = function($hex) {
+    // Clamp opacity to 0-1 range
+    $opacity = max(0, min(1, (float) $opacity));
+
+    // Helper function to convert hex to rgba
+    $hexToRgba = function($hex, $alpha) {
+        $hex = ltrim($hex, '#');
+        if (strlen($hex) === 3) {
+            $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+        }
+        $r = hexdec(substr($hex, 0, 2));
+        $g = hexdec(substr($hex, 2, 2));
+        $b = hexdec(substr($hex, 4, 2));
+        return "rgba({$r}, {$g}, {$b}, {$alpha})";
+    };
+
+    // Helper function to lighten a hex color and return as rgba
+    $lightenColorRgba = function($hex, $alpha) {
         $hex = ltrim($hex, '#');
         if (strlen($hex) === 3) {
             $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
@@ -19,15 +35,17 @@
         $r = min(255, hexdec(substr($hex, 0, 2)) + (255 - hexdec(substr($hex, 0, 2))) * 40 / 100);
         $g = min(255, hexdec(substr($hex, 2, 2)) + (255 - hexdec(substr($hex, 2, 2))) * 40 / 100);
         $b = min(255, hexdec(substr($hex, 4, 2)) + (255 - hexdec(substr($hex, 4, 2))) * 40 / 100);
-        return sprintf('#%02x%02x%02x', $r, $g, $b);
+        return "rgba(" . round($r) . ", " . round($g) . ", " . round($b) . ", {$alpha})";
     };
 
-    // Generate light variants
-    $colorLight = $lightenColor($color);
-    
+    // Generate color variants with opacity
+    $colorRgba = $hexToRgba($color, $opacity);
+    $colorLight = $lightenColorRgba($color, $opacity);
+
     // Use color as fallback for dark mode if not specified
     $colorDark = $colorDark ?? $color;
-    $colorDarkLight = $lightenColor($colorDark);
+    $colorDarkRgba = $hexToRgba($colorDark, $opacity);
+    $colorDarkLight = $lightenColorRgba($colorDark, $opacity);
 
     // Determine animation mode
     if ($onHover && $infinite) {
@@ -144,7 +162,7 @@
     {{ $attributes->twMerge(['class' => "rotating-border-wrapper relative bg-background border border-transparent rounded-2xl {$class}"]) }}
     data-mode="{{ $animationMode }}"
     x-bind:data-playing="playing"
-    style="--rb-color: {{ $color }}; --rb-color-light: {{ $colorLight }}; --rb-color-dark: {{ $colorDark }}; --rb-color-dark-light: {{ $colorDarkLight }}; --rb-duration: {{ $duration }}s; --rb-border-width: {{ $borderWidth }};"
+    style="--rb-color: {{ $colorRgba }}; --rb-color-light: {{ $colorLight }}; --rb-color-dark: {{ $colorDarkRgba }}; --rb-color-dark-light: {{ $colorDarkLight }}; --rb-duration: {{ $duration }}s; --rb-border-width: {{ $borderWidth }};"
 >
     {{ $slot }}
 </div>
