@@ -51,7 +51,8 @@
         >
             <!-- Animated grid lines -->
             <div 
-                class="retro-grid-animate retro-grid-lines retro-grid-lines-light retro-grid-lines-dark"
+                x-ref="retroGridLines"
+                {{ $attributes->twMergeFor('lines', 'retro-grid-animate retro-grid-lines retro-grid-lines-light retro-grid-lines-dark') }}
                 style="
                     background-size: {{ $cellSize }}px {{ $cellSize }}px;
                     opacity: {{ $opacity }};
@@ -63,8 +64,8 @@
     </div>
     
     <!-- Gradient fade overlay - fades grid at top and bottom -->
-    <div class="absolute inset-0 bg-gradient-to-t from-background via-transparent to-background pointer-events-none"></div>
+    <div class="absolute inset-0 bg-linear-to-t from-background via-transparent to-background pointer-events-none"></div>
     
     <!-- Additional bottom fade for stronger effect -->
-    <div class="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-background to-transparent pointer-events-none"></div>
+    <div class="absolute inset-x-0 bottom-0 h-1/2 bg-linear-to-t from-background to-transparent pointer-events-none"></div>
 </div>
