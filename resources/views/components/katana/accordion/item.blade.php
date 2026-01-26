@@ -35,12 +35,13 @@
             @endif
         </span>
     </button>
-    <div 
-        x-show="isOpen(id)" 
-        x-collapse 
+    <div
+        x-show="isOpen(id)"
+        x-collapse
         x-cloak
-        {{ $attributes->twMergeFor('content', 'px-3 pb-4 pt-0 text-sm text-foreground/70') }}
     >
-        {{ $slot }}
+        <div {{ $attributes->twMergeFor('content', 'px-3 pb-4 pt-0 text-sm text-foreground/70') }}>
+            {{ $slot }}
+        </div>
     </div>
 </div>
