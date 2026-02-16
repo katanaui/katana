@@ -31,6 +31,9 @@ const buildOptions = {
   sourcemap: !isProduction,
   minify: isProduction,
   platform: 'browser',
+  loader: {
+    '.ttf': 'file',
+  },
 };
 
 async function build() {
