@@ -1,5 +1,6 @@
 @props([
     'content' => '',
+    'language' => 'html',
     'placeholder' => 'Start typing here',
     'theme' => 'dark',
     'paddingTopClass' => 'pt-3',
@@ -16,14 +17,15 @@
             textarea.innerHTML = html;
             return textarea.value;
         },
-        monacoLanguage: 'html',
+        monacoLanguage: @js($language),
         monacoPlaceholder: false,
         monacoPlaceholderText: '{{ $placeholder }}',
         monacoLoader: true,
         monacoFontSize: '15px',
         monacoId: $id('monaco-editor'),
         editor: null,
-         monacoEditor(editor){
+        monacoEditor(editor){
+        console.log(this.monacoLanguage);
             editor.onDidChangeModelContent((e) => {
                 this.monacoContent = editor.getValue();
                 this.updatePlaceholder(editor.getValue());
@@ -234,11 +236,7 @@
             if (!window.MonacoEnvironment) {
                 window.MonacoEnvironment = {
                     getWorker: function(workerId, label) {
-                        const workerBlob = new Blob([
-                            'self.MonacoEnvironment = { baseUrl: `https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.0/min/` };' +
-                            'importScripts(`https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.0/min/vs/base/worker/workerMain.js`);'
-                        ], { type: 'text/javascript' });
-                        return new Worker(URL.createObjectURL(workerBlob));
+                        return new Worker('{{ asset('katana/monaco-editor-worker.js') }}');
                     }
                 };
             }
@@ -257,7 +255,7 @@
                     theme: '{{ $theme }}',
                     fontSize: monacoFontSize,
                     automaticLayout: true,
-                    language: 'markdown',
+                    language: monacoLanguage,
                     minimap: { enabled: false },
                     tabIndex: {{ $tabindex ?? 0 }},
                     ...lineNumberAttributes
@@ -290,7 +288,7 @@
                 element: document.getElementById(monacoId)
             }; 
         });
-    " :id="monacoId" class="flex flex-col items-center relative justify-start w-full h-full {{ $paddingTopClass }}" style="height:{{ $height }}px"
+    " :id="monacoId" class="flex flex-col items-center relative justify-start bg-stone-900 rounded-xl overflow-hidden w-full h-full {{ $paddingTopClass }}" style="height:{{ $height }}px"
     @update-placeholder-text.window="monacoPlaceholderText=$event.detail.placeholderText; console.log($event.detail)"
     @focus-editor.window="monacoEditorFocus()"
     >
