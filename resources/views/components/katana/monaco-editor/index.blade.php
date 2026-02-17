@@ -2,12 +2,12 @@
     'content' => '',
     'language' => 'html',
     'placeholder' => 'Start typing here',
-    'theme' => 'dark',
-    'paddingTopClass' => 'pt-3',
-    'paddingTop' => 0,
+    'theme' => 'light',
+    'paddingTop' => 12,
     'height' => 250,
     'tabindex' => null,
-    'lineNumbers' => true
+    'lineNumbers' => true,
+    'minimap' => false
 ])
 
 @once
@@ -22,10 +22,11 @@
         paddingTop: {{ $paddingTop ?? 0 }},
         tabIndex: {{ $tabindex ?? 0 }},
         lineNumbers: {{ $lineNumbers ? 'true' : 'false' }},
+        minimap: {{ $minimap ? 'true' : 'false' }},
         cssUrl: '{{ asset('katana/monaco-editor.css') }}',
         workerUrl: '{{ asset('katana/monaco-editor-worker.js') }}'
     })"
-    class="flex flex-col items-center relative justify-start @if($theme == 'light') bg-white @else bg-stone-900 @endif overflow-hidden w-full h-full {{ $paddingTopClass }}"
+    class="flex flex-col items-center relative justify-start @if($theme == 'light') bg-white @else bg-stone-900 @endif overflow-hidden w-full h-full"
     style="height:{{ $height }}px"
     @update-placeholder-text.window="monacoPlaceholderText=$event.detail.placeholderText"
     @focus-editor.window="monacoEditorFocus()"
@@ -46,7 +47,7 @@
 
     <div x-show="!monacoLoader" class="relative z-10 w-full h-full">
         <div x-ref="monacoEditorElement" class="w-full h-full text-lg"></div>
-        <div x-ref="monacoPlaceholderElement" x-show="monacoPlaceholder" @click="monacoEditorFocus()" :style="'font-size: ' + monacoFontSize + '; margin-top: {{ $paddingTop }}px'" class="absolute pointer-events-none top-0 left-0 z-50 mt-0.5 @if($lineNumbers) ml-16 @else ml-8 @endif w-full font-mono text-sm -translate-x-0.5 text-stone-500" x-text="monacoPlaceholderText"></div>
+        <div x-ref="monacoPlaceholderElement" x-show="monacoPlaceholder" @click="monacoEditorFocus()" :style="'font-size: ' + monacoFontSize + '; margin-top: {{ $paddingTop }}px'" class="absolute pointer-events-none top-0 left-0 z-50 mt-0.5 @if($lineNumbers) ml-12 @else ml-6 @endif w-full font-mono text-sm -translate-x-0.5 text-stone-500" x-text="monacoPlaceholderText"></div>
     </div>
 
 </div>
