@@ -264,34 +264,24 @@ window.KatanaMonacoEditor = function (config) {
             }
 
             if (!window.MonacoEnvironment) {
+                const workerBase = config.workerUrl.replace('monaco-editor-worker.js', '');
                 window.MonacoEnvironment = {
                     getWorker: function (workerId, label) {
+                        if (label === 'typescript' || label === 'javascript') {
+                            return new Worker(workerBase + 'monaco-ts-worker.js');
+                        }
+                        if (label === 'html' || label === 'handlebars' || label === 'razor') {
+                            return new Worker(workerBase + 'monaco-html-worker.js');
+                        }
+                        if (label === 'css' || label === 'scss' || label === 'less') {
+                            return new Worker(workerBase + 'monaco-css-worker.js');
+                        }
+                        if (label === 'json') {
+                            return new Worker(workerBase + 'monaco-json-worker.js');
+                        }
                         return new Worker(config.workerUrl);
                     },
                 };
-
-                // Disable TypeScript/JavaScript diagnostics since we use a basic editor worker
-                // that doesn't have language-specific handlers (prevents "Missing requestHandler" errors)
-                if (monaco.languages.typescript) {
-                    monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
-                        noSemanticValidation: true,
-                        noSyntacticValidation: true,
-                        noSuggestionDiagnostics: true,
-                    });
-                    monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
-                        noSemanticValidation: true,
-                        noSyntacticValidation: true,
-                        noSuggestionDiagnostics: true,
-                    });
-                    monaco.languages.typescript.javascriptDefaults.setCompilerOptions({
-                        noLib: true,
-                        allowNonTsExtensions: true,
-                    });
-                    monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
-                        noLib: true,
-                        allowNonTsExtensions: true,
-                    });
-                }
             }
 
             monaco.editor.defineTheme('light', monacoThemeLight);
@@ -308,21 +298,6 @@ window.KatanaMonacoEditor = function (config) {
                 automaticLayout: true,
                 language: this.monacoLanguage,
                 minimap: { enabled: this.minimap },
-                links: false,
-                folding: false,
-                stickyScroll: { enabled: false },
-                hover: { enabled: false },
-                quickSuggestions: false,
-                suggestOnTriggerCharacters: false,
-                parameterHints: { enabled: false },
-                occurrencesHighlight: 'off',
-                selectionHighlight: false,
-                codeLens: false,
-                colorDecorators: false,
-                contextmenu: false,
-                formatOnPaste: false,
-                formatOnType: false,
-                inlayHints: { enabled: 'off' },
                 tabIndex: config.tabIndex || 0,
                 ...lineNumberAttributes,
             });
