@@ -269,6 +269,29 @@ window.KatanaMonacoEditor = function (config) {
                         return new Worker(config.workerUrl);
                     },
                 };
+
+                // Disable TypeScript/JavaScript diagnostics since we use a basic editor worker
+                // that doesn't have language-specific handlers (prevents "Missing requestHandler" errors)
+                if (monaco.languages.typescript) {
+                    monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
+                        noSemanticValidation: true,
+                        noSyntacticValidation: true,
+                        noSuggestionDiagnostics: true,
+                    });
+                    monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+                        noSemanticValidation: true,
+                        noSyntacticValidation: true,
+                        noSuggestionDiagnostics: true,
+                    });
+                    monaco.languages.typescript.javascriptDefaults.setCompilerOptions({
+                        noLib: true,
+                        allowNonTsExtensions: true,
+                    });
+                    monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
+                        noLib: true,
+                        allowNonTsExtensions: true,
+                    });
+                }
             }
 
             monaco.editor.defineTheme('light', monacoThemeLight);
@@ -299,6 +322,7 @@ window.KatanaMonacoEditor = function (config) {
                 contextmenu: false,
                 formatOnPaste: false,
                 formatOnType: false,
+                inlayHints: { enabled: 'off' },
                 tabIndex: config.tabIndex || 0,
                 ...lineNumberAttributes,
             });
