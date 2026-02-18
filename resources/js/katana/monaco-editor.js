@@ -90,6 +90,17 @@ const monacoThemeLight = {
     },
 };
 
+function isDarkMode() {
+    return document.documentElement.classList.contains('dark');
+}
+
+function resolveTheme(configTheme) {
+    if (configTheme === 'auto') {
+        return isDarkMode() ? 'dark' : 'light';
+    }
+    return configTheme || 'light';
+}
+
 window.KatanaMonacoEditor = function (config) {
     return {
         minimap: config.minimap || false,
@@ -291,11 +302,12 @@ window.KatanaMonacoEditor = function (config) {
             monaco.editor.defineTheme('dark', monacoThemeDark);
 
             const el = this.$el;
+            const initialTheme = resolveTheme(config.theme);
 
             el.editor = monaco.editor.create(this.$refs.monacoEditorElement, {
                 value: this.stripLivewireAttributes(this.decodeHTMLEntities(this.monacoContent)),
                 padding: { top: parseInt(config.paddingTop || 0) },
-                theme: config.theme || 'dark',
+                theme: initialTheme,
                 fontSize: config.fontSize || 14,
                 automaticLayout: true,
                 language: this.monacoLanguage,
@@ -345,6 +357,23 @@ window.KatanaMonacoEditor = function (config) {
             window.addEventListener('monaco-editor-height-update', (event) => {
                 this.$refs.monacoEditorElement.style.height = event.detail.height;
             });
+
+            // Watch for dark mode changes when theme is 'auto'
+            if (config.theme === 'auto') {
+                const applyTheme = () => {
+                    const newTheme = resolveTheme('auto');
+                    monaco.editor.setTheme(newTheme);
+                    el.classList.toggle('bg-white', newTheme === 'light');
+                    el.classList.toggle('bg-stone-900', newTheme === 'dark');
+                };
+                const observer = new MutationObserver(applyTheme);
+                observer.observe(document.documentElement, {
+                    attributes: true,
+                    attributeFilter: ['class'],
+                });
+                // Apply initial background
+                applyTheme();
+            }
 
             window.monacoInstances[this.monacoId] = {
                 editor: el.editor,

@@ -46,7 +46,7 @@
         cssUrl: '{{ asset('katana/monaco-editor.css') }}',
         workerUrl: '{{ asset('katana/monaco-editor-worker.js') }}'
     })"
-    class="flex flex-col items-center relative justify-start @if($theme == 'light') bg-white @else bg-stone-900 @endif overflow-hidden w-full h-full"
+    class="flex flex-col items-center relative justify-start @if($theme == 'auto') bg-white dark:bg-stone-900 @elseif($theme == 'light') bg-white @else bg-stone-900 @endif overflow-hidden w-full h-full"
     style="height:{{ $height }}px"
     @update-placeholder-text.window="monacoPlaceholderText=$event.detail.placeholderText"
     @focus-editor.window="monacoEditorFocus()"
