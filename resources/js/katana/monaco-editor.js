@@ -98,7 +98,7 @@ window.KatanaMonacoEditor = function (config) {
         monacoPlaceholder: false,
         monacoPlaceholderText: config.placeholder || 'Start typing here',
         monacoLoader: true,
-        monacoFontSize: '15px',
+        monacoFontSize: (config.fontSize || 14) + 'px',
         monacoId: null,
         editor: null,
 
@@ -250,14 +250,17 @@ window.KatanaMonacoEditor = function (config) {
 
             this.loadCss();
 
-            let lineNumberAttributes = {
-                lineNumbers: false,
-                lineNumberMinChars: 0,
-                glyphMargin: false,
-            };
+            let lineNumberAttributes = {};
 
-            if (config.lineNumbers) {
+            if (!config.lineNumbers) {
                 lineNumberAttributes = {
+                    lineNumbers: 'off',
+                    lineNumberMinChars: 0,
+                    glyphMargin: false,
+                };
+            } else {
+                lineNumberAttributes = {
+                    lineNumbers: config.lineNumbersStyle || 'on',
                     lineNumbersMinChars: 3,
                     lineDecorationsWidth: '12px',
                 };
@@ -292,15 +295,37 @@ window.KatanaMonacoEditor = function (config) {
             el.editor = monaco.editor.create(this.$refs.monacoEditorElement, {
                 value: this.stripLivewireAttributes(this.decodeHTMLEntities(this.monacoContent)),
                 padding: { top: parseInt(config.paddingTop || 0) },
-                wordWrap: true,
                 theme: config.theme || 'dark',
-                fontSize: this.monacoFontSize,
+                fontSize: config.fontSize || 14,
                 automaticLayout: true,
                 language: this.monacoLanguage,
                 minimap: { enabled: this.minimap },
+                readOnly: config.readOnly || false,
+                autoIndent: config.autoIndent !== false ? 'advanced' : 'none',
+                wordWrap: config.wordWrap || 'off',
+                renderWhitespace: config.showWhitespace || 'none',
+                formatOnPaste: config.formatOnPaste !== false,
+                suggestOnTriggerCharacters: config.suggestOnTriggerCharacters !== false,
                 tabIndex: config.tabIndex || 0,
                 ...lineNumberAttributes,
             });
+
+            // Auto-size editor height based on minLines/maxLines
+            if (config.minLines || config.maxLines) {
+                const lineHeight = el.editor.getOption(monaco.editor.EditorOption.lineHeight);
+                const paddingTop = parseInt(config.paddingTop || 0);
+                const updateEditorHeight = () => {
+                    const lineCount = el.editor.getModel().getLineCount();
+                    const minH = config.minLines ? config.minLines * lineHeight + paddingTop : 0;
+                    const maxH = config.maxLines ? config.maxLines * lineHeight + paddingTop : Infinity;
+                    const contentH = Math.max(minH, Math.min(maxH, lineCount * lineHeight + paddingTop));
+                    this.$refs.monacoEditorElement.style.height = contentH + 'px';
+                    el.style.height = contentH + 'px';
+                    el.editor.layout();
+                };
+                el.editor.onDidChangeModelContent(updateEditorHeight);
+                updateEditorHeight();
+            }
 
             this.setupEditorEvents(el.editor);
 
