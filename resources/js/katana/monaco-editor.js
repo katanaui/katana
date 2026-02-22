@@ -319,8 +319,14 @@ window.KatanaMonacoEditor = function (config) {
                 formatOnPaste: config.formatOnPaste !== false,
                 suggestOnTriggerCharacters: config.suggestOnTriggerCharacters !== false,
                 tabIndex: config.tabIndex || 0,
+                scrollBeyondLastLine: false,
                 ...lineNumberAttributes,
                 lineDecorationsWidth: 2,
+            });
+
+            // Force layout after Alpine makes the container visible
+            this.$nextTick(() => {
+                el.editor.layout();
             });
 
             // Auto-size editor height based on minLines/maxLines
