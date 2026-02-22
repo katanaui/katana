@@ -2,7 +2,7 @@
     'content' => '',
     'language' => 'html',
     'placeholder' => 'Start typing here',
-    'theme' => 'light',
+    'theme' => 'auto',
     'readOnly' => false,
     'autoIndent' => true,
     'wordWrap' => 'off',

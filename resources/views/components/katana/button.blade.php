@@ -14,7 +14,7 @@
             $loaderClasses = 'size-3';
             break;
         case 'sm':
-            $sizeClasses = 'px-3 py-1.5 leading-4 text-xs rounded';
+            $sizeClasses = 'px-3 py-[5px] leading-4 text-xs rounded';
             $loaderClasses = 'size-3';
             break;
         case 'md':

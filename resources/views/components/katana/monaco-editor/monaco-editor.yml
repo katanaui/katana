@@ -1,1 +1,111 @@
 component: Monaco Editor
+props:
+  - name: content
+    description: The initial code content to display in the editor
+    type: textarea
+    default: ''
+  - name: language
+    description: The programming language for syntax highlighting
+    type: select
+    default: html
+    options:
+      - html
+      - css
+      - javascript
+      - typescript
+      - json
+      - php
+      - markdown
+      - xml
+      - yaml
+      - sql
+      - python
+      - plaintext
+  - name: placeholder
+    description: Placeholder text shown when the editor is empty
+    type: text
+    default: 'Start typing here'
+  - name: theme
+    description: The color theme of the editor
+    type: select
+    default: auto
+    options:
+      - light
+      - dark
+      - auto
+  - name: readOnly
+    description: Whether the editor is read-only
+    type: boolean
+    default: false
+  - name: autoIndent
+    description: Enable automatic indentation
+    type: boolean
+    default: true
+  - name: wordWrap
+    description: Controls how lines should wrap in the editor
+    type: select
+    default: 'off'
+    options:
+      - 'off'
+      - 'on'
+      - wordWrapColumn
+      - bounded
+  - name: minLines
+    description: Minimum number of lines to display
+    type: number
+    default: null
+  - name: maxLines
+    description: Maximum number of lines to display
+    type: number
+    default: null
+  - name: fontSize
+    description: Font size in pixels for the editor text
+    type: number
+    default: 14
+  - name: showWhitespace
+    description: Controls when whitespace characters are rendered
+    type: select
+    default: none
+    options:
+      - none
+      - boundary
+      - selection
+      - trailing
+      - all
+  - name: formatOnPaste
+    description: Automatically format code when pasting
+    type: boolean
+    default: true
+  - name: suggestOnTriggerCharacters
+    description: Show autocomplete suggestions on trigger characters
+    type: boolean
+    default: true
+  - name: lineNumbersStyle
+    description: Controls the display style of line numbers
+    type: select
+    default: 'on'
+    options:
+      - 'on'
+      - 'off'
+      - relative
+      - interval
+  - name: paddingTop
+    description: Top padding in pixels inside the editor
+    type: number
+    default: 12
+  - name: height
+    description: Height of the editor in pixels
+    type: number
+    default: 250
+  - name: tabindex
+    description: The tabindex attribute for keyboard navigation
+    type: number
+    default: null
+  - name: lineNumbers
+    description: Show or hide line numbers in the gutter
+    type: boolean
+    default: true
+  - name: minimap
+    description: Show or hide the minimap code overview
+    type: boolean
+    default: false

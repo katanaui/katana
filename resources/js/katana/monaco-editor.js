@@ -320,6 +320,7 @@ window.KatanaMonacoEditor = function (config) {
                 suggestOnTriggerCharacters: config.suggestOnTriggerCharacters !== false,
                 tabIndex: config.tabIndex || 0,
                 ...lineNumberAttributes,
+                lineDecorationsWidth: 2,
             });
 
             // Auto-size editor height based on minLines/maxLines
