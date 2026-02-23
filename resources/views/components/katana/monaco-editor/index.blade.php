@@ -20,9 +20,51 @@
     'minimap' => false
 ])
 
-@once
-<script src="{{ asset('katana/monaco-editor.js') }}"></script>
-@endonce
+<script>
+if (!window.KatanaMonacoEditor) {
+    window._katanaMonacoLoadPromise = null;
+    window.KatanaMonacoEditor = function(config) {
+        return {
+            monacoLoader: true,
+            monacoPlaceholder: false,
+            monacoPlaceholderText: config.placeholder || 'Start typing here',
+            monacoFontSize: (config.fontSize || 14) + 'px',
+            monacoContent: config.content || '',
+            monacoId: null,
+            editor: null,
+            monacoEditorFocus() {
+                this.$el.dispatchEvent(
+                    new CustomEvent('monaco-editor-focused', { monacoId: this.monacoId })
+                );
+            },
+            init() {
+                this.monacoId = this.$id('monaco-editor');
+                this.$el.id = this.monacoId;
+                var self = this;
+                if (!window._katanaMonacoLoadPromise) {
+                    window._katanaMonacoLoadPromise = new Promise(function(resolve, reject) {
+                        var s = document.createElement('script');
+                        s.src = config.scriptUrl;
+                        s.onload = resolve;
+                        s.onerror = reject;
+                        document.head.appendChild(s);
+                    });
+                }
+                window._katanaMonacoLoadPromise.then(function() {
+                    var full = window.KatanaMonacoEditor(config);
+                    var keys = Object.keys(full);
+                    for (var i = 0; i < keys.length; i++) {
+                        if (keys[i] !== 'init') {
+                            self[keys[i]] = full[keys[i]];
+                        }
+                    }
+                    full.init.call(self);
+                });
+            }
+        };
+    };
+}
+</script>
 
 <div x-data="KatanaMonacoEditor({
         content: @js($content),
@@ -44,7 +86,8 @@
         lineNumbers: {{ $lineNumbers ? 'true' : 'false' }},
         minimap: {{ $minimap ? 'true' : 'false' }},
         cssUrl: '{{ asset('katana/monaco-editor.css') }}',
-        workerUrl: '{{ asset('katana/monaco-editor-worker.js') }}'
+        workerUrl: '{{ asset('katana/monaco-editor-worker.js') }}',
+        scriptUrl: '{{ asset('katana/monaco-editor.js') }}'
     })"
     class="flex flex-col items-center relative justify-start @if($theme == 'auto') bg-white dark:bg-stone-900 @elseif($theme == 'light') bg-white @else bg-stone-900 @endif overflow-hidden w-full h-full"
     style="height:{{ $height }}px"
