@@ -1,0 +1,19 @@
+component: Directory Tree
+props:
+  - name: disk
+    description: The filesystem disk to use for reading files
+    type: select
+    default: local
+    options:
+      - local
+      - public
+      - s3
+      - project
+  - name: baseDir
+    description: The base directory path to display
+    type: text
+    default: ''
+  - name: exclude
+    description: Array of directory names to exclude from the tree
+    type: text
+    default: '[]'

@@ -34,6 +34,13 @@ class KatanaServiceProvider extends ServiceProvider
             $this->loadViewsFrom(__DIR__.'/../resources/views/components', $namespace);
         }
 
+        // Register Volt single-file Livewire components
+        if (class_exists(\Livewire\Volt\Volt::class)) {
+            \Livewire\Volt\Volt::mount([
+                __DIR__.'/../resources/views/livewire',
+            ]);
+        }
+
         if ($this->app->runningInConsole()) {
             $this->publishes([
                 __DIR__.'/../config/config.php' => config_path('katana.php'),

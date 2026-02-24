@@ -20,6 +20,8 @@ components:
       name: Checkbox
     - id: command
       name: Command
+    - id: directory-tree
+      name: Directory Tree
     - id: drawer
       name: Drawer
     - id: dropdown
