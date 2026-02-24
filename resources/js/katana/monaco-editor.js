@@ -253,8 +253,10 @@ window.KatanaMonacoEditor = function (config) {
         },
 
         init() {
-            this.monacoId = this.$id('monaco-editor');
-            this.$el.id = this.monacoId;
+            if (!this.monacoId) {
+                this.monacoId = this.$id('monaco-editor');
+                this.$el.id = this.monacoId;
+            }
             this.monacoLoader = false;
 
             window.monacoInstances = window.monacoInstances || {};
