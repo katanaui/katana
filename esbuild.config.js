@@ -23,6 +23,7 @@ if (fs.existsSync(sourceDir)) {
   });
 }
 
+// Main component builds (includes monaco-editor.js, tiptap.js, etc.)
 const buildOptions = {
   entryPoints,
   outdir: outputDir,
@@ -31,6 +32,9 @@ const buildOptions = {
   sourcemap: !isProduction,
   minify: isProduction,
   platform: 'browser',
+  loader: {
+    '.ttf': 'file',
+  },
 };
 
 async function build() {
