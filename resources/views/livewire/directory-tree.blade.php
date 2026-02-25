@@ -8,11 +8,12 @@ new class extends Component {
     public string $disk = 'local';
     public string $baseDir = '';
     public array $exclude = ['node_modules', 'vendor', '.git', '.github', 'storage', '.claude'];
+    public array $lazyDirs = ['node_modules', 'vendor'];
     public $structure = [];
     public $currentPath = '';
     public $files = [];
 
-    public function mount($disk = 'local', $baseDir = '', $exclude = null)
+    public function mount($disk = 'local', $baseDir = '', $exclude = null, $lazyDirs = null)
     {
         $this->disk = $disk;
         $this->baseDir = $baseDir;
@@ -21,7 +22,11 @@ new class extends Component {
             $this->exclude = $exclude;
         }
 
-        $this->structure = $this->getDirectoryStructure($this->baseDir);
+        if ($lazyDirs !== null) {
+            $this->lazyDirs = $lazyDirs;
+        }
+
+        $this->structure = $this->getDirectoryStructure($this->baseDir, 2);
     }
 
     protected function getDiskRootPath()
@@ -30,7 +35,7 @@ new class extends Component {
         return rtrim($diskConfig['root'] ?? '', '/');
     }
 
-    protected function getDirectoryStructure($baseDir)
+    protected function getDirectoryStructure($baseDir, $depth = 1)
     {
         $structure = [];
         $root = $this->getDiskRootPath();
@@ -64,16 +69,27 @@ new class extends Component {
                     'type' => 'directory',
                     'path' => $relativePath,
                     'symlink' => true,
+                    'lazy' => false,
                     'children' => [],
                 ];
             } elseif (is_dir($fullPath)) {
                 if (in_array($entry, $this->exclude)) {
                     continue;
                 }
+
+                $isLazy = in_array($entry, $this->lazyDirs);
+                $children = [];
+
+                // Recurse into non-lazy directories when depth > 1
+                if ($depth > 1 && !$isLazy) {
+                    $children = $this->getDirectoryStructure($diskPath, $depth - 1);
+                }
+
                 $structure[$entry] = [
                     'type' => 'directory',
                     'path' => $relativePath,
-                    'children' => [],
+                    'lazy' => $isLazy,
+                    'children' => $children,
                 ];
             } else {
                 $structure[$entry] = [
@@ -92,42 +108,6 @@ new class extends Component {
             return strcasecmp($a, $b);
         });
         return $structure;
-    }
-
-    public function loadChildren($relativePath)
-    {
-        $diskPath = $this->baseDir ? rtrim($this->baseDir, '/') . '/' . $relativePath : $relativePath;
-        $children = $this->getDirectoryStructure($diskPath);
-
-        // Navigate the nested structure to find the correct node
-        // Use a local copy and reassign to ensure Livewire detects the change
-        $parts = explode('/', $relativePath);
-        $structure = $this->structure;
-        $current = &$structure;
-
-        foreach ($parts as $i => $part) {
-            if (!isset($current[$part])) {
-                return [];
-            }
-            if ($i < count($parts) - 1) {
-                $current = &$current[$part]['children'];
-            } else {
-                $current = &$current[$part];
-            }
-        }
-
-        $current['children'] = $children;
-        $this->structure = $structure;
-
-        // Return file paths so Alpine can batch-fetch contents
-        $filePaths = [];
-        foreach ($children as $child) {
-            if ($child['type'] === 'file') {
-                $filePaths[] = $child['path'];
-            }
-        }
-
-        return $filePaths;
     }
 
     public function navigateToPath($relativePath)
@@ -154,7 +134,7 @@ new class extends Component {
 }; ?>
 
 <div class="relative h-full text-sm select-none bg-stone-950 scrollbar-hide">
-    <div x-data="directoryTree()" class="p-3">
+    <div x-data="directoryTree()" x-init="init()" class="p-3">
         @foreach($structure as $name => $item)
             <x-katana.directory-tree-item
                 :name="$name"
@@ -169,21 +149,150 @@ new class extends Component {
 function directoryTree() {
     return {
         expanded: {},
-        loadedDirs: {},
-        files: {},
+        prefetchCache: {},
         pendingFetches: {},
+        files: {},
+        fetchedDirectories: {},
+
+        config: {
+            disk: @js($disk),
+            baseDir: @js($baseDir),
+            exclude: @js($exclude),
+            lazyDirs: @js($lazyDirs),
+        },
+
+        init() {
+            // Mark server-rendered directories as preloaded
+            this.$el.querySelectorAll('[data-loaded]').forEach(el => {
+                const path = el.getAttribute('data-children-for');
+                if (path) {
+                    // Collect child dirs from the rendered HTML
+                    const childDirs = [];
+                    el.querySelectorAll(':scope > [data-dir-path]').forEach(child => {
+                        const dirPath = child.getAttribute('data-dir-path');
+                        const isLazy = child.getAttribute('data-lazy') === 'true';
+                        if (dirPath && !isLazy) {
+                            childDirs.push(dirPath);
+                        }
+                    });
+                    this.prefetchCache[path] = { html: null, childDirs: childDirs, preloaded: true };
+                }
+            });
+        },
+
+        toggle(path, isLazy, isSymlink, level, containerEl) {
+            this.expanded[path] = !this.expanded[path];
+
+            if (!this.expanded[path] || isSymlink) {
+                return;
+            }
+
+            // If children are server-rendered (in DOM with data-loaded)
+            if (containerEl && containerEl.hasAttribute('data-loaded')) {
+                this.prefetchVisibleChildren(path);
+                return;
+            }
+
+            // If we have cached HTML from prefetch
+            if (this.prefetchCache[path] && this.prefetchCache[path].html) {
+                this.injectChildren(path, containerEl, this.prefetchCache[path]);
+                this.prefetchVisibleChildren(path);
+                return;
+            }
+
+            // Otherwise fetch from API
+            this.fetchChildren(path, level).then(data => {
+                if (data && this.expanded[path]) {
+                    this.injectChildren(path, containerEl, data);
+                    this.prefetchVisibleChildren(path);
+                }
+            });
+        },
+
+        fetchChildren(path, level) {
+            // Return cached data if available
+            if (this.prefetchCache[path] && this.prefetchCache[path].html) {
+                return Promise.resolve(this.prefetchCache[path]);
+            }
+
+            // Return pending fetch if one exists
+            if (this.pendingFetches[path]) {
+                return this.pendingFetches[path];
+            }
+
+            const csrfToken = document.querySelector('meta[name=csrf-token]');
+            this.pendingFetches[path] = fetch('/katana/directory-children', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken ? csrfToken.content : '',
+                },
+                body: JSON.stringify({
+                    disk: this.config.disk,
+                    baseDir: this.config.baseDir,
+                    path: path,
+                    exclude: this.config.exclude,
+                    lazyDirs: this.config.lazyDirs,
+                    level: level,
+                }),
+            })
+            .then(r => r.json())
+            .then(data => {
+                this.prefetchCache[path] = {
+                    html: data.html,
+                    childDirs: data.childDirs || [],
+                    preloaded: false,
+                };
+                return this.prefetchCache[path];
+            })
+            .catch(err => {
+                console.error('Error fetching directory children:', err);
+                return null;
+            })
+            .finally(() => {
+                delete this.pendingFetches[path];
+            });
+
+            return this.pendingFetches[path];
+        },
+
+        injectChildren(path, containerEl, data) {
+            if (!containerEl || !data || !data.html) return;
+
+            containerEl.innerHTML = data.html;
+            containerEl.setAttribute('data-loaded', 'true');
+
+            // Initialize Alpine on the new DOM elements
+            Alpine.initTree(containerEl);
+        },
+
+        prefetchVisibleChildren(parentPath) {
+            const cached = this.prefetchCache[parentPath];
+            if (!cached || !cached.childDirs) return;
+
+            cached.childDirs.forEach(childPath => {
+                if (!this.prefetchCache[childPath] && !this.pendingFetches[childPath]) {
+                    // Determine the level from the path depth
+                    const parentDepth = parentPath.split('/').length;
+                    this.fetchChildren(childPath, parentDepth + 1);
+                }
+            });
+        },
+
+        // Keep existing file fetching methods
         fetchFileContent(fullPath) {
             if (this.files[fullPath]) {
                 return Promise.resolve(this.files[fullPath]);
             }
-            if (this.pendingFetches[fullPath]) {
-                return this.pendingFetches[fullPath];
+            if (this.pendingFetches['file:' + fullPath]) {
+                return this.pendingFetches['file:' + fullPath];
             }
-            this.pendingFetches[fullPath] = fetch('/file-content', {
+            const csrfToken = document.querySelector('meta[name=csrf-token]');
+            this.pendingFetches['file:' + fullPath] = fetch('/file-content', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content
+                    'X-CSRF-TOKEN': csrfToken ? csrfToken.content : '',
                 },
                 body: JSON.stringify({ path: fullPath })
             })
@@ -201,28 +310,29 @@ function directoryTree() {
                 throw error;
             })
             .finally(() => {
-                delete this.pendingFetches[fullPath];
+                delete this.pendingFetches['file:' + fullPath];
             });
-            return this.pendingFetches[fullPath];
+            return this.pendingFetches['file:' + fullPath];
         },
-        fetchedDirectories: {},
+
         fetchFilesInDirectory(dirPath, files) {
             if (this.fetchedDirectories[dirPath]) {
                 return;
             }
             const filesToFetch = files.filter(f =>
-                !this.files[f] && !this.pendingFetches[f]
+                !this.files[f] && !this.pendingFetches['file:' + f]
             );
             if (filesToFetch.length === 0) {
                 this.fetchedDirectories[dirPath] = true;
                 return;
             }
-            filesToFetch.forEach(f => { this.pendingFetches[f] = true; });
+            filesToFetch.forEach(f => { this.pendingFetches['file:' + f] = true; });
+            const csrfToken = document.querySelector('meta[name=csrf-token]');
             fetch('/batch-file-content', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content
+                    'X-CSRF-TOKEN': csrfToken ? csrfToken.content : '',
                 },
                 body: JSON.stringify({ paths: filesToFetch })
             })
@@ -237,7 +347,7 @@ function directoryTree() {
                 console.error('Error batch fetching files:', error);
             })
             .finally(() => {
-                filesToFetch.forEach(f => { delete this.pendingFetches[f]; });
+                filesToFetch.forEach(f => { delete this.pendingFetches['file:' + f]; });
                 this.fetchedDirectories[dirPath] = true;
             });
         }

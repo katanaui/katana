@@ -18,7 +18,7 @@ class KatanaServiceProvider extends ServiceProvider
         // $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'katana');
         // $this->loadViewsFrom(__DIR__.'/../resources/views', 'katana');
         // $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
-        // $this->loadRoutesFrom(__DIR__.'/routes.php');
+        $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
 
         // Get the configurable namespace for components
         $namespace = config('katana.components.namespace', 'katana');
