@@ -219,6 +219,7 @@ function directoryTree() {
         creatingType: null,
         creatingInPath: null,
         creatingName: '',
+        isCreating: false,
 
         config: {
             disk: @js($disk),
@@ -228,7 +229,12 @@ function directoryTree() {
         },
 
         init() {
+            this.rebuildPrefetchCache();
+        },
+
+        rebuildPrefetchCache() {
             // Mark server-rendered directories as preloaded
+            this.prefetchCache = {};
             this.$el.querySelectorAll('[data-loaded]').forEach(el => {
                 const path = el.getAttribute('data-children-for');
                 if (path !== null) {
@@ -277,7 +283,11 @@ function directoryTree() {
                     rootInput.focus();
                     return;
                 }
-                const input = this.$el.querySelector('[data-creation-input="' + CSS.escape(this.creatingInPath) + '"]');
+                // CSS.escape('') throws, so guard against empty string
+                const escapedPath = this.creatingInPath === ''
+                    ? ''
+                    : CSS.escape(this.creatingInPath);
+                const input = this.$el.querySelector('[data-creation-input="' + escapedPath + '"]');
                 if (input) {
                     input.focus();
                 }
@@ -285,12 +295,16 @@ function directoryTree() {
         },
 
         async confirmCreation() {
+            // Re-entrancy guard — prevents blur from triggering a second call
+            if (this.isCreating) return;
+
             const name = this.creatingName.trim();
             if (!name) {
                 this.cancelCreation();
                 return;
             }
 
+            this.isCreating = true;
             const type = this.creatingType;
             const parentPath = this.creatingInPath;
             const endpoint = type === 'file' ? '/katana/directory-create-file' : '/katana/directory-create-folder';
@@ -320,9 +334,17 @@ function directoryTree() {
                     return;
                 }
 
-                // Success — refresh the directory
+                // Success — dismiss the creation input
                 this.cancelCreation();
-                await this.refreshDirectory(parentPath);
+
+                // Use Livewire to re-render the tree with fresh server data.
+                // This is more reliable than client-side innerHTML manipulation
+                // because Livewire properly manages its own DOM morph while
+                // preserving Alpine state (expanded dirs, selections, etc.).
+                await this.$wire.refreshTree();
+
+                // Rebuild prefetch cache from the newly rendered DOM
+                this.rebuildPrefetchCache();
 
                 // Select the newly created item
                 if (type === 'file') {
@@ -336,6 +358,8 @@ function directoryTree() {
                 console.error('Error creating ' + type + ':', err);
                 this.$dispatch('directory-tree-error', { message: 'Failed to create ' + type });
                 this.cancelCreation();
+            } finally {
+                this.isCreating = false;
             }
         },
 
@@ -354,7 +378,11 @@ function directoryTree() {
             delete this.pendingFetches[path];
 
             // Find the container element for this directory
-            const containerEl = this.$el.querySelector('[data-children-for="' + CSS.escape(path) + '"]');
+            // Note: CSS.escape('') throws, so we handle empty string directly
+            const selector = path === ''
+                ? '[data-children-for=""]'
+                : '[data-children-for="' + CSS.escape(path) + '"]';
+            const containerEl = this.$el.querySelector(selector);
             if (containerEl) {
                 containerEl.removeAttribute('data-loaded');
             }
