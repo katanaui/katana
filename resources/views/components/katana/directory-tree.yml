@@ -17,3 +17,10 @@ props:
     description: Array of directory names to exclude from the tree
     type: text
     default: '[]'
+  - name: showToolbar
+    description: Show the toolbar with new file/folder creation buttons
+    type: select
+    default: 'true'
+    options:
+      - 'true'
+      - 'false'

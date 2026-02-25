@@ -12,11 +12,13 @@ new class extends Component {
     public $structure = [];
     public $currentPath = '';
     public $files = [];
+    public bool $showToolbar = true;
 
-    public function mount($disk = 'local', $baseDir = '', $exclude = null, $lazyDirs = null)
+    public function mount($disk = 'local', $baseDir = '', $exclude = null, $lazyDirs = null, $showToolbar = true)
     {
         $this->disk = $disk;
         $this->baseDir = $baseDir;
+        $this->showToolbar = $showToolbar;
 
         if ($exclude !== null) {
             $this->exclude = $exclude;
@@ -26,6 +28,11 @@ new class extends Component {
             $this->lazyDirs = $lazyDirs;
         }
 
+        $this->structure = $this->getDirectoryStructure($this->baseDir, 2);
+    }
+
+    public function refreshTree()
+    {
         $this->structure = $this->getDirectoryStructure($this->baseDir, 2);
     }
 
@@ -133,15 +140,65 @@ new class extends Component {
 
 }; ?>
 
-<div class="relative h-full text-sm select-none bg-stone-950 scrollbar-hide">
-    <div x-data="directoryTree()" x-init="init()" class="p-3">
-        @foreach($structure as $name => $item)
-            <x-katana.directory-tree-item
-                :name="$name"
-                :item="$item"
-                :level="0"
-            />
-        @endforeach
+<div class="relative flex flex-col h-full text-sm select-none bg-stone-950 scrollbar-hide" x-data="directoryTree()" x-init="init()">
+    @if($showToolbar)
+    <div class="flex items-center justify-end gap-1 px-3 pt-2 pb-1 shrink-0">
+        <button
+            type="button"
+            title="New File"
+            :disabled="creatingType !== null"
+            :class="creatingType !== null ? 'opacity-30 cursor-not-allowed' : 'hover:bg-stone-800 hover:text-white/90'"
+            class="p-1 rounded text-white/50 transition-colors"
+            @click="startCreating('file')"
+        >
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="M9 15h6"/></svg>
+        </button>
+        <button
+            type="button"
+            title="New Folder"
+            :disabled="creatingType !== null"
+            :class="creatingType !== null ? 'opacity-30 cursor-not-allowed' : 'hover:bg-stone-800 hover:text-white/90'"
+            class="p-1 rounded text-white/50 transition-colors"
+            @click="startCreating('folder')"
+        >
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 10v6"/><path d="M9 13h6"/><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
+        </button>
+    </div>
+    @endif
+    <div class="flex-1 p-3 overflow-y-auto scrollbar-hide">
+        <div data-children-for="" data-loaded="true">
+            @foreach($structure as $name => $item)
+                <x-katana.directory-tree-item
+                    :name="$name"
+                    :item="$item"
+                    :level="0"
+                />
+            @endforeach
+        </div>
+
+        {{-- Root-level inline creation input (outside container so it survives innerHTML refresh) --}}
+        <template x-if="creatingType && creatingInPath === ''">
+            <div class="flex items-center px-2 py-1 ml-0">
+                <span class="mr-1.5 ml-3.5">
+                    <template x-if="creatingType === 'folder'">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-white stroke-current" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
+                    </template>
+                    <template x-if="creatingType === 'file'">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 stroke-current" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>
+                    </template>
+                </span>
+                <input
+                    type="text"
+                    x-model="creatingName"
+                    x-ref="rootCreationInput"
+                    @keydown.enter.prevent="confirmCreation()"
+                    @keydown.escape.prevent="cancelCreation()"
+                    @blur="creatingName.trim() ? confirmCreation() : cancelCreation()"
+                    class="flex-1 px-1 py-0 text-sm bg-stone-800 border border-blue-500/50 rounded text-white/90 outline-none focus:border-blue-500"
+                    placeholder="Enter name..."
+                />
+            </div>
+        </template>
     </div>
 </div>
 
@@ -154,6 +211,15 @@ function directoryTree() {
         files: {},
         fetchedDirectories: {},
 
+        // Selection state
+        selectedFile: null,
+        selectedDirectory: null,
+
+        // Creation state
+        creatingType: null,
+        creatingInPath: null,
+        creatingName: '',
+
         config: {
             disk: @js($disk),
             baseDir: @js($baseDir),
@@ -165,7 +231,7 @@ function directoryTree() {
             // Mark server-rendered directories as preloaded
             this.$el.querySelectorAll('[data-loaded]').forEach(el => {
                 const path = el.getAttribute('data-children-for');
-                if (path) {
+                if (path !== null) {
                     // Collect child dirs from the rendered HTML
                     const childDirs = [];
                     el.querySelectorAll(':scope > [data-dir-path]').forEach(child => {
@@ -178,6 +244,127 @@ function directoryTree() {
                     this.prefetchCache[path] = { html: null, childDirs: childDirs, preloaded: true };
                 }
             });
+        },
+
+        selectFile(path) {
+            this.selectedFile = path;
+            // Derive parent directory from file path
+            const lastSlash = path.lastIndexOf('/');
+            this.selectedDirectory = lastSlash > -1 ? path.substring(0, lastSlash) : '';
+            this.$dispatch('directory-tree-selection-changed', { file: this.selectedFile, directory: this.selectedDirectory });
+        },
+
+        selectDirectory(path) {
+            this.selectedDirectory = path;
+            this.selectedFile = null;
+            this.$dispatch('directory-tree-selection-changed', { file: null, directory: this.selectedDirectory });
+        },
+
+        startCreating(type) {
+            this.creatingType = type;
+            this.creatingName = '';
+            this.creatingInPath = this.selectedDirectory ?? '';
+
+            // Auto-expand the target directory if it's not root and not already expanded
+            if (this.creatingInPath !== '' && !this.expanded[this.creatingInPath]) {
+                this.expanded[this.creatingInPath] = true;
+            }
+
+            this.$nextTick(() => {
+                // Focus the input — check root input first, then look for directory-scoped inputs
+                const rootInput = this.$refs.rootCreationInput;
+                if (rootInput) {
+                    rootInput.focus();
+                    return;
+                }
+                const input = this.$el.querySelector('[data-creation-input="' + CSS.escape(this.creatingInPath) + '"]');
+                if (input) {
+                    input.focus();
+                }
+            });
+        },
+
+        async confirmCreation() {
+            const name = this.creatingName.trim();
+            if (!name) {
+                this.cancelCreation();
+                return;
+            }
+
+            const type = this.creatingType;
+            const parentPath = this.creatingInPath;
+            const endpoint = type === 'file' ? '/katana/directory-create-file' : '/katana/directory-create-folder';
+
+            const csrfToken = document.querySelector('meta[name=csrf-token]');
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken ? csrfToken.content : '',
+                    },
+                    body: JSON.stringify({
+                        disk: this.config.disk,
+                        baseDir: this.config.baseDir,
+                        parentPath: parentPath,
+                        name: name,
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    this.$dispatch('directory-tree-error', { message: data.error });
+                    this.cancelCreation();
+                    return;
+                }
+
+                // Success — refresh the directory
+                this.cancelCreation();
+                await this.refreshDirectory(parentPath);
+
+                // Select the newly created item
+                if (type === 'file') {
+                    this.selectFile(data.path);
+                } else {
+                    this.selectDirectory(data.path);
+                }
+
+                this.$dispatch('directory-tree-created', { type, path: data.path, name });
+            } catch (err) {
+                console.error('Error creating ' + type + ':', err);
+                this.$dispatch('directory-tree-error', { message: 'Failed to create ' + type });
+                this.cancelCreation();
+            }
+        },
+
+        cancelCreation() {
+            this.creatingType = null;
+            this.creatingInPath = null;
+            this.creatingName = '';
+        },
+
+        async refreshDirectory(path) {
+            // Normalize null to empty string for root
+            if (path === null) path = '';
+
+            // Clear prefetch cache for this path so it re-fetches
+            delete this.prefetchCache[path];
+            delete this.pendingFetches[path];
+
+            // Find the container element for this directory
+            const containerEl = this.$el.querySelector('[data-children-for="' + CSS.escape(path) + '"]');
+            if (containerEl) {
+                containerEl.removeAttribute('data-loaded');
+            }
+
+            // Re-fetch children from the API
+            const depth = path ? path.split('/').length : 0;
+            const data = await this.fetchChildren(path, depth);
+            if (data && containerEl) {
+                this.injectChildren(path, containerEl, data);
+            }
         },
 
         toggle(path, isLazy, isSymlink, level, containerEl) {

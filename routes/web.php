@@ -7,7 +7,7 @@ Route::post('/katana/directory-children', function (Request $request) {
     $validated = $request->validate([
         'disk' => 'required|string',
         'baseDir' => 'nullable|string',
-        'path' => 'required|string',
+        'path' => 'nullable|string',
         'exclude' => 'nullable|array',
         'lazyDirs' => 'nullable|array',
         'level' => 'nullable|integer|min:0|max:50',
@@ -15,7 +15,7 @@ Route::post('/katana/directory-children', function (Request $request) {
 
     $disk = $validated['disk'];
     $baseDir = $validated['baseDir'] ?? '';
-    $path = $validated['path'];
+    $path = $validated['path'] ?? '';
     $exclude = $validated['exclude'] ?? [];
     $lazyDirs = $validated['lazyDirs'] ?? ['node_modules', 'vendor'];
     $level = $validated['level'] ?? 1;
@@ -115,4 +115,112 @@ Route::post('/katana/directory-children', function (Request $request) {
         'html' => $html,
         'childDirs' => $childDirs,
     ]);
+})->middleware('web');
+
+Route::post('/katana/directory-create-file', function (Request $request) {
+    $validated = $request->validate([
+        'disk' => 'required|string',
+        'baseDir' => 'nullable|string',
+        'parentPath' => 'nullable|string',
+        'name' => 'required|string|max:255',
+    ]);
+
+    $disk = $validated['disk'];
+    $baseDir = $validated['baseDir'] ?? '';
+    $parentPath = $validated['parentPath'] ?? '';
+    $name = $validated['name'];
+
+    // Validate filename
+    if (str_contains($name, '/') || str_contains($name, '\\') || $name === '.' || $name === '..') {
+        return response()->json(['error' => 'Invalid filename'], 422);
+    }
+
+    // Validate disk is local-driver only
+    $diskConfig = config("filesystems.disks.{$disk}");
+    if (!$diskConfig || !in_array($diskConfig['driver'] ?? '', ['local'])) {
+        return response()->json(['error' => 'Invalid disk'], 422);
+    }
+
+    $root = rtrim($diskConfig['root'] ?? '', '/');
+    $parentDiskPath = $baseDir
+        ? ($parentPath ? rtrim($baseDir, '/') . '/' . ltrim($parentPath, '/') : $baseDir)
+        : $parentPath;
+    $parentFullPath = $root . ($parentDiskPath ? '/' . ltrim($parentDiskPath, '/') : '');
+
+    // Security: block path traversal
+    $realRoot = realpath($root);
+    $realParent = realpath($parentFullPath);
+    if (!$realRoot || !$realParent || !str_starts_with($realParent, $realRoot)) {
+        return response()->json(['error' => 'Invalid path'], 422);
+    }
+
+    if (!is_dir($realParent)) {
+        return response()->json(['error' => 'Parent directory does not exist'], 422);
+    }
+
+    $targetFullPath = $realParent . '/' . $name;
+    if (file_exists($targetFullPath)) {
+        return response()->json(['error' => 'A file or folder with that name already exists'], 422);
+    }
+
+    // Create the file
+    file_put_contents($targetFullPath, '');
+
+    $relativePath = $parentPath ? rtrim($parentPath, '/') . '/' . $name : $name;
+
+    return response()->json(['success' => true, 'path' => $relativePath]);
+})->middleware('web');
+
+Route::post('/katana/directory-create-folder', function (Request $request) {
+    $validated = $request->validate([
+        'disk' => 'required|string',
+        'baseDir' => 'nullable|string',
+        'parentPath' => 'nullable|string',
+        'name' => 'required|string|max:255',
+    ]);
+
+    $disk = $validated['disk'];
+    $baseDir = $validated['baseDir'] ?? '';
+    $parentPath = $validated['parentPath'] ?? '';
+    $name = $validated['name'];
+
+    // Validate folder name
+    if (str_contains($name, '/') || str_contains($name, '\\') || $name === '.' || $name === '..') {
+        return response()->json(['error' => 'Invalid folder name'], 422);
+    }
+
+    // Validate disk is local-driver only
+    $diskConfig = config("filesystems.disks.{$disk}");
+    if (!$diskConfig || !in_array($diskConfig['driver'] ?? '', ['local'])) {
+        return response()->json(['error' => 'Invalid disk'], 422);
+    }
+
+    $root = rtrim($diskConfig['root'] ?? '', '/');
+    $parentDiskPath = $baseDir
+        ? ($parentPath ? rtrim($baseDir, '/') . '/' . ltrim($parentPath, '/') : $baseDir)
+        : $parentPath;
+    $parentFullPath = $root . ($parentDiskPath ? '/' . ltrim($parentDiskPath, '/') : '');
+
+    // Security: block path traversal
+    $realRoot = realpath($root);
+    $realParent = realpath($parentFullPath);
+    if (!$realRoot || !$realParent || !str_starts_with($realParent, $realRoot)) {
+        return response()->json(['error' => 'Invalid path'], 422);
+    }
+
+    if (!is_dir($realParent)) {
+        return response()->json(['error' => 'Parent directory does not exist'], 422);
+    }
+
+    $targetFullPath = $realParent . '/' . $name;
+    if (file_exists($targetFullPath)) {
+        return response()->json(['error' => 'A file or folder with that name already exists'], 422);
+    }
+
+    // Create the directory
+    mkdir($targetFullPath, 0755);
+
+    $relativePath = $parentPath ? rtrim($parentPath, '/') . '/' . $name : $name;
+
+    return response()->json(['success' => true, 'path' => $relativePath]);
 })->middleware('web');

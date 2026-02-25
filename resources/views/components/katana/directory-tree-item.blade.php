@@ -32,7 +32,8 @@
 >
     @if($item['type'] === 'directory')
         <div class="flex items-center px-2 py-1 truncate rounded cursor-pointer text-white/60 dark:text-white/60 hover:dark:text-white/80 hover:text-white/80 hover:bg-stone-800 dark:hover:bg-neutral-800"
-            x-on:click="toggle('{{ $escapedPath }}', {{ $isLazy ? 'true' : 'false' }}, {{ $isSymlink ? 'true' : 'false' }}, {{ $level + 1 }}, $el.parentElement.querySelector('[data-children-for=&quot;{{ $escapedPath }}&quot;]'))"
+            :class="selectedDirectory === '{{ $escapedPath }}' ? 'bg-stone-800/60 dark:bg-neutral-800/60 !text-white/90' : ''"
+            x-on:click="selectDirectory('{{ $escapedPath }}'); toggle('{{ $escapedPath }}', {{ $isLazy ? 'true' : 'false' }}, {{ $isSymlink ? 'true' : 'false' }}, {{ $level + 1 }}, $el.parentElement.querySelector('[data-children-for=&quot;{{ $escapedPath }}&quot;]'))"
         >
             <svg :class="{ 'rotate-90' : expanded['{{ $escapedPath }}'] }" xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 transition-all duration-100 ease-out scale-110 stroke-current" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
             <span class="mr-1.5 ml-0.5">
@@ -71,15 +72,41 @@
                     </div>
                 @endif
             @endif
+
+            {{-- Inline creation input for this directory --}}
+            <template x-if="creatingType && creatingInPath === '{{ $escapedPath }}'">
+                <div class="flex items-center px-2 py-1 ml-2">
+                    <span class="mr-1.5">
+                        <template x-if="creatingType === 'folder'">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-white stroke-current" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
+                        </template>
+                        <template x-if="creatingType === 'file'">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 stroke-current" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>
+                        </template>
+                    </span>
+                    <input
+                        type="text"
+                        x-model="creatingName"
+                        data-creation-input="{{ $escapedPath }}"
+                        @keydown.enter.prevent="confirmCreation()"
+                        @keydown.escape.prevent="cancelCreation()"
+                        @blur="creatingName.trim() ? confirmCreation() : cancelCreation()"
+                        class="flex-1 px-1 py-0 text-sm bg-stone-800 border border-blue-500/50 rounded text-white/90 outline-none focus:border-blue-500"
+                        placeholder="Enter name..."
+                    />
+                </div>
+            </template>
         </div>
     @else
         <div class="flex items-center px-2 py-1 truncate rounded cursor-pointer hover:bg-stone-800 dark:hover:bg-neutral-800 text-white/60 dark:text-white/60 hover:dark:text-white/80 hover:text-white/80"
+            :class="selectedFile === '{{ $escapedPath }}' ? 'bg-blue-500/15 !text-blue-300' : ''"
             @mouseover="
                 const fullPath = '{{ $escapedPath }}';
                 fetchFileContent(fullPath);
             "
             @click="
                 const fullPath = '{{ $escapedPath }}';
+                selectFile(fullPath);
                 fetchFileContent(fullPath).then(content => {
                     $dispatch('file-selected', [{ file: fullPath, content }]);
                 });
