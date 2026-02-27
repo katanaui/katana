@@ -311,6 +311,15 @@ function directoryTree() {
 
             const csrfToken = document.querySelector('meta[name=csrf-token]');
 
+            // Dim the input to show processing state
+            const inputEl = parentPath === ''
+                ? this.$refs.rootCreationInput
+                : this.$el.querySelector('[data-creation-input="' + (parentPath ? CSS.escape(parentPath) : '') + '"]');
+            if (inputEl) {
+                inputEl.disabled = true;
+                inputEl.style.opacity = '0.5';
+            }
+
             try {
                 const response = await fetch(endpoint, {
                     method: 'POST',
@@ -334,17 +343,13 @@ function directoryTree() {
                     return;
                 }
 
-                // Success — dismiss the creation input
-                this.cancelCreation();
-
-                // Use Livewire to re-render the tree with fresh server data.
-                // This is more reliable than client-side innerHTML manipulation
-                // because Livewire properly manages its own DOM morph while
-                // preserving Alpine state (expanded dirs, selections, etc.).
+                // Refresh tree FIRST — the new item appears in the DOM
+                // while the creation input is still visible as a placeholder.
                 await this.$wire.refreshTree();
-
-                // Rebuild prefetch cache from the newly rendered DOM
                 this.rebuildPrefetchCache();
+
+                // NOW dismiss the input — the new item is already in the tree
+                this.cancelCreation();
 
                 // Select the newly created item
                 if (type === 'file') {
@@ -494,8 +499,14 @@ function directoryTree() {
             });
         },
 
-        // Keep existing file fetching methods
+        // File content fetching — disabled automatically if the endpoint returns 404
+        _fileContentAvailable: null,
+
         fetchFileContent(fullPath) {
+            // If we've detected the endpoint doesn't exist, bail out silently
+            if (this._fileContentAvailable === false) {
+                return Promise.resolve(null);
+            }
             if (this.files[fullPath]) {
                 return Promise.resolve(this.files[fullPath]);
             }
@@ -511,18 +522,24 @@ function directoryTree() {
                 },
                 body: JSON.stringify({ path: fullPath })
             })
-            .then(response => response.json())
+            .then(response => {
+                if (response.status === 404) {
+                    this._fileContentAvailable = false;
+                    return null;
+                }
+                this._fileContentAvailable = true;
+                return response.json();
+            })
             .then(data => {
+                if (!data) return null;
                 if (!data.error) {
                     this.files[fullPath] = data.content;
                     return data.content;
-                } else {
-                    throw new Error(data.error);
                 }
+                return null;
             })
             .catch(error => {
-                console.error('Error fetching file:', error);
-                throw error;
+                return null;
             })
             .finally(() => {
                 delete this.pendingFetches['file:' + fullPath];
@@ -531,9 +548,9 @@ function directoryTree() {
         },
 
         fetchFilesInDirectory(dirPath, files) {
-            if (this.fetchedDirectories[dirPath]) {
-                return;
-            }
+            if (this._fileContentAvailable === false) return;
+            if (this.fetchedDirectories[dirPath]) return;
+
             const filesToFetch = files.filter(f =>
                 !this.files[f] && !this.pendingFetches['file:' + f]
             );
@@ -551,15 +568,22 @@ function directoryTree() {
                 },
                 body: JSON.stringify({ paths: filesToFetch })
             })
-            .then(response => response.json())
+            .then(response => {
+                if (response.status === 404) {
+                    this._fileContentAvailable = false;
+                    return null;
+                }
+                return response.json();
+            })
             .then(data => {
+                if (!data) return;
                 const contents = data.contents || {};
                 Object.entries(contents).forEach(([file, content]) => {
                     this.files[file] = content;
                 });
             })
             .catch(error => {
-                console.error('Error batch fetching files:', error);
+                // Silently handle — endpoint may not exist
             })
             .finally(() => {
                 filesToFetch.forEach(f => { delete this.pendingFetches['file:' + f]; });
