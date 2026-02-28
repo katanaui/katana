@@ -4,6 +4,7 @@
     'exclude' => [],
     'lazyDirs' => ['node_modules', 'vendor'],
     'showToolbar' => true,
+    'readonly' => false,
     'title' => null,
 ])
 
@@ -16,7 +17,7 @@
     x-data="{ dtCreating: false }"
     @dt-creating-state.window="dtCreating = $event.detail.creating"
 >
-    @if($showToolbar)
+    @if($showToolbar && !$readonly)
     <div class="flex items-center px-5 pt-3 shrink-0">
         {{-- Left: header slot or title --}}
         <div class="flex-1 min-w-0">
@@ -52,6 +53,6 @@
     </div>
     @endif
     <div class="flex-1 min-h-0">
-        <livewire:directory-tree :disk="$disk" :base-dir="$baseDir" :exclude="$exclude" :lazy-dirs="$lazyDirs" :show-toolbar="false" />
+        <livewire:directory-tree :disk="$disk" :base-dir="$baseDir" :exclude="$exclude" :lazy-dirs="$lazyDirs" :show-toolbar="false" :readonly="$readonly" />
     </div>
 </section>

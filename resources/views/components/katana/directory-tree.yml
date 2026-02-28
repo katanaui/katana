@@ -28,3 +28,10 @@ props:
     options:
       - 'true'
       - 'false'
+  - name: readonly
+    description: When true, hides file/folder creation UI and blocks write operations server-side
+    type: select
+    default: 'false'
+    options:
+      - 'true'
+      - 'false'

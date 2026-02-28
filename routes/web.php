@@ -1,7 +1,37 @@
 <?php
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Contracts\Encryption\DecryptException;
+
+function validateWriteToken(Request $request): bool
+{
+    $token = $request->input('_write_token');
+    if (!$token) {
+        return false;
+    }
+
+    try {
+        $payload = json_decode(Crypt::decryptString($token), true);
+    } catch (DecryptException $e) {
+        return false;
+    }
+
+    if (!is_array($payload) || empty($payload['writable'])) {
+        return false;
+    }
+
+    // Verify the token is scoped to the same disk + baseDir
+    if (($payload['disk'] ?? '') !== ($request->input('disk') ?? '')) {
+        return false;
+    }
+    if (($payload['baseDir'] ?? '') !== ($request->input('baseDir') ?? '')) {
+        return false;
+    }
+
+    return true;
+}
 
 Route::post('/katana/directory-children', function (Request $request) {
     $validated = $request->validate([
@@ -100,6 +130,7 @@ Route::post('/katana/directory-children', function (Request $request) {
             'name' => $name,
             'item' => $item,
             'level' => $level,
+            'readonly' => $request->boolean('readonly', false),
         ])->render();
     }
 
@@ -123,7 +154,12 @@ Route::post('/katana/directory-create-file', function (Request $request) {
         'baseDir' => 'nullable|string',
         'parentPath' => 'nullable|string',
         'name' => 'required|string|max:255',
+        '_write_token' => 'required|string',
     ]);
+
+    if (!validateWriteToken($request)) {
+        return response()->json(['error' => 'Forbidden'], 403);
+    }
 
     $disk = $validated['disk'];
     $baseDir = $validated['baseDir'] ?? '';
@@ -177,7 +213,12 @@ Route::post('/katana/directory-create-folder', function (Request $request) {
         'baseDir' => 'nullable|string',
         'parentPath' => 'nullable|string',
         'name' => 'required|string|max:255',
+        '_write_token' => 'required|string',
     ]);
+
+    if (!validateWriteToken($request)) {
+        return response()->json(['error' => 'Forbidden'], 403);
+    }
 
     $disk = $validated['disk'];
     $baseDir = $validated['baseDir'] ?? '';

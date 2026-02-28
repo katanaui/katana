@@ -1,6 +1,7 @@
 <?php
 
 use Livewire\Volt\Component;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Storage;
 
 new class extends Component {
@@ -13,12 +14,23 @@ new class extends Component {
     public $currentPath = '';
     public $files = [];
     public bool $showToolbar = true;
+    public bool $readonly = false;
+    public ?string $writeToken = null;
 
-    public function mount($disk = 'local', $baseDir = '', $exclude = null, $lazyDirs = null, $showToolbar = true)
+    public function mount($disk = 'local', $baseDir = '', $exclude = null, $lazyDirs = null, $showToolbar = true, $readonly = false)
     {
         $this->disk = $disk;
         $this->baseDir = $baseDir;
         $this->showToolbar = $showToolbar;
+        $this->readonly = $readonly;
+
+        if (!$this->readonly) {
+            $this->writeToken = Crypt::encryptString(json_encode([
+                'writable' => true,
+                'disk' => $this->disk,
+                'baseDir' => $this->baseDir,
+            ]));
+        }
 
         if ($exclude !== null) {
             $this->exclude = $exclude;
@@ -140,8 +152,8 @@ new class extends Component {
 
 }; ?>
 
-<div class="relative flex flex-col h-full text-sm select-none bg-stone-950 scrollbar-hide" x-data="directoryTree()" x-init="init()" @dt-start-creating.window="startCreating($event.detail.type)">
-    @if($showToolbar)
+<div class="relative flex flex-col h-full text-sm select-none bg-stone-950 scrollbar-hide" x-data="directoryTree(@js($readonly), @js($writeToken))" x-init="init()" @if(!$readonly) @dt-start-creating.window="startCreating($event.detail.type)" @endif>
+    @if($showToolbar && !$readonly)
     <div class="flex items-center justify-end gap-1 px-3 pt-2 pb-1 shrink-0">
         <button
             type="button"
@@ -172,10 +184,12 @@ new class extends Component {
                     :name="$name"
                     :item="$item"
                     :level="0"
+                    :readonly="$readonly"
                 />
             @endforeach
         </div>
 
+        @if(!$readonly)
         {{-- Root-level inline creation input (outside container so it survives innerHTML refresh) --}}
         <template x-if="creatingType && creatingInPath === ''">
             <div class="flex items-center px-2 py-1 ml-0">
@@ -194,17 +208,21 @@ new class extends Component {
                     @keydown.enter.prevent="confirmCreation()"
                     @keydown.escape.prevent="cancelCreation()"
                     @blur="creatingName.trim() ? confirmCreation() : cancelCreation()"
-                    class="flex-1 px-1 py-0 text-sm bg-stone-800 border border-blue-500/50 rounded text-white/90 outline-none focus:border-blue-500"
+                    class="flex-1 px-1 py-0 text-sm bg-stone-800 border border-blue-500/50 rounded-md text-white/90 outline-none focus:border-blue-500"
                     placeholder="Enter name..."
                 />
             </div>
         </template>
+        @endif
     </div>
 </div>
 
 <script>
-function directoryTree() {
+function directoryTree(readonly, writeToken) {
     return {
+        readonly: readonly || false,
+        writeToken: writeToken || null,
+
         expanded: {},
         prefetchCache: {},
         pendingFetches: {},
@@ -271,6 +289,7 @@ function directoryTree() {
         },
 
         startCreating(type) {
+            if (this.readonly) return;
             this.creatingType = type;
             this.creatingName = '';
             this.creatingInPath = this.selectedDirectory ?? '';
@@ -336,6 +355,7 @@ function directoryTree() {
                         baseDir: this.config.baseDir,
                         parentPath: parentPath,
                         name: name,
+                        _write_token: this.writeToken,
                     }),
                 });
 
@@ -458,6 +478,7 @@ function directoryTree() {
                     exclude: this.config.exclude,
                     lazyDirs: this.config.lazyDirs,
                     level: level,
+                    readonly: this.readonly,
                 }),
             })
             .then(r => r.json())

@@ -1,4 +1,4 @@
-@props(['name', 'item', 'level'])
+@props(['name', 'item', 'level', 'readonly' => false])
 
 @php
     $fileTypes = config('katana.directorytree.file_types', []);
@@ -62,6 +62,7 @@
                         :name="$childName"
                         :item="$child"
                         :level="$level + 1"
+                        :readonly="$readonly"
                     />
                 @endforeach
             @else
@@ -73,10 +74,11 @@
                 @endif
             @endif
 
+            @if(!$readonly)
             {{-- Inline creation input for this directory --}}
             <template x-if="creatingType && creatingInPath === '{{ $escapedPath }}'">
                 <div class="flex items-center px-2 py-1 ml-2">
-                    <span class="mr-1.5">
+                    <span class="mr-1.5 ml-3.5">
                         <template x-if="creatingType === 'folder'">
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-white stroke-current" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
                         </template>
@@ -91,11 +93,12 @@
                         @keydown.enter.prevent="confirmCreation()"
                         @keydown.escape.prevent="cancelCreation()"
                         @blur="creatingName.trim() ? confirmCreation() : cancelCreation()"
-                        class="flex-1 px-1 py-0 text-sm bg-stone-800 border border-blue-500/50 rounded text-white/90 outline-none focus:border-blue-500"
+                        class="flex-1 px-1 py-0 text-sm bg-stone-800 border border-blue-500/50 rounded-md text-white/90 outline-none focus:border-blue-500"
                         placeholder="Enter name..."
                     />
                 </div>
             </template>
+            @endif
         </div>
     @else
         <div class="flex items-center px-2 py-1 truncate rounded cursor-pointer hover:bg-stone-800 dark:hover:bg-neutral-800 text-white/60 dark:text-white/60 hover:dark:text-white/80 hover:text-white/80"
@@ -112,7 +115,7 @@
                 });
             "
         >
-            <span class="@if($level === 0) ml-3.5 @endif mr-1.5">
+            <span class="ml-3.5 mr-1.5">
                 @if($fileType && isset($fileType['icon']) && isset($fileType['color']))
                     <span class="{{ $fileType['color'] }}">{!! $fileType['icon'] !!}</span>
                 @else
