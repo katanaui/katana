@@ -17,7 +17,7 @@
     @dt-creating-state.window="dtCreating = $event.detail.creating"
 >
     @if($showToolbar)
-    <div class="flex items-center px-3 pt-3 pb-1.5 shrink-0">
+    <div class="flex items-center px-5 pt-3 shrink-0">
         {{-- Left: header slot or title --}}
         <div class="flex-1 min-w-0">
             @if(isset($header) && !$header->isEmpty())
