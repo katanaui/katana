@@ -140,7 +140,7 @@ new class extends Component {
 
 }; ?>
 
-<div class="relative flex flex-col h-full text-sm select-none bg-stone-950 scrollbar-hide" x-data="directoryTree()" x-init="init()">
+<div class="relative flex flex-col h-full text-sm select-none bg-stone-950 scrollbar-hide" x-data="directoryTree()" x-init="init()" @dt-start-creating.window="startCreating($event.detail.type)">
     @if($showToolbar)
     <div class="flex items-center justify-end gap-1 px-3 pt-2 pb-1 shrink-0">
         <button
@@ -230,6 +230,10 @@ function directoryTree() {
 
         init() {
             this.rebuildPrefetchCache();
+            // Broadcast creating state so the wrapper toolbar can disable buttons
+            this.$watch('creatingType', (value) => {
+                this.$dispatch('dt-creating-state', { creating: value !== null });
+            });
         },
 
         rebuildPrefetchCache() {
