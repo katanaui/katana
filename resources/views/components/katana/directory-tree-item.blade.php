@@ -31,24 +31,24 @@
     @endif
 >
     @if($item['type'] === 'directory')
-        <div class="flex items-center px-2 py-1 truncate rounded cursor-pointer text-white/60 dark:text-white/60 hover:dark:text-white/80 hover:text-white/80 hover:bg-stone-800 dark:hover:bg-neutral-800"
-            :class="selectedDirectory === '{{ $escapedPath }}' ? 'bg-stone-800/60 dark:bg-neutral-800/60 !text-white/90' : ''"
+        <div class="flex items-center px-2 py-1 truncate rounded cursor-pointer text-foreground hover:text-accent-foreground hover:bg-accent/50"
+            :class="selectedDirectory === '{{ $escapedPath }}' ? 'bg-accent/50 !text-accent-foreground' : ''"
             x-on:click="selectDirectory('{{ $escapedPath }}'); toggle('{{ $escapedPath }}', {{ $isLazy ? 'true' : 'false' }}, {{ $isSymlink ? 'true' : 'false' }}, {{ $level + 1 }}, $el.parentElement.querySelector('[data-children-for=&quot;{{ $escapedPath }}&quot;]'))"
         >
-            <svg :class="{ 'rotate-90' : expanded['{{ $escapedPath }}'] }" xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 transition-all duration-100 ease-out scale-110 stroke-current" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+            <svg :class="{ 'rotate-90' : expanded['{{ $escapedPath }}'] }" xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 shrink-0 transition-all duration-100 ease-out scale-110 stroke-current" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
             <span class="mr-1.5 ml-0.5">
-                <svg x-show="!expanded['{{ $escapedPath }}']" xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-white stroke-current" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
-                <svg x-show="expanded['{{ $escapedPath }}']" xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-white stroke-current" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" x-cloak><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></svg>
+                <svg x-show="!expanded['{{ $escapedPath }}']" xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 stroke-current" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
+                <svg x-show="expanded['{{ $escapedPath }}']" xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 stroke-current" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" x-cloak><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></svg>
             </span>
 
             <span>{{ $name }}</span>
             @if($isSymlink)
-                <span class="ml-1 text-xs text-white/30">(symlink)</span>
+                <span class="ml-1 text-xs text-muted-foreground/50">(symlink)</span>
             @endif
         </div>
         {{-- Vertical Left Line in Tree --}}
         <span x-show="expanded['{{ $escapedPath }}']" class="overflow-hidden absolute top-0 pt-7 ml-3 w-px h-full translate-x-0.5" x-cloak>
-            <span class="block relative w-px h-full bg-stone-700 dark:bg-stone-800"></span>
+            <span class="block relative w-px h-full bg-border"></span>
         </span>
         <div class="ml-4"
             data-children-for="{{ $escapedPath }}"
@@ -67,7 +67,7 @@
                 @endforeach
             @else
                 @if(!$isSymlink)
-                    <div x-show="!prefetchCache?.['{{ $escapedPath }}']?.loaded && !prefetchCache?.['{{ $escapedPath }}']?.preloaded" class="flex items-center px-2 py-1 ml-2 text-white/30">
+                    <div x-show="!prefetchCache?.['{{ $escapedPath }}']?.loaded && !prefetchCache?.['{{ $escapedPath }}']?.preloaded" class="flex items-center px-2 py-1 ml-2 text-muted-foreground/50">
                         <svg class="w-3 h-3 mr-2 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                         <span class="text-xs">Loading...</span>
                     </div>
@@ -80,7 +80,7 @@
                 <div class="flex items-center px-2 py-1 ml-2">
                     <span class="mr-1.5 ml-3.5">
                         <template x-if="creatingType === 'folder'">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-white stroke-current" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 stroke-current" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
                         </template>
                         <template x-if="creatingType === 'file'">
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 stroke-current" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>
@@ -93,7 +93,7 @@
                         @keydown.enter.prevent="confirmCreation()"
                         @keydown.escape.prevent="cancelCreation()"
                         @blur="creatingName.trim() ? confirmCreation() : cancelCreation()"
-                        class="flex-1 px-1 py-0 text-sm bg-stone-800 border border-blue-500/50 rounded-md text-white/90 outline-none focus:border-blue-500"
+                        class="flex-1 px-1 py-0 text-sm bg-muted border border-border rounded-md text-foreground outline-none focus:border-ring"
                         placeholder="Enter name..."
                     />
                 </div>
@@ -101,8 +101,8 @@
             @endif
         </div>
     @else
-        <div class="flex items-center px-2 py-1 truncate rounded cursor-pointer hover:bg-stone-800 dark:hover:bg-neutral-800 text-white/60 dark:text-white/60 hover:dark:text-white/80 hover:text-white/80"
-            :class="selectedFile === '{{ $escapedPath }}' ? 'bg-blue-500/15 !text-blue-300' : ''"
+        <div class="flex items-center px-2 py-1 truncate rounded cursor-pointer hover:bg-accent/50 text-foreground hover:text-accent-foreground"
+            :class="selectedFile === '{{ $escapedPath }}' ? 'bg-blue-50 dark:bg-blue-500/15 !text-blue-600 dark:!text-blue-400' : ''"
             @mouseover="
                 const fullPath = '{{ $escapedPath }}';
                 fetchFileContent(fullPath);
@@ -115,7 +115,8 @@
                 });
             "
         >
-            <span class="ml-3.5 mr-1.5">
+            <span class="w-3 shrink-0"></span>
+            <span class="ml-0.5 mr-1.5">
                 @if($fileType && isset($fileType['icon']) && isset($fileType['color']))
                     <span class="{{ $fileType['color'] }}">{!! $fileType['icon'] !!}</span>
                 @else

@@ -152,15 +152,15 @@ new class extends Component {
 
 }; ?>
 
-<div class="relative flex flex-col h-full text-sm select-none bg-stone-950 scrollbar-hide" x-data="directoryTree(@js($readonly), @js($writeToken))" x-init="init()" @if(!$readonly) @dt-start-creating.window="startCreating($event.detail.type)" @endif>
+<div class="relative flex flex-col h-full text-sm select-none bg-background scrollbar-hide" x-data="directoryTree(@js($readonly), @js($writeToken))" x-init="init()" @if(!$readonly) @dt-start-creating.window="startCreating($event.detail.type)" @endif>
     @if($showToolbar && !$readonly)
     <div class="flex items-center justify-end gap-1 px-3 pt-2 pb-1 shrink-0">
         <button
             type="button"
             title="New File"
             :disabled="creatingType !== null"
-            :class="creatingType !== null ? 'opacity-30 cursor-not-allowed' : 'hover:bg-stone-800 hover:text-white/90'"
-            class="p-1 rounded text-white/50 transition-colors"
+            :class="creatingType !== null ? 'opacity-30 cursor-not-allowed' : 'hover:bg-muted hover:text-accent-foreground'"
+            class="p-1 rounded text-muted-foreground transition-colors"
             @click="startCreating('file')"
         >
             <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="M9 15h6"/></svg>
@@ -169,8 +169,8 @@ new class extends Component {
             type="button"
             title="New Folder"
             :disabled="creatingType !== null"
-            :class="creatingType !== null ? 'opacity-30 cursor-not-allowed' : 'hover:bg-stone-800 hover:text-white/90'"
-            class="p-1 rounded text-white/50 transition-colors"
+            :class="creatingType !== null ? 'opacity-30 cursor-not-allowed' : 'hover:bg-muted hover:text-accent-foreground'"
+            class="p-1 rounded text-muted-foreground transition-colors"
             @click="startCreating('folder')"
         >
             <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 10v6"/><path d="M9 13h6"/><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
@@ -195,7 +195,7 @@ new class extends Component {
             <div class="flex items-center px-2 py-1 ml-0">
                 <span class="mr-1.5 ml-3.5">
                     <template x-if="creatingType === 'folder'">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-white stroke-current" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 stroke-current" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
                     </template>
                     <template x-if="creatingType === 'file'">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 stroke-current" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>
@@ -208,7 +208,7 @@ new class extends Component {
                     @keydown.enter.prevent="confirmCreation()"
                     @keydown.escape.prevent="cancelCreation()"
                     @blur="creatingName.trim() ? confirmCreation() : cancelCreation()"
-                    class="flex-1 px-1 py-0 text-sm bg-stone-800 border border-blue-500/50 rounded-md text-white/90 outline-none focus:border-blue-500"
+                    class="flex-1 px-1 py-0 text-sm bg-muted border border-border rounded-md text-foreground outline-none focus:border-ring"
                     placeholder="Enter name..."
                 />
             </div>
