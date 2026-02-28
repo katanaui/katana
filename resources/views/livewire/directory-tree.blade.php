@@ -413,8 +413,8 @@ function directoryTree() {
                 return;
             }
 
-            // If we have cached HTML from prefetch
-            if (this.prefetchCache[path] && this.prefetchCache[path].html) {
+            // If we have cached data from prefetch (including empty directories)
+            if (this.prefetchCache[path] && this.prefetchCache[path].loaded) {
                 this.injectChildren(path, containerEl, this.prefetchCache[path]);
                 this.prefetchVisibleChildren(path);
                 return;
@@ -430,8 +430,8 @@ function directoryTree() {
         },
 
         fetchChildren(path, level) {
-            // Return cached data if available
-            if (this.prefetchCache[path] && this.prefetchCache[path].html) {
+            // Return cached data if available (including empty directories)
+            if (this.prefetchCache[path] && this.prefetchCache[path].loaded) {
                 return Promise.resolve(this.prefetchCache[path]);
             }
 
@@ -459,9 +459,10 @@ function directoryTree() {
             .then(r => r.json())
             .then(data => {
                 this.prefetchCache[path] = {
-                    html: data.html,
+                    html: data.html || '',
                     childDirs: data.childDirs || [],
                     preloaded: false,
+                    loaded: true,
                 };
                 return this.prefetchCache[path];
             })
@@ -477,13 +478,15 @@ function directoryTree() {
         },
 
         injectChildren(path, containerEl, data) {
-            if (!containerEl || !data || !data.html) return;
+            if (!containerEl || !data) return;
 
-            containerEl.innerHTML = data.html;
+            containerEl.innerHTML = data.html || '';
             containerEl.setAttribute('data-loaded', 'true');
 
             // Initialize Alpine on the new DOM elements
-            Alpine.initTree(containerEl);
+            if (data.html) {
+                Alpine.initTree(containerEl);
+            }
         },
 
         prefetchVisibleChildren(parentPath) {
