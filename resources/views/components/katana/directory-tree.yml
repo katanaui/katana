@@ -35,3 +35,10 @@ props:
     options:
       - 'true'
       - 'false'
+  - name: animateCollapse
+    description: When true, adds x-collapse to folder containers for smooth expand/collapse animations. Requires the Alpine.js Collapse plugin.
+    type: select
+    default: 'false'
+    options:
+      - 'true'
+      - 'false'

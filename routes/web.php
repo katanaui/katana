@@ -41,6 +41,7 @@ Route::post('/katana/directory-children', function (Request $request) {
         'exclude' => 'nullable|array',
         'lazyDirs' => 'nullable|array',
         'level' => 'nullable|integer|min:0|max:50',
+        'animateCollapse' => 'nullable|boolean',
     ]);
 
     $disk = $validated['disk'];
@@ -49,6 +50,7 @@ Route::post('/katana/directory-children', function (Request $request) {
     $exclude = $validated['exclude'] ?? [];
     $lazyDirs = $validated['lazyDirs'] ?? ['node_modules', 'vendor'];
     $level = $validated['level'] ?? 1;
+    $animateCollapse = $validated['animateCollapse'] ?? false;
 
     // Validate disk is local-driver only
     $diskConfig = config("filesystems.disks.{$disk}");
@@ -131,6 +133,7 @@ Route::post('/katana/directory-children', function (Request $request) {
             'item' => $item,
             'level' => $level,
             'readonly' => $request->boolean('readonly', false),
+            'animateCollapse' => $animateCollapse,
         ])->render();
     }
 

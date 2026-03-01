@@ -15,14 +15,16 @@ new class extends Component {
     public $files = [];
     public bool $showToolbar = true;
     public bool $readonly = false;
+    public bool $animateCollapse = false;
     public ?string $writeToken = null;
 
-    public function mount($disk = 'local', $baseDir = '', $exclude = null, $lazyDirs = null, $showToolbar = true, $readonly = false)
+    public function mount($disk = 'local', $baseDir = '', $exclude = null, $lazyDirs = null, $showToolbar = true, $readonly = false, $animateCollapse = false)
     {
         $this->disk = $disk;
         $this->baseDir = $baseDir;
         $this->showToolbar = $showToolbar;
         $this->readonly = $readonly;
+        $this->animateCollapse = $animateCollapse;
 
         if (!$this->readonly) {
             $this->writeToken = Crypt::encryptString(json_encode([
@@ -185,6 +187,7 @@ new class extends Component {
                     :item="$item"
                     :level="0"
                     :readonly="$readonly"
+                    :animateCollapse="$animateCollapse"
                 />
             @endforeach
         </div>
@@ -193,7 +196,8 @@ new class extends Component {
         {{-- Root-level inline creation input (outside container so it survives innerHTML refresh) --}}
         <template x-if="creatingType && creatingInPath === ''">
             <div class="flex items-center px-2 py-1 ml-0">
-                <span class="mr-1.5 ml-3.5">
+                <span class="w-3 shrink-0"></span>
+                <span class="ml-0.5 mr-1.5">
                     <template x-if="creatingType === 'folder'">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 stroke-current" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
                     </template>
@@ -244,6 +248,7 @@ function directoryTree(readonly, writeToken) {
             baseDir: @js($baseDir),
             exclude: @js($exclude),
             lazyDirs: @js($lazyDirs),
+            animateCollapse: @js($animateCollapse),
         },
 
         init() {
@@ -479,6 +484,7 @@ function directoryTree(readonly, writeToken) {
                     lazyDirs: this.config.lazyDirs,
                     level: level,
                     readonly: this.readonly,
+                    animateCollapse: this.config.animateCollapse,
                 }),
             })
             .then(r => r.json())

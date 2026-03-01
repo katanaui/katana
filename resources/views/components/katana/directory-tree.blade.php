@@ -6,6 +6,7 @@
     'showToolbar' => true,
     'readonly' => false,
     'title' => null,
+    'animateCollapse' => false,
 ])
 
 @php
@@ -53,6 +54,6 @@
     </div>
     @endif
     <div class="flex-1 min-h-0">
-        <livewire:directory-tree :disk="$disk" :base-dir="$baseDir" :exclude="$exclude" :lazy-dirs="$lazyDirs" :show-toolbar="false" :readonly="$readonly" />
+        <livewire:directory-tree :disk="$disk" :base-dir="$baseDir" :exclude="$exclude" :lazy-dirs="$lazyDirs" :show-toolbar="false" :readonly="$readonly" :animate-collapse="$animateCollapse" />
     </div>
 </section>
