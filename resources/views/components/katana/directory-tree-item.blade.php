@@ -24,10 +24,10 @@
     $escapedPath = e($item['path']);
 @endphp
 
-<div class="@if ($level !== 0) ml-2 @endif relative font-light" @if ($item['type'] === 'directory') data-dir-path="{{ $item['path'] }}"
+<div class="@if ($level !== 0) ml-2 @endif relative font-light transition-all duration-200" :class="{ 'opacity-20 scale-[0.98] pointer-events-none': deletingPath === '{{ $escapedPath }}' }" @if ($item['type'] === 'directory') data-dir-path="{{ $item['path'] }}"
         @if ($isLazy) data-lazy="true" @endif @endif>
     @if ($item['type'] === 'directory')
-        <div x-on:click="selectDirectory('{{ $escapedPath }}'); toggle('{{ $escapedPath }}', {{ $isLazy ? 'true' : 'false' }}, {{ $isSymlink ? 'true' : 'false' }}, {{ $level + 1 }}, $el.parentElement.querySelector('[data-children-for=&quot;{{ $escapedPath }}&quot;]'))" class="text-foreground hover:text-accent-foreground hover:bg-accent/50 flex cursor-pointer items-center truncate rounded px-2 py-1" :class="selectedDirectory === '{{ $escapedPath }}' ? 'bg-accent/50 !text-accent-foreground' : ''">
+        <div x-on:click="selectDirectory('{{ $escapedPath }}'); toggle('{{ $escapedPath }}', {{ $isLazy ? 'true' : 'false' }}, {{ $isSymlink ? 'true' : 'false' }}, {{ $level + 1 }}, $el.parentElement.querySelector('[data-children-for=&quot;{{ $escapedPath }}&quot;]'))" class="text-foreground/80 hover:text-accent-foreground hover:bg-accent/50 flex cursor-pointer items-center truncate rounded px-2 py-1" :class="selectedDirectory === '{{ $escapedPath }}' ? 'bg-accent/50 !text-accent-foreground' : ''">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 shrink-0 scale-110 stroke-current transition-all duration-150 ease-out" :class="{ 'rotate-90': expanded['{{ $escapedPath }}'] }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="m9 18 6-6-6-6" />
             </svg>
@@ -92,7 +92,7 @@
             @endif
         </div>
     @else
-        <div class="text-foreground flex cursor-pointer items-center truncate rounded px-2 py-1" :class="selectedFile === '{{ $escapedPath }}' ? 'bg-blue-50 dark:bg-blue-500/15 hover:bg-blue-100 dark:hover:bg-blue-500/25 !text-blue-600 dark:!text-blue-400' : 'hover:bg-accent/50 hover:text-accent-foreground'" @mouseover="
+        <div class="text-foreground/80 hover:text-foreground flex cursor-pointer items-center truncate rounded px-2 py-1" :class="selectedFile === '{{ $escapedPath }}' ? 'bg-blue-50 dark:bg-blue-500/15 hover:bg-blue-100 dark:hover:bg-blue-500/25 !text-blue-600 dark:!text-blue-400' : 'hover:bg-accent/50 hover:text-accent-foreground'" @mouseover="
                 const fullPath = '{{ $escapedPath }}';
                 fetchFileContent(fullPath);
             " @click="

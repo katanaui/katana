@@ -154,9 +154,23 @@ new class extends Component {
 
 }; ?>
 
-<div class="relative flex flex-col h-full text-sm select-none bg-background scrollbar-hide" x-data="directoryTree(@js($readonly), @js($writeToken))" x-init="init()" @if(!$readonly) @dt-start-creating.window="startCreating($event.detail.type)" @endif>
+<div class="relative flex flex-col h-full text-sm select-none bg-background scrollbar-hide" x-data="directoryTree(@js($readonly), @js($writeToken))" x-init="init()" @if(!$readonly) @dt-start-creating.window="startCreating($event.detail.type)" @dt-delete-selected.window="deleteSelected()" @endif>
     @if($showToolbar && !$readonly)
     <div class="flex items-center justify-end gap-1 px-3 pt-2 pb-1 shrink-0">
+        <button
+            type="button"
+            title="Delete"
+            :disabled="(selectedFile === null && (selectedDirectory === null || selectedDirectory === '')) || creatingType !== null || isDeleting"
+            class="p-1 rounded transition-all duration-200"
+            :class="(selectedFile === null && (selectedDirectory === null || selectedDirectory === '')) || creatingType !== null || isDeleting
+                ? 'text-muted-foreground/20 pointer-events-none'
+                : 'text-muted-foreground/60 hover:bg-red-500/10 hover:text-red-500 dark:hover:text-red-400'"
+            @click="deleteSelected()"
+        >
+            <svg x-show="!isDeleting" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+            <svg x-show="isDeleting" x-cloak xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 animate-spin text-muted-foreground/40" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+        </button>
+        <div class="w-px h-3 bg-border/40 mx-0.5 transition-opacity duration-200" :class="(selectedFile !== null || (selectedDirectory !== null && selectedDirectory !== '')) && creatingType === null ? 'opacity-100' : 'opacity-0'"></div>
         <button
             type="button"
             title="New File"
@@ -242,6 +256,10 @@ function directoryTree(readonly, writeToken) {
         creatingInPath: null,
         creatingName: '',
         isCreating: false,
+
+        // Deletion state
+        isDeleting: false,
+        deletingPath: null,
 
         config: {
             disk: @js($disk),
@@ -401,6 +419,86 @@ function directoryTree(readonly, writeToken) {
             this.creatingType = null;
             this.creatingInPath = null;
             this.creatingName = '';
+        },
+
+        async deleteSelected() {
+            if (this.readonly || this.isDeleting) return;
+
+            const isFile = this.selectedFile !== null;
+            const path = isFile ? this.selectedFile : this.selectedDirectory;
+            const type = isFile ? 'file' : 'directory';
+
+            if (!path) return;
+
+            this.isDeleting = true;
+            this.deletingPath = path;
+            this.$dispatch('dt-deleting-state', { deleting: true });
+
+            const csrfToken = document.querySelector('meta[name=csrf-token]');
+            const fadePromise = new Promise(resolve => setTimeout(resolve, 200));
+
+            try {
+                const fetchPromise = fetch('/katana/directory-delete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken ? csrfToken.content : '',
+                    },
+                    body: JSON.stringify({
+                        disk: this.config.disk,
+                        baseDir: this.config.baseDir,
+                        path: path,
+                        type: type,
+                        _write_token: this.writeToken,
+                    }),
+                }).then(r => r.json());
+
+                const [data] = await Promise.all([fetchPromise, fadePromise]);
+
+                if (data.error) {
+                    this.$dispatch('directory-tree-error', { message: data.error });
+                    return;
+                }
+
+                // Clear selection
+                this.selectedFile = null;
+                this.selectedDirectory = null;
+                this.$dispatch('directory-tree-selection-changed', { file: null, directory: null });
+
+                // Clean up caches
+                if (isFile) {
+                    delete this.files[path];
+                } else {
+                    Object.keys(this.expanded).forEach(key => {
+                        if (key === path || key.startsWith(path + '/')) {
+                            delete this.expanded[key];
+                        }
+                    });
+                    Object.keys(this.prefetchCache).forEach(key => {
+                        if (key === path || key.startsWith(path + '/')) {
+                            delete this.prefetchCache[key];
+                        }
+                    });
+                    Object.keys(this.files).forEach(key => {
+                        if (key.startsWith(path + '/')) {
+                            delete this.files[key];
+                        }
+                    });
+                }
+
+                // Refresh tree
+                await this.$wire.refreshTree();
+                this.rebuildPrefetchCache();
+
+                this.$dispatch('directory-tree-deleted', { type, path });
+            } catch (err) {
+                console.error('Error deleting ' + type + ':', err);
+                this.$dispatch('directory-tree-error', { message: 'Failed to delete ' + type });
+            } finally {
+                this.isDeleting = false;
+                this.deletingPath = null;
+                this.$dispatch('dt-deleting-state', { deleting: false });
+            }
         },
 
         async refreshDirectory(path) {
