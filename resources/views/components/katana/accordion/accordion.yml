@@ -7,6 +7,6 @@ props:
 slots:
     - name: slot
       description: Accordion items
-      default: '<x-katana.accordion-item title="Item 1">Content for item
-        </x-katana.accordion-item><x-katana.accordion-item title="Item 2">Content for item
-        </x-katana.accordion-item>'
+      default: '<x-katana.accordion.item title="Item 1">Content for item
+        </x-katana.accordion.item><x-katana.accordion.item title="Item 2">Content for item
+        </x-katana.accordion.item>'
