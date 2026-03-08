@@ -30,6 +30,8 @@ components:
       name: Image Upload
     - id: infinite-canvas
       name: Infinite Canvas
+    - id: input
+      name: Input
     - id: label
       name: Label
     - id: modal
