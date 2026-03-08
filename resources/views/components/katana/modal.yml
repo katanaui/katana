@@ -17,4 +17,4 @@ slots:
     default: '<x-katana.button variant="outline">Open</x-katana.button>'
   - name: title
     description: The modal title text
-    default: 'Modal Title'
+    default: "Modal Title"

@@ -1,0 +1,8 @@
+component: Button
+props:
+slots:
+  - name: slot
+    description: The main card content
+    default: This is a simple card component, which is nothing more than a div with padding, borders, radius, shadow, and a few other styles.
+studio:
+  container: '<div class="w-full max-w-lg mx-auto">{{component}}</div>'

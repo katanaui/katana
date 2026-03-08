@@ -30,4 +30,4 @@ props:
 slots:
   - name: slot
     description: The main slot of the drawer
-    default: '<x-button>Open Drawer</x-button>'
+    default: "<x-katana.button>Open Drawer</x-katana.button>"
