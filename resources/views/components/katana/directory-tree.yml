@@ -1,26 +1,62 @@
 component: Directory Tree
 props:
   - name: disk
-    description: The filesystem disk to use for reading files
+    description: The Laravel filesystem disk to use for reading and writing files
     type: select
     default: local
     options:
       - local
       - public
       - s3
-      - project
   - name: baseDir
-    description: The base directory path to display
+    description: The base directory path to display as the root of the tree
     type: text
     default: ''
   - name: exclude
-    description: Array of directory names to exclude from the tree
+    description: Array of directory names to completely exclude from the tree (hidden files are always excluded)
     type: text
     default: '[]'
+  - name: lazyDirs
+    description: Array of directory names that are lazy-loaded on expand instead of pre-fetched. Useful for large directories like node_modules or vendor.
+    type: text
+    default: '["node_modules","vendor"]'
+  - name: title
+    description: Title displayed in the toolbar header. Defaults to the folder name derived from baseDir.
+    type: text
+    default: ''
   - name: showToolbar
-    description: Show the toolbar with new file/folder creation buttons
+    description: Show the toolbar with title, delete, new file, and new folder buttons
     type: select
     default: 'true'
     options:
       - 'true'
       - 'false'
+  - name: readonly
+    description: When true, hides all creation/deletion UI and blocks write operations server-side via an encrypted token
+    type: select
+    default: 'false'
+    options:
+      - 'true'
+      - 'false'
+  - name: animateCollapse
+    description: When true, uses Alpine.js x-collapse for smooth expand/collapse animations on folders. Requires the Alpine.js Collapse plugin.
+    type: select
+    default: 'false'
+    options:
+      - 'true'
+      - 'false'
+slots:
+  - name: header
+    description: Custom header content displayed in the toolbar area. Overrides the default title when provided.
+    default: ''
+events:
+  - name: file-selected
+    description: Dispatched when a file is clicked. Payload contains the file path and its content.
+  - name: directory-tree-selection-changed
+    description: Dispatched when the selected file or directory changes. Payload contains the current file and directory paths.
+  - name: directory-tree-created
+    description: Dispatched after a file or folder is successfully created. Payload contains the type, path, and name.
+  - name: directory-tree-deleted
+    description: Dispatched after a file or folder is successfully deleted. Payload contains the type and path.
+  - name: directory-tree-error
+    description: Dispatched when a creation or deletion operation fails. Payload contains the error message.

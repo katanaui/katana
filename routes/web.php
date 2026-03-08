@@ -1,7 +1,37 @@
 <?php
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Contracts\Encryption\DecryptException;
+
+function validateWriteToken(Request $request): bool
+{
+    $token = $request->input('_write_token');
+    if (!$token) {
+        return false;
+    }
+
+    try {
+        $payload = json_decode(Crypt::decryptString($token), true);
+    } catch (DecryptException $e) {
+        return false;
+    }
+
+    if (!is_array($payload) || empty($payload['writable'])) {
+        return false;
+    }
+
+    // Verify the token is scoped to the same disk + baseDir
+    if (($payload['disk'] ?? '') !== ($request->input('disk') ?? '')) {
+        return false;
+    }
+    if (($payload['baseDir'] ?? '') !== ($request->input('baseDir') ?? '')) {
+        return false;
+    }
+
+    return true;
+}
 
 Route::post('/katana/directory-children', function (Request $request) {
     $validated = $request->validate([
@@ -11,6 +41,7 @@ Route::post('/katana/directory-children', function (Request $request) {
         'exclude' => 'nullable|array',
         'lazyDirs' => 'nullable|array',
         'level' => 'nullable|integer|min:0|max:50',
+        'animateCollapse' => 'nullable|boolean',
     ]);
 
     $disk = $validated['disk'];
@@ -19,6 +50,7 @@ Route::post('/katana/directory-children', function (Request $request) {
     $exclude = $validated['exclude'] ?? [];
     $lazyDirs = $validated['lazyDirs'] ?? ['node_modules', 'vendor'];
     $level = $validated['level'] ?? 1;
+    $animateCollapse = $validated['animateCollapse'] ?? false;
 
     // Validate disk is local-driver only
     $diskConfig = config("filesystems.disks.{$disk}");
@@ -100,6 +132,8 @@ Route::post('/katana/directory-children', function (Request $request) {
             'name' => $name,
             'item' => $item,
             'level' => $level,
+            'readonly' => $request->boolean('readonly', false),
+            'animateCollapse' => $animateCollapse,
         ])->render();
     }
 
@@ -123,7 +157,12 @@ Route::post('/katana/directory-create-file', function (Request $request) {
         'baseDir' => 'nullable|string',
         'parentPath' => 'nullable|string',
         'name' => 'required|string|max:255',
+        '_write_token' => 'required|string',
     ]);
+
+    if (!validateWriteToken($request)) {
+        return response()->json(['error' => 'Forbidden'], 403);
+    }
 
     $disk = $validated['disk'];
     $baseDir = $validated['baseDir'] ?? '';
@@ -177,7 +216,12 @@ Route::post('/katana/directory-create-folder', function (Request $request) {
         'baseDir' => 'nullable|string',
         'parentPath' => 'nullable|string',
         'name' => 'required|string|max:255',
+        '_write_token' => 'required|string',
     ]);
+
+    if (!validateWriteToken($request)) {
+        return response()->json(['error' => 'Forbidden'], 403);
+    }
 
     $disk = $validated['disk'];
     $baseDir = $validated['baseDir'] ?? '';
@@ -223,4 +267,71 @@ Route::post('/katana/directory-create-folder', function (Request $request) {
     $relativePath = $parentPath ? rtrim($parentPath, '/') . '/' . $name : $name;
 
     return response()->json(['success' => true, 'path' => $relativePath]);
+})->middleware('web');
+
+Route::post('/katana/directory-delete', function (Request $request) {
+    $validated = $request->validate([
+        'disk' => 'required|string',
+        'baseDir' => 'nullable|string',
+        'path' => 'required|string',
+        'type' => 'required|string|in:file,directory',
+        '_write_token' => 'required|string',
+    ]);
+
+    if (!validateWriteToken($request)) {
+        return response()->json(['error' => 'Forbidden'], 403);
+    }
+
+    $disk = $validated['disk'];
+    $baseDir = $validated['baseDir'] ?? '';
+    $path = $validated['path'];
+    $type = $validated['type'];
+
+    // Validate disk is local-driver only
+    $diskConfig = config("filesystems.disks.{$disk}");
+    if (!$diskConfig || !in_array($diskConfig['driver'] ?? '', ['local'])) {
+        return response()->json(['error' => 'Invalid disk'], 422);
+    }
+
+    $root = rtrim($diskConfig['root'] ?? '', '/');
+    $diskPath = $baseDir ? rtrim($baseDir, '/') . '/' . ltrim($path, '/') : $path;
+    $fullPath = $root . '/' . ltrim($diskPath, '/');
+
+    // Security: block path traversal
+    $realRoot = realpath($root);
+    $realPath = realpath($fullPath);
+    if (!$realRoot || !$realPath || !str_starts_with($realPath, $realRoot)) {
+        return response()->json(['error' => 'Invalid path'], 422);
+    }
+
+    // Prevent deleting the root directory itself
+    if ($realPath === $realRoot) {
+        return response()->json(['error' => 'Cannot delete root directory'], 422);
+    }
+
+    if ($type === 'file') {
+        if (!is_file($realPath)) {
+            return response()->json(['error' => 'File not found'], 404);
+        }
+        unlink($realPath);
+    } else {
+        if (!is_dir($realPath)) {
+            return response()->json(['error' => 'Directory not found'], 404);
+        }
+        // Recursively delete directory contents then the directory itself
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($realPath, \RecursiveDirectoryIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::CHILD_FIRST
+        );
+        foreach ($iterator as $item) {
+            if ($item->isDir()) {
+                rmdir($item->getPathname());
+            } else {
+                unlink($item->getPathname());
+            }
+        }
+        rmdir($realPath);
+    }
+
+    return response()->json(['success' => true, 'path' => $path]);
 })->middleware('web');
