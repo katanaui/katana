@@ -13,7 +13,7 @@
  });" class="relative h-auto w-auto" @keydown.escape.window="modalOpen = false">
     <div @click="modalOpen=true">
         @if (empty(trim($slot)))
-            <x-button variant="outline">Open</x-button>
+            <x-katana.button variant="outline">Open</x-katana.button>
         @else
             {!! $slot !!}
         @endif

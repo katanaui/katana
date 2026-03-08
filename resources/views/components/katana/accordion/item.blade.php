@@ -24,7 +24,7 @@
 >
     <button 
         @click="toggle(id)" 
-        {{ $attributes->twMergeFor('title', 'flex w-full items-center text-foreground/80 group-hover/accordion-item:text-foreground justify-between py-4 px-3 text-left select-none font-medium group-hover/accordion-item:underline') }}
+        {{ $attributes->twMergeFor('title', 'flex w-full items-center text-foreground/80 group-hover/accordion-item:text-foreground justify-between py-4 px-3 text-left text-sm select-none font-medium group-hover/accordion-item:underline') }}
     >
         <span>{{ $title }}</span>
         <span  {{ $attributes->twMergeFor('icon', 'w-3.5 h-3.5 duration-200 ease-out transform') }} :class="{ 'rotate-180': isOpen(id) }">
@@ -39,8 +39,9 @@
         x-show="isOpen(id)" 
         x-collapse 
         x-cloak
-        {{ $attributes->twMergeFor('content', 'px-3 pb-4 pt-0 text-sm text-foreground/70') }}
     >
-        {{ $slot }}
+        <div {{ $attributes->twMergeFor('content', 'px-3 pb-4 pt-0 text-sm text-foreground/70') }}>
+            {{ $slot }}
+        </div>
     </div>
 </div>
