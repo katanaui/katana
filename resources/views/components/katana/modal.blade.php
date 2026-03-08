@@ -19,7 +19,7 @@
     ">
     <div @click="modalOpen=true">
         @if (empty(trim($slot)))
-            <x-button variant="outline">Open</x-button>
+            <x-katana.button variant="outline">Open</x-katana.button>
         @else
             {!! $slot !!}
         @endif

@@ -4,3 +4,9 @@ props:
     description: If true, only allow one accordion item to be open at a time
     type: boolean
     default: false
+slots:
+    - name: slot
+      description: Accordion items
+      default: '<x-katana.accordion-item title="Item 1">Content for item
+        </x-katana.accordion-item><x-katana.accordion-item title="Item 2">Content for item
+        </x-katana.accordion-item>'
