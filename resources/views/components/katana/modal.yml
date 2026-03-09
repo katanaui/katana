@@ -11,7 +11,11 @@ props:
 slots:
   - name: slot
     description: The main modal content
-    default: '<p class="text-sm py-5 text-balance opacity-60">This is where you can add some content in your modal. This can be informative, provide an action, or even a form.</p>'
+    default: '<x-katana.button variant="outline">Trigger</x-katana.button>
+      <x-slot:content>
+          <h2 class="-translate-y-1.5">Modal Title</h2>
+          <p class="text-base opacity-60">The main body content for your modal will go here. Add text, images, a form, and more.</p>
+      </x-slot:content>'
   - name: trigger
     description: Custom trigger element to open the modal
     default: '<x-katana.button variant="outline">Open</x-katana.button>'

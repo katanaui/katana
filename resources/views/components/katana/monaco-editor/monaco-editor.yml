@@ -109,3 +109,28 @@ props:
     description: Show or hide the minimap code overview
     type: boolean
     default: false
+studio:
+  head: |
+    <script>
+    window.MonacoEnvironment = {
+      getWorker: function() {
+        return new Worker(URL.createObjectURL(new Blob([''], {type: 'application/javascript'})));
+      }
+    };
+    </script>
+  default: '<x-katana.monaco-editor
+        language="html"
+        height="250"
+        content="<!DOCTYPE html>
+    <html>
+    <head>
+        <title>Page Title</title>
+    </head>
+    <body>
+        <h1>KatanaUI</h1>
+        <p>This is the Monaco Editor</p>
+        <p>You can easily add a code editor to your app</p>
+    </body>
+    </html>"
+    theme="auto"
+        />'
