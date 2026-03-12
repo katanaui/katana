@@ -23,15 +23,19 @@ class KatanaServiceProvider extends ServiceProvider
         // Get the configurable namespace for components
         $namespace = config('katana.components.namespace', 'katana');
 
-        if (empty($namespace)) {
+        // Prefer packages/ path (editable in playground) over vendor/ (read-only copy)
+        $packagesPath = base_path('packages/katanaui/katana/resources/views/components');
+        $vendorPath = __DIR__.'/../resources/views/components';
+        $componentsPath = is_dir($packagesPath) ? $packagesPath : $vendorPath;
 
+        if (empty($namespace)) {
             // No namespace - load components from root (e.g., <x-button>)
-            Blade::anonymousComponentPath(__DIR__.'/../resources/views/components/katana');
-            $this->loadViewsFrom(__DIR__.'/../resources/views/components/katana', '');
+            Blade::anonymousComponentPath($componentsPath.'/katana');
+            $this->loadViewsFrom($componentsPath.'/katana', '');
         } else {
             // Use configured namespace (e.g., <x-katana.button> or <x-ui.button>)
-            Blade::anonymousComponentPath(__DIR__.'/../resources/views/components', $namespace);
-            $this->loadViewsFrom(__DIR__.'/../resources/views/components', $namespace);
+            Blade::anonymousComponentPath($componentsPath, $namespace);
+            $this->loadViewsFrom($componentsPath, $namespace);
         }
 
         // Register Volt single-file Livewire components
