@@ -1,7 +1,12 @@
+
 component: Input
 props:
+	- name: label
+		description: The label text shown above the input
+		type: text
+		default: "Full name"
 	- name: type
-		description: The input type attribute
+		description: The input's HTML type attribute
 		type: select
 		default: text
 		options:
@@ -10,25 +15,41 @@ props:
 			- password
 			- number
 			- tel
-			- url
-	- name: label
-		description: The label text displayed above the input (if set)
+	- name: name
+		description: The input name attribute
 		type: text
-		default: null
+		default: name
 	- name: placeholder
 		description: Placeholder text for the input
 		type: text
-		default: ''
+		default: "Jane Doe"
+	- name: value
+		description: Initial value for the input
+		type: text
+		default: ""
+	- name: help
+		description: Secondary help text shown below the input
+		type: text
+		default: null
+	- name: error
+		description: Error text to display
+		type: text
+		default: null
 	- name: disabled
 		description: Whether the input is disabled
 		type: boolean
 		default: false
-	- name: value
-		description: Initial value for the input
-		type: text
-		default: ''
+	- name: readonly
+		description: Whether the input is readonly
+		type: boolean
+		default: false
+	- name: required
+		description: Whether the input is required
+		type: boolean
+		default: false
 studio:
+	container: '<div class="w-full max-w-lg mx-auto">{{component}}</div>'
 	defaults:
-		label: "Email address"
-		placeholder: "you@company.com"
-		type: email
+		label: "Full name"
+		placeholder: "Jane Doe"
+

@@ -41,7 +41,7 @@ class KatanaServiceProvider extends ServiceProvider
         // Register Volt single-file Livewire components
         if (class_exists(\Livewire\Volt\Volt::class)) {
             \Livewire\Volt\Volt::mount([
-                __DIR__.'/../resources/views/livewire',
+                dirname(__DIR__).'/resources/views/livewire',
             ]);
         }
 

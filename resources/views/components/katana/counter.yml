@@ -1,0 +1,7 @@
+component: Counter
+props: []
+slots: []
+studio:
+  container: '<div class="w-full max-w-sm mx-auto border border-gray-200 outline-4 outline-gray-100 rounded-xl overflow-hidden">{{component}}</div>'
+  default: |
+    <livewire:counter />
