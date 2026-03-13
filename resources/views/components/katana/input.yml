@@ -1,0 +1,34 @@
+component: Input
+props:
+	- name: type
+		description: The input type attribute
+		type: select
+		default: text
+		options:
+			- text
+			- email
+			- password
+			- number
+			- tel
+			- url
+	- name: label
+		description: The label text displayed above the input (if set)
+		type: text
+		default: null
+	- name: placeholder
+		description: Placeholder text for the input
+		type: text
+		default: ''
+	- name: disabled
+		description: Whether the input is disabled
+		type: boolean
+		default: false
+	- name: value
+		description: Initial value for the input
+		type: text
+		default: ''
+studio:
+	defaults:
+		label: "Email address"
+		placeholder: "you@company.com"
+		type: email
