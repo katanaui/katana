@@ -60,3 +60,32 @@ events:
     description: Dispatched after a file or folder is successfully deleted. Payload contains the type and path.
   - name: directory-tree-error
     description: Dispatched when a creation or deletion operation fails. Payload contains the error message.
+studio:
+  defaults:
+    baseDir: project
+    lazyDirs: '[]'
+  container: |
+    @php
+    $base = storage_path('app/private/project');
+    if (!is_dir($base)) {
+        mkdir($base . '/src/Components', 0755, true);
+        mkdir($base . '/src/Layouts', 0755, true);
+        mkdir($base . '/public/css', 0755, true);
+        mkdir($base . '/public/js', 0755, true);
+        mkdir($base . '/config', 0755, true);
+        mkdir($base . '/tests/Feature', 0755, true);
+        mkdir($base . '/database/migrations', 0755, true);
+        file_put_contents($base . '/README.md', '# My Project');
+        file_put_contents($base . '/composer.json', '{}');
+        file_put_contents($base . '/src/Components/Button.php', '<?php');
+        file_put_contents($base . '/src/Components/Card.php', '<?php');
+        file_put_contents($base . '/src/Components/Modal.php', '<?php');
+        file_put_contents($base . '/src/Layouts/AppLayout.php', '<?php');
+        file_put_contents($base . '/public/css/app.css', '');
+        file_put_contents($base . '/public/js/app.js', '');
+        file_put_contents($base . '/config/app.php', '<?php return [];');
+        file_put_contents($base . '/tests/Feature/ExampleTest.php', '<?php');
+        file_put_contents($base . '/database/migrations/create_users.php', '<?php');
+    }
+    @endphp
+    <div style="width:100%;max-width:380px;margin:1rem auto;height:420px;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">{{component}}</div>

@@ -11,7 +11,7 @@ props:
 slots:
   - name: slot
     description: The main modal content
-    default: '<x-katana.button variant="outline">Trigger</x-katana.button>
+    default: '<x-katana.button>Open Modal</x-katana.button>
       <x-slot:content>
           <h2 class="-translate-y-1.5">Modal Title</h2>
           <p class="text-base opacity-60">The main body content for your modal will go here. Add text, images, a form, and more.</p>

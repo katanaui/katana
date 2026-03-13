@@ -110,6 +110,7 @@ props:
     type: boolean
     default: false
 studio:
+  container: '<div class="w-full max-w-xl mx-auto border outline-4 outline-gray-100 border-gray-200 rounded-xl overflow-hidden">{{component}}</div>'
   head: |
     <script>
     window.MonacoEnvironment = {
@@ -118,7 +119,8 @@ studio:
       }
     };
     </script>
-  default: '<x-katana.monaco-editor
+  default: |
+    <x-katana.monaco-editor
         language="html"
         height="250"
         content="<!DOCTYPE html>
@@ -133,4 +135,4 @@ studio:
     </body>
     </html>"
     theme="auto"
-        />'
+        />

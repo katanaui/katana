@@ -200,7 +200,7 @@
             }
             return {};
         }
-    }" x-init="init($refs.editor)" id="{{ $id }}" class="relative min-h-[200px] w-full overflow-hidden rounded-lg border border-accent" @update-content="updateContent($event.detail.content)" wire:ignore {{ $attributes->whereDoesntStartWith('wire:model') }}>
+    }" x-init="init($refs.editor)" id="{{ $id }}" class="relative min-h-[200px] w-full overflow-hidden rounded-lg border border-border" @update-content="updateContent($event.detail.content)" wire:ignore {{ $attributes->whereDoesntStartWith('wire:model') }}>
     <div class="relative z-50 flex space-x-1 border-b border-accent bg-background p-1">
         @foreach ($toolbar_items as $item)
             @if ($item == 'divider')
@@ -213,6 +213,6 @@
             @endif
         @endforeach
     </div>
-    <div x-ref="editor" class="prose prose-sm sm:prose-base lg:prose-md dark:prose-invert lg:max-w-full sm:max-w-full max-w-full h-[200px] min-h-[200px] w-full overflow-scroll"></div>
+    <div x-ref="editor" class="prose prose-sm sm:prose-base lg:prose-md dark:prose-invert lg:!max-w-full sm:!max-w-full overflow-x-hidden !max-w-full h-[200px] min-h-[200px] w-full overflow-scroll"></div>
     <x-katana.tiptap.modals.link :elementId="$id" />
 </div>
