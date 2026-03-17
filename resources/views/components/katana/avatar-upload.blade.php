@@ -64,9 +64,9 @@
                             this.cropperInstance = null;
                         }
                         this.cropperInstance = new Croppie(this.$refs.cropContainer, {
-                            viewport:    { width: 220, height: 220, type: 'square' },
-                            boundary:    { width: 260, height: 260 },
-                            enableExif:  true,
+                            viewport:     { width: 220, height: 220, type: 'square' },
+                            boundary:     { width: 220, height: 220 },
+                            enableExif:   true,
                             enableResize: false,
                         });
                         this.cropperInstance.bind({ url: imgDataUrl, orientation: 4 });
@@ -177,8 +177,8 @@
                     Position and resize your photo
                 </h3>
 
-                {{-- Croppie container — overflow:hidden clips the 2000px box-shadow bleed --}}
-                <div class="relative mt-5 flex h-72 items-center justify-center overflow-hidden rounded-xl">
+                {{-- Croppie container --}}
+                <div class="relative mt-5 flex h-72 items-center justify-center">
                     {{-- Loading spinner --}}
                     <div x-show="loadingCrop" class="flex items-center justify-center">
                         <svg class="size-6 animate-spin text-neutral-400" fill="none" viewBox="0 0 24 24">
@@ -217,23 +217,23 @@
 @once
     <style>
         /*
-         * Croppie overrides — circular crop UX
+         * Croppie overrides — circular crop UX (Wave-style)
          *
-         * KEY: border-radius + box-shadow go on the VIEWPORT, NOT the boundary.
-         * Applying overflow:hidden to .cr-boundary clips the drag/zoom UI when
-         * the image extends outside the viewport, causing the circle to vanish
-         * when zoomed out. The boundary must stay square and unclipped.
+         * boundary = viewport size (220×220), so overflow:hidden on .cr-boundary
+         * safely clips the box-shadow without touching the zoom slider (which
+         * lives in .cr-slider-wrap, a sibling of .cr-boundary, outside the clip).
+         *
+         * box-shadow on .cr-viewport masks the square corners → circular look.
+         * border-radius on .cr-boundary clips the masked area to a circle.
          */
-        .croppie-container .cr-viewport {
-            border-radius: 50% !important;
-            /* Giant white shadow masks everything outside the circle */
+        .croppie-container .cr-viewport,
+        .croppie-container .cr-resizer {
             box-shadow: 0 0 2000px 2000px rgba(255, 255, 255, 1) !important;
             border: none !important;
         }
-        /* Boundary: square, never clips — lets Croppie's zoom/drag work freely */
         .croppie-container .cr-boundary {
-            border-radius: 0 !important;
-            overflow: visible !important;
+            border-radius: 50% !important;
+            overflow: hidden !important;
         }
         .croppie-container .cr-slider-wrap {
             margin-top: 12px !important;
