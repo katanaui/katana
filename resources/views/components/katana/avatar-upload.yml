@@ -1,0 +1,40 @@
+name: Avatar Upload
+description: A circular avatar picker with built-in Croppie.js crop modal. Click the circle to open the file selector; after choosing a file, a crop/resize modal appears. On "Apply", the cropped PNG (base64) is stored and optionally synced to a Livewire property via wire-target.
+category: Form
+dependencies:
+  - croppie@2.6.2 (loaded via CDN automatically via @once)
+  - exif-js@2.3.0 (loaded via CDN automatically via @once)
+props:
+  src:
+    type: string|null
+    default: null
+    description: Current avatar URL — shown as the initial preview.
+  size:
+    type: integer
+    default: 14
+    description: Tailwind numeric size class (e.g. 14 → size-14 = 56px).
+  wireTarget:
+    type: string|null
+    default: null
+    description: Livewire property name to $wire.set() with the cropped base64 PNG after applying the crop.
+  placeholder:
+    type: string|null
+    default: null
+    description: Fallback image URL to show when src is empty and no upload has been made.
+examples:
+  basic: |
+    <x-katana.avatar-upload
+        wire-target="avatar"
+        :src="$agent->avatarUrl()"
+    />
+  custom_size: |
+    <x-katana.avatar-upload
+        wire-target="profile_avatar"
+        :src="auth()->user()->avatar_url"
+        :size="20"
+    />
+notes:
+  - Must be used inside a Livewire component for wire-target to work.
+  - Croppie and Exif-JS are loaded once via @once regardless of how many instances are on the page.
+  - The component stores the raw base64 in the Livewire property. Persist it on the server by decoding with base64_decode() and saving to disk.
+  - The modal teleports to <body> to avoid z-index stacking issues.
