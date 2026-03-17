@@ -177,8 +177,8 @@
                     Position and resize your photo
                 </h3>
 
-                {{-- Croppie container --}}
-                <div class="relative mt-5 flex h-72 items-center justify-center">
+                {{-- Croppie container — overflow:hidden clips the 2000px box-shadow bleed --}}
+                <div class="relative mt-5 flex h-72 items-center justify-center overflow-hidden rounded-xl">
                     {{-- Loading spinner --}}
                     <div x-show="loadingCrop" class="flex items-center justify-center">
                         <svg class="size-6 animate-spin text-neutral-400" fill="none" viewBox="0 0 24 24">
