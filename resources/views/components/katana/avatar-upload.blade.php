@@ -50,9 +50,15 @@
 
             const reader = new FileReader();
             reader.onload = (e) => {
-                // Give the modal a tick to render before initialising Croppie
+                const imgDataUrl = e.target.result;
                 this.$nextTick(() => {
-                    setTimeout(() => {
+                    // 1. Hide spinner and SHOW the crop container first so Croppie
+                    //    can measure the element's dimensions correctly.
+                    this.loadingCrop = false;
+
+                    // 2. Wait for the DOM to reflect the visibility change,
+                    //    then init Croppie on the now-visible element.
+                    this.$nextTick(() => {
                         if (this.cropperInstance) {
                             this.cropperInstance.destroy();
                             this.cropperInstance = null;
@@ -62,9 +68,8 @@
                             boundary:   { width: 240, height: 240 },
                             enableExif: true,
                         });
-                        this.cropperInstance.bind({ url: e.target.result, orientation: 4 });
-                        this.loadingCrop = false;
-                    }, 50);
+                        this.cropperInstance.bind({ url: imgDataUrl, orientation: 4 });
+                    });
                 });
             };
             reader.readAsDataURL(file);
@@ -72,8 +77,10 @@
 
         applyCrop() {
             if (!this.cropperInstance) return;
+            // Use size:'viewport' so the result maps exactly to the 190×190
+            // circular viewport — no whitespace baked into the output image.
             this.cropperInstance
-                .result({ type: 'base64', size: { width: 400, height: 400 }, format: 'png', quality: 1 })
+                .result({ type: 'base64', size: 'viewport', format: 'png', quality: 1 })
                 .then((base64) => {
                     this.previewSrc = base64;
                     this.modalOpen = false;
