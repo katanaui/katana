@@ -64,8 +64,8 @@
                             this.cropperInstance = null;
                         }
                         this.cropperInstance = new Croppie(this.$refs.cropContainer, {
-                            viewport:     { width: 220, height: 220, type: 'square' },
-                            boundary:     { width: 220, height: 220 },
+                            viewport:     { width: 190, height: 190, type: 'circle' },
+                            boundary:     { width: 240, height: 240 },
                             enableExif:   true,
                             enableResize: false,
                         });
@@ -216,16 +216,7 @@
 
 @once
     <style>
-        /*
-         * Croppie overrides — circular crop UX (Wave-style)
-         *
-         * boundary = viewport size (220×220), so overflow:hidden on .cr-boundary
-         * safely clips the box-shadow without touching the zoom slider (which
-         * lives in .cr-slider-wrap, a sibling of .cr-boundary, outside the clip).
-         *
-         * box-shadow on .cr-viewport masks the square corners → circular look.
-         * border-radius on .cr-boundary clips the masked area to a circle.
-         */
+        /* Croppie — circular crop UX */
         .croppie-container .cr-viewport,
         .croppie-container .cr-resizer {
             box-shadow: 0 0 2000px 2000px rgba(255, 255, 255, 1) !important;
