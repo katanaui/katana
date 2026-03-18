@@ -69,7 +69,7 @@
                             enableExif:   true,
                             enableResize: false,
                         });
-                        this.cropperInstance.bind({ url: imgDataUrl, orientation: 4 });
+                        this.cropperInstance.bind({ url: imgDataUrl });
                     });
                 });
             };
