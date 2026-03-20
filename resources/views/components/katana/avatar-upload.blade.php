@@ -19,84 +19,89 @@
 @endonce
 
 <div
-    x-data="{
-        previewSrc: @js($src),
-        placeholder: @js($placeholder),
-        modalOpen: false,
-        loadingCrop: true,
-        cropperInstance: null,
+    x-data="(() => {
+        // Store Croppie instance outside Alpine's reactive proxy so
+        // Croppie's internal methods (bind, result, destroy) work correctly.
+        let _cropper = null;
 
-        get displaySrc() {
-            return this.previewSrc || this.placeholder || null;
-        },
+        return {
+            previewSrc: @js($src),
+            placeholder: @js($placeholder),
+            modalOpen: false,
+            loadingCrop: true,
 
-        openFilePicker() {
-            this.$refs.fileInput.click();
-        },
+            get displaySrc() {
+                return this.previewSrc || this.placeholder || null;
+            },
 
-        handleFileChange() {
-            const file = this.$refs.fileInput.files[0];
-            if (!file) return;
+            openFilePicker() {
+                this.$refs.fileInput.click();
+            },
 
-            const ext = file.name.split('.').pop().toLowerCase();
-            if (!['jpg', 'jpeg', 'png'].includes(ext)) {
-                alert('Invalid file type. Please select a JPG or PNG file.');
-                this.$refs.fileInput.value = '';
-                return;
-            }
+            handleFileChange() {
+                const file = this.$refs.fileInput.files[0];
+                if (!file) return;
 
-            this.modalOpen = true;
-            this.loadingCrop = true;
-
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const imgDataUrl = e.target.result;
-                this.$nextTick(() => {
-                    // 1. Hide spinner and SHOW the crop container first so Croppie
-                    //    can measure the element's dimensions correctly.
-                    this.loadingCrop = false;
-
-                    // 2. Wait for the DOM to reflect the visibility change,
-                    //    then init Croppie on the now-visible element.
-                    this.$nextTick(() => {
-                        if (this.cropperInstance) {
-                            this.cropperInstance.destroy();
-                            this.cropperInstance = null;
-                        }
-                        this.cropperInstance = new Croppie(this.$refs.cropContainer, {
-                            viewport:     { width: 190, height: 190, type: 'circle' },
-                            boundary:     { width: 240, height: 240 },
-                            enableExif:   true,
-                            enableResize: false,
-                        });
-                        this.cropperInstance.bind({ url: imgDataUrl, orientation: 4 });
-                    });
-                });
-            };
-            reader.readAsDataURL(file);
-        },
-
-        applyCrop() {
-            if (!this.cropperInstance) return;
-            // Use size:'viewport' so the result maps exactly to the 190×190
-            // circular viewport — no whitespace baked into the output image.
-            this.cropperInstance
-                .result({ type: 'base64', size: 'viewport', format: 'png', quality: 1 })
-                .then((base64) => {
-                    this.previewSrc = base64;
-                    this.modalOpen = false;
+                const ext = file.name.split('.').pop().toLowerCase();
+                if (!['jpg', 'jpeg', 'png'].includes(ext)) {
+                    alert('Invalid file type. Please select a JPG or PNG file.');
                     this.$refs.fileInput.value = '';
-                    @if($wireTarget)
-                        $wire.set('{{ $wireTarget }}', base64);
-                    @endif
-                });
-        },
+                    return;
+                }
 
-        cancelCrop() {
-            this.modalOpen = false;
-            this.$refs.fileInput.value = '';
-        },
-    }"
+                this.modalOpen = true;
+                this.loadingCrop = true;
+
+                // Read the file immediately, then init Croppie after modal renders.
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const imgDataUrl = e.target.result;
+
+                    setTimeout(() => {
+                        this.loadingCrop = false;
+
+                        this.$nextTick(() => {
+                            if (_cropper) {
+                                _cropper.destroy();
+                            }
+
+                            const el = this.$refs.cropContainer;
+                            _cropper = new Croppie(el, {
+                                viewport: { width: 190, height: 190, type: 'square' },
+                                boundary: { width: 190, height: 190 },
+                                enableExif: true,
+                            });
+
+                            _cropper.bind({
+                                url: imgDataUrl,
+                                orientation: 4
+                            });
+                        });
+                    }, 800);
+                };
+                reader.readAsDataURL(file);
+            },
+
+            applyCrop() {
+                if (!_cropper) return;
+                _cropper
+                    .result({ type: 'base64', size: 'original', format: 'png', quality: 1 })
+                    .then((base64) => {
+                        this.previewSrc = base64;
+                        this.modalOpen = false;
+                        this.$refs.fileInput.value = '';
+                        @if($wireTarget)
+                            $wire.set('{{ $wireTarget }}', base64);
+                        @endif
+                    });
+            },
+
+            cancelCrop() {
+                this.modalOpen = false;
+                this.$refs.fileInput.value = '';
+            },
+        };
+    })()"
     class="relative inline-block"
 >
     {{-- ── Circle trigger ─────────────────────────────────────────────────── --}}
