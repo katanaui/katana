@@ -64,12 +64,12 @@
                             this.cropperInstance = null;
                         }
                         this.cropperInstance = new Croppie(this.$refs.cropContainer, {
-                            viewport:    { width: 220, height: 220, type: 'square' },
-                            boundary:    { width: 260, height: 260 },
-                            enableExif:  true,
+                            viewport:     { width: 190, height: 190, type: 'circle' },
+                            boundary:     { width: 240, height: 240 },
+                            enableExif:   true,
                             enableResize: false,
                         });
-                        this.cropperInstance.bind({ url: imgDataUrl, orientation: 4 });
+                        this.cropperInstance.bind({ url: imgDataUrl });
                     });
                 });
             };
@@ -216,24 +216,15 @@
 
 @once
     <style>
-        /*
-         * Croppie overrides — circular crop UX
-         *
-         * KEY: border-radius + box-shadow go on the VIEWPORT, NOT the boundary.
-         * Applying overflow:hidden to .cr-boundary clips the drag/zoom UI when
-         * the image extends outside the viewport, causing the circle to vanish
-         * when zoomed out. The boundary must stay square and unclipped.
-         */
-        .croppie-container .cr-viewport {
-            border-radius: 50% !important;
-            /* Giant white shadow masks everything outside the circle */
+        /* Croppie — circular crop UX */
+        .croppie-container .cr-viewport,
+        .croppie-container .cr-resizer {
             box-shadow: 0 0 2000px 2000px rgba(255, 255, 255, 1) !important;
             border: none !important;
         }
-        /* Boundary: square, never clips — lets Croppie's zoom/drag work freely */
         .croppie-container .cr-boundary {
-            border-radius: 0 !important;
-            overflow: visible !important;
+            border-radius: 50% !important;
+            overflow: hidden !important;
         }
         .croppie-container .cr-slider-wrap {
             margin-top: 12px !important;
