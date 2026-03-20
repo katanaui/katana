@@ -5,21 +5,21 @@ dependencies:
   - croppie@2.6.2 (loaded via CDN automatically via @once)
   - exif-js@2.3.0 (loaded via CDN automatically via @once)
 props:
-  src:
-    type: string|null
-    default: null
+  - name: src
+    type: text
+    default: ""
     description: Current avatar URL — shown as the initial preview.
-  size:
-    type: integer
-    default: 14
+  - name: size
+    type: text
+    default: "14"
     description: Tailwind numeric size class (e.g. 14 → size-14 = 56px).
-  wireTarget:
-    type: string|null
-    default: null
+  - name: wire-target
+    type: text
+    default: ""
     description: Livewire property name to $wire.set() with the cropped base64 PNG after applying the crop.
-  placeholder:
-    type: string|null
-    default: null
+  - name: placeholder
+    type: text
+    default: ""
     description: Fallback image URL to show when src is empty and no upload has been made.
 examples:
   basic: |
