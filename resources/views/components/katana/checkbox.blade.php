@@ -23,6 +23,7 @@
 
 <{!! $containerAttribute !!} x-data="{ checked: {{ $checked ? 'true' : 'false' }} }" 
     x-init="
+        checked = $refs.checkbox.checked;
         const checkFunction = function(){ checked = true };
         $refs.checkbox.check = checkFunction;
         const unCheckFunction = function(){ checked = false };
