@@ -20,6 +20,6 @@
             this.activeAccordions === id :
             this.activeAccordions.includes(id);
     }
-}" {{ $attributes->twMerge('w-full mx-auto divide-y divide-border bg-background') }}>
+}" {{ $attributes->twMerge('w-full mx-auto divide-y divide-border') }}>
     {{ $slot }}
 </div>
