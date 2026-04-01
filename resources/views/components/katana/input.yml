@@ -48,7 +48,7 @@ props:
     type: boolean
     default: false
 studio:
-  container: '<div class="w-full max-w-lg mx-auto">{{component}}</div>'
+  container: '<div class="w-full max-w-sm mx-auto">{{component}}</div>'
   defaults:
     label: "Full name"
     placeholder: "Jane Doe"
