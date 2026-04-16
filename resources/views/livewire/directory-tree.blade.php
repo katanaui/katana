@@ -358,21 +358,40 @@ window.directoryTree = function directoryTree(readonly, writeToken) {
         rebuildPrefetchCache() {
             // Mark server-rendered directories as preloaded
             this.prefetchCache = {};
+            // Root may have new files after refreshTree — reset so content
+            // prefetch re-runs for the visible top level.
+            delete this.fetchedDirectories[''];
+
             this.$el.querySelectorAll('[data-loaded]').forEach(el => {
                 const path = el.getAttribute('data-children-for');
-                if (path !== null) {
-                    // Collect child dirs from the rendered HTML
-                    const childDirs = [];
-                    el.querySelectorAll(':scope > [data-dir-path]').forEach(child => {
-                        const dirPath = child.getAttribute('data-dir-path');
-                        const isLazy = child.getAttribute('data-lazy') === 'true';
-                        if (dirPath && !isLazy) {
-                            childDirs.push(dirPath);
-                        }
-                    });
-                    this.prefetchCache[path] = { html: null, childDirs: childDirs, preloaded: true };
-                }
+                if (path === null) return;
+
+                const childDirs = [];
+                el.querySelectorAll(':scope > [data-dir-path]').forEach(child => {
+                    const dirPath = child.getAttribute('data-dir-path');
+                    const isLazy = child.getAttribute('data-lazy') === 'true';
+                    if (dirPath && !isLazy) {
+                        childDirs.push(dirPath);
+                    }
+                });
+
+                const childFiles = [];
+                el.querySelectorAll(':scope > [data-file-path]').forEach(child => {
+                    const filePath = child.getAttribute('data-file-path');
+                    if (filePath) childFiles.push(filePath);
+                });
+
+                this.prefetchCache[path] = { html: null, childDirs, childFiles, preloaded: true };
             });
+
+            // Eagerly prefetch only root-level file content. Sub-folder files
+            // are batch-prefetched lazily when the user expands their parent
+            // (via prefetchVisibleChildren), which avoids hammering the disk
+            // for folders the user never opens.
+            const rootCache = this.prefetchCache[''];
+            if (rootCache && rootCache.childFiles && rootCache.childFiles.length > 0) {
+                this.fetchFilesInDirectory('', rootCache.childFiles);
+            }
         },
 
         selectFile(path) {
@@ -586,6 +605,10 @@ window.directoryTree = function directoryTree(readonly, writeToken) {
             // Clear prefetch cache for this path so it re-fetches
             delete this.prefetchCache[path];
             delete this.pendingFetches[path];
+            // Allow the post-refresh batch prefetch to run — without this, a
+            // newly-created file in an already-prefetched folder would never
+            // have its content cached.
+            delete this.fetchedDirectories[path];
 
             // Find the container element for this directory
             // Note: CSS.escape('') throws, so we handle empty string directly
@@ -602,6 +625,7 @@ window.directoryTree = function directoryTree(readonly, writeToken) {
             const data = await this.fetchChildren(path, depth);
             if (data && containerEl) {
                 this.injectChildren(path, containerEl, data);
+                this.prefetchVisibleChildren(path);
             }
         },
 
@@ -668,6 +692,7 @@ window.directoryTree = function directoryTree(readonly, writeToken) {
                 this.prefetchCache[path] = {
                     html: data.html || '',
                     childDirs: data.childDirs || [],
+                    childFiles: data.childFiles || [],
                     preloaded: false,
                     loaded: true,
                 };
@@ -699,103 +724,124 @@ window.directoryTree = function directoryTree(readonly, writeToken) {
 
         prefetchVisibleChildren(parentPath) {
             const cached = this.prefetchCache[parentPath];
-            if (!cached || !cached.childDirs) return;
+            if (!cached) return;
 
-            cached.childDirs.forEach(childPath => {
+            // Structure-level prefetch: grab the HTML of nested dirs so the
+            // next expand doesn't round-trip.
+            (cached.childDirs || []).forEach(childPath => {
                 if (!this.prefetchCache[childPath] && !this.pendingFetches[childPath]) {
-                    // Determine the level from the path depth
                     const parentDepth = parentPath.split('/').length;
                     this.fetchChildren(childPath, parentDepth + 1);
                 }
             });
 
+            // Content-level prefetch: batch-read the files visible at this
+            // level so clicking any one of them is instant.
+            if ((cached.childFiles || []).length > 0) {
+                this.fetchFilesInDirectory(parentPath, cached.childFiles);
+            }
         },
 
-        // File content fetching — disabled automatically if the endpoint returns 404
-        _fileContentAvailable: null,
+        // File content prefetch & cache.
+        //
+        // `this.files[path]` values:
+        //   undefined — never fetched
+        //   null      — fetched but unavailable (binary, too large, or error)
+        //   string    — file contents (empty string is a valid cached value)
+        //
+        // Callers must check `!== undefined`, not truthiness — empty files are
+        // real cache hits.
 
         fetchFileContent(fullPath) {
-            // If we've detected the endpoint doesn't exist, bail out silently
-            if (this._fileContentAvailable === false) {
-                return Promise.resolve(null);
-            }
-            if (this.files[fullPath]) {
+            if (this.files[fullPath] !== undefined) {
                 return Promise.resolve(this.files[fullPath]);
             }
+            // If a batch prefetch is already reading this path, reuse its
+            // Promise so a hover during a batch doesn't fire a second request.
             if (this.pendingFetches['file:' + fullPath]) {
                 return this.pendingFetches['file:' + fullPath];
             }
+
             const csrfToken = document.querySelector('meta[name=csrf-token]');
-            this.pendingFetches['file:' + fullPath] = fetch('/file-content', {
+            const promise = fetch('/katana/file-content', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': csrfToken ? csrfToken.content : '',
                 },
-                body: JSON.stringify({ path: fullPath })
+                body: JSON.stringify({
+                    disk: this.config.disk,
+                    baseDir: this.config.baseDir,
+                    path: fullPath,
+                }),
             })
-            .then(response => {
-                if (response.status === 404) {
-                    this._fileContentAvailable = false;
-                    return null;
-                }
-                this._fileContentAvailable = true;
-                return response.json();
-            })
+            .then(response => response.json().catch(() => ({ error: 'Bad response' })))
             .then(data => {
-                if (!data) return null;
-                if (!data.error) {
-                    this.files[fullPath] = data.content;
-                    return data.content;
-                }
-                return null;
+                const content = (data && typeof data.content === 'string') ? data.content : null;
+                this.files[fullPath] = content;
+                return content;
             })
-            .catch(error => {
+            .catch(() => {
+                this.files[fullPath] = null;
                 return null;
             })
             .finally(() => {
                 delete this.pendingFetches['file:' + fullPath];
             });
-            return this.pendingFetches['file:' + fullPath];
+
+            this.pendingFetches['file:' + fullPath] = promise;
+            return promise;
         },
 
         fetchFilesInDirectory(dirPath, files) {
-            if (this._fileContentAvailable === false) return;
             if (this.fetchedDirectories[dirPath]) return;
 
-            const filesToFetch = files.filter(f =>
-                !this.files[f] && !this.pendingFetches['file:' + f]
+            const filesToFetch = (files || []).filter(f =>
+                this.files[f] === undefined && !this.pendingFetches['file:' + f]
             );
+
             if (filesToFetch.length === 0) {
                 this.fetchedDirectories[dirPath] = true;
                 return;
             }
-            filesToFetch.forEach(f => { this.pendingFetches['file:' + f] = true; });
+
+            // Per-file resolver so a concurrent fetchFileContent() hover can
+            // await the in-flight batch rather than starting a duplicate fetch.
+            const resolvers = {};
+            filesToFetch.forEach(f => {
+                this.pendingFetches['file:' + f] = new Promise(resolve => {
+                    resolvers[f] = resolve;
+                });
+            });
+
+            const settle = (f, content) => {
+                this.files[f] = content;
+                resolvers[f](content);
+            };
+
             const csrfToken = document.querySelector('meta[name=csrf-token]');
-            fetch('/batch-file-content', {
+            fetch('/katana/batch-file-content', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': csrfToken ? csrfToken.content : '',
                 },
-                body: JSON.stringify({ paths: filesToFetch })
+                body: JSON.stringify({
+                    disk: this.config.disk,
+                    baseDir: this.config.baseDir,
+                    paths: filesToFetch,
+                }),
             })
-            .then(response => {
-                if (response.status === 404) {
-                    this._fileContentAvailable = false;
-                    return null;
-                }
-                return response.json();
-            })
+            .then(response => response.json())
             .then(data => {
-                if (!data) return;
-                const contents = data.contents || {};
-                Object.entries(contents).forEach(([file, content]) => {
-                    this.files[file] = content;
+                const contents = (data && data.contents) || {};
+                filesToFetch.forEach(f => {
+                    const content = typeof contents[f] === 'string' ? contents[f] : null;
+                    settle(f, content);
                 });
             })
-            .catch(error => {
-                // Silently handle — endpoint may not exist
+            .catch(() => {
+                filesToFetch.forEach(f => settle(f, null));
             })
             .finally(() => {
                 filesToFetch.forEach(f => { delete this.pendingFetches['file:' + f]; });

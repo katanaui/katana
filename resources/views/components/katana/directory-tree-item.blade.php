@@ -25,7 +25,7 @@
 @endphp
 
 <div class="@if ($level !== 0) ml-2 @endif relative font-light transition-all duration-200" :class="{ 'opacity-20 scale-[0.98] pointer-events-none': deletingPath === '{{ $escapedPath }}' }" @if ($item['type'] === 'directory') data-dir-path="{{ $item['path'] }}"
-        @if ($isLazy) data-lazy="true" @endif @endif>
+        @if ($isLazy) data-lazy="true" @endif @else data-file-path="{{ $item['path'] }}" @endif>
     @if ($item['type'] === 'directory')
         <div x-on:click="selectDirectory('{{ $escapedPath }}'); toggle('{{ $escapedPath }}', {{ $isLazy ? 'true' : 'false' }}, {{ $isSymlink ? 'true' : 'false' }}, {{ $level + 1 }}, $el.parentElement.querySelector('[data-children-for=&quot;{{ $escapedPath }}&quot;]'))" class="flex cursor-pointer items-center truncate rounded px-2 py-1 text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100" :class="selectedDirectory === '{{ $escapedPath }}' ? '!bg-zinc-200 !text-zinc-900 dark:!bg-zinc-700 dark:!text-zinc-100' : ''">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 shrink-0 scale-110 stroke-current transition-all duration-150 ease-out" :class="{ 'rotate-90': expanded['{{ $escapedPath }}'] }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -100,7 +100,7 @@
             @endif
         </div>
     @else
-        <div data-file-path="{{ $escapedPath }}" class="flex cursor-pointer items-center truncate rounded px-2 py-1 text-zinc-700 transition-colors dark:text-zinc-300" :class="selectedFile === '{{ $escapedPath }}' ? 'bg-blue-50 !text-blue-600 hover:bg-blue-100 dark:bg-blue-500/15 dark:!text-blue-400 dark:hover:bg-blue-500/25' : 'hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100'" @mouseover="
+        <div class="flex cursor-pointer items-center truncate rounded px-2 py-1 text-zinc-700 transition-colors dark:text-zinc-300" :class="selectedFile === '{{ $escapedPath }}' ? 'bg-blue-50 !text-blue-600 hover:bg-blue-100 dark:bg-blue-500/15 dark:!text-blue-400 dark:hover:bg-blue-500/25' : 'hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100'" @mouseover="
                 const fullPath = '{{ $escapedPath }}';
                 fetchFileContent(fullPath);
             " @click="

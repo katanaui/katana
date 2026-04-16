@@ -6,6 +6,12 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Contracts\Encryption\DecryptException;
 
+// Bounds the payload of /katana/file-content and /katana/batch-file-content.
+// A batch of 50 × 1MB worst-case is 50MB — still JSON-safe, and in practice
+// batches are dominated by small source files well under 50KB each.
+const KATANA_MAX_FILE_CONTENT_SIZE = 1_000_000;
+const KATANA_MAX_BATCH_FILE_COUNT = 50;
+
 function validateWriteToken(Request $request): bool
 {
     $token = $request->input('_write_token');
@@ -77,6 +83,92 @@ function katanaIsLocalDisk(string $disk): bool
     return (config("filesystems.disks.{$disk}.driver") ?? '') === 'local';
 }
 
+/**
+ * Read a file off a disk for the tree's content-prefetch endpoints.
+ *
+ * Returns one of:
+ *   ['content' => string, 'size' => int]   — UTF-8 text, safe to JSON-encode
+ *   ['binary' => true, 'size' => int]      — null-byte/invalid-UTF-8 detected
+ *   ['tooLarge' => true, 'size' => int]    — exceeds KATANA_MAX_FILE_CONTENT_SIZE
+ *   ['error' => string]                    — disk/path problem
+ *
+ * Path validation mirrors the directory-children / directory-delete routes:
+ * realpath containment check on local disks, katanaJoinDiskPath on abstract
+ * ones. Binary files are flagged (not transcoded) so consumers can render a
+ * placeholder without blowing up the JSON payload.
+ */
+function katanaReadFileSafely(string $diskName, string $baseDir, string $path): array
+{
+    $diskConfig = config("filesystems.disks.{$diskName}");
+    if (!$diskConfig) {
+        return ['error' => 'Invalid disk'];
+    }
+
+    if (katanaIsLocalDisk($diskName)) {
+        $root = rtrim($diskConfig['root'] ?? '', '/');
+        $diskPath = $baseDir ? rtrim($baseDir, '/') . '/' . ltrim($path, '/') : $path;
+        $fullPath = $root . '/' . ltrim($diskPath, '/');
+
+        $realRoot = realpath($root);
+        $realPath = realpath($fullPath);
+        if (!$realRoot || !$realPath || !str_starts_with($realPath, $realRoot)) {
+            return ['error' => 'Invalid path'];
+        }
+
+        if (!is_file($realPath)) {
+            return ['error' => 'Not a file'];
+        }
+
+        $size = filesize($realPath);
+        if ($size === false) {
+            return ['error' => 'Cannot stat file'];
+        }
+
+        if ($size > KATANA_MAX_FILE_CONTENT_SIZE) {
+            return ['tooLarge' => true, 'size' => $size];
+        }
+
+        $content = @file_get_contents($realPath);
+        if ($content === false) {
+            return ['error' => 'Cannot read file'];
+        }
+    } else {
+        $diskPath = katanaJoinDiskPath($baseDir, $path);
+        if ($diskPath === false || $diskPath === '') {
+            return ['error' => 'Invalid path'];
+        }
+
+        $storage = Storage::disk($diskName);
+        if (!$storage->exists($diskPath)) {
+            return ['error' => 'Not a file'];
+        }
+
+        $size = $storage->size($diskPath);
+        if ($size > KATANA_MAX_FILE_CONTENT_SIZE) {
+            return ['tooLarge' => true, 'size' => $size];
+        }
+
+        $content = $storage->get($diskPath);
+        if ($content === null) {
+            return ['error' => 'Cannot read file'];
+        }
+    }
+
+    // Null byte in the first 8KB is a reliable binary marker; mb_check_encoding
+    // catches the remaining cases (Latin-1 text, truncated UTF-8, etc.) that
+    // would otherwise produce invalid JSON.
+    $sample = substr($content, 0, 8192);
+    if ($sample !== '' && strpos($sample, "\0") !== false) {
+        return ['binary' => true, 'size' => $size];
+    }
+
+    if (!mb_check_encoding($content, 'UTF-8')) {
+        return ['binary' => true, 'size' => $size];
+    }
+
+    return ['content' => $content, 'size' => $size];
+}
+
 Route::post('/katana/directory-children', function (Request $request) {
     $validated = $request->validate([
         'disk' => 'required|string',
@@ -131,15 +223,19 @@ Route::post('/katana/directory-children', function (Request $request) {
     }
 
     $childDirs = [];
+    $childFiles = [];
     foreach ($items as $item) {
         if ($item['type'] === 'directory' && empty($item['symlink']) && empty($item['lazy'])) {
             $childDirs[] = $item['path'];
+        } elseif ($item['type'] === 'file') {
+            $childFiles[] = $item['path'];
         }
     }
 
     return response()->json([
         'html' => $html,
         'childDirs' => $childDirs,
+        'childFiles' => $childFiles,
     ]);
 })->middleware('web');
 
@@ -470,4 +566,65 @@ Route::post('/katana/directory-delete', function (Request $request) {
     }
 
     return response()->json(['success' => true, 'path' => $path]);
+})->middleware('web');
+
+Route::post('/katana/file-content', function (Request $request) {
+    $validated = $request->validate([
+        'disk' => 'required|string',
+        'baseDir' => 'nullable|string',
+        'path' => 'required|string',
+    ]);
+
+    $result = katanaReadFileSafely(
+        $validated['disk'],
+        $validated['baseDir'] ?? '',
+        $validated['path'],
+    );
+
+    if (isset($result['error'])) {
+        $status = $result['error'] === 'Invalid disk' || $result['error'] === 'Invalid path' ? 422 : 404;
+        return response()->json(['error' => $result['error']], $status);
+    }
+
+    return response()->json($result);
+})->middleware('web');
+
+Route::post('/katana/batch-file-content', function (Request $request) {
+    $validated = $request->validate([
+        'disk' => 'required|string',
+        'baseDir' => 'nullable|string',
+        'paths' => 'required|array|max:'.KATANA_MAX_BATCH_FILE_COUNT,
+        'paths.*' => 'required|string',
+    ]);
+
+    $disk = $validated['disk'];
+    $baseDir = $validated['baseDir'] ?? '';
+    $paths = $validated['paths'];
+
+    $contents = [];
+    $binary = [];
+    $tooLarge = [];
+    $errors = [];
+
+    foreach ($paths as $path) {
+        $result = katanaReadFileSafely($disk, $baseDir, $path);
+
+        if (isset($result['content'])) {
+            $contents[$path] = $result['content'];
+        } elseif (!empty($result['binary'])) {
+            $binary[] = $path;
+        } elseif (!empty($result['tooLarge'])) {
+            $tooLarge[] = $path;
+        } else {
+            // Soft-fail individual entries so one bad path doesn't sink the whole batch.
+            $errors[$path] = $result['error'] ?? 'Unknown error';
+        }
+    }
+
+    return response()->json([
+        'contents' => $contents,
+        'binary' => $binary,
+        'tooLarge' => $tooLarge,
+        'errors' => $errors,
+    ]);
 })->middleware('web');
