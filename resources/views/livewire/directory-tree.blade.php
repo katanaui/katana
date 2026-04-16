@@ -1,6 +1,6 @@
 <?php
 
-use Livewire\Volt\Component;
+use Livewire\Component;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Storage;
 
@@ -56,7 +56,20 @@ new class extends Component {
         return rtrim($diskConfig['root'] ?? '', '/');
     }
 
+    protected function isLocalDisk(): bool
+    {
+        $driver = config("filesystems.disks.{$this->disk}.driver");
+        return $driver === 'local';
+    }
+
     protected function getDirectoryStructure($baseDir, $depth = 1)
+    {
+        return $this->isLocalDisk()
+            ? $this->getLocalDirectoryStructure($baseDir, $depth)
+            : $this->getDiskDirectoryStructure($baseDir, $depth);
+    }
+
+    protected function getLocalDirectoryStructure($baseDir, $depth = 1)
     {
         $structure = [];
         $root = $this->getDiskRootPath();
@@ -120,6 +133,70 @@ new class extends Component {
             }
         }
 
+        return $this->sortStructure($structure);
+    }
+
+    /**
+     * Disk-abstracted directory walk. Works for any filesystem driver
+     * (s3, ftp, sftp, etc.) via Laravel's Storage facade.
+     */
+    protected function getDiskDirectoryStructure($baseDir, $depth = 1)
+    {
+        $disk = Storage::disk($this->disk);
+        $dirKey = ltrim(rtrim((string) $baseDir, '/'), '/');
+        $baseDirPrefix = rtrim($this->baseDir, '/');
+        $structure = [];
+
+        foreach ($disk->directories($dirKey) as $dirKeyChild) {
+            $entry = basename($dirKeyChild);
+
+            if ($entry === '' || $entry[0] === '.' || in_array($entry, $this->exclude)) {
+                continue;
+            }
+
+            $relativePath = $baseDirPrefix !== ''
+                ? ltrim(substr($dirKeyChild, strlen($baseDirPrefix)), '/')
+                : ltrim($dirKeyChild, '/');
+
+            $isLazy = in_array($entry, $this->lazyDirs);
+            $children = [];
+
+            if ($depth > 1 && !$isLazy) {
+                $children = $this->getDirectoryStructure($dirKeyChild, $depth - 1);
+            }
+
+            $structure[$entry] = [
+                'type' => 'directory',
+                'path' => $relativePath,
+                'lazy' => $isLazy,
+                'children' => $children,
+            ];
+        }
+
+        foreach ($disk->files($dirKey) as $fileKey) {
+            $entry = basename($fileKey);
+
+            // Skip hidden files (including the .gitkeep markers used to
+            // persist empty directories on blob storage).
+            if ($entry === '' || $entry[0] === '.') {
+                continue;
+            }
+
+            $relativePath = $baseDirPrefix !== ''
+                ? ltrim(substr($fileKey, strlen($baseDirPrefix)), '/')
+                : ltrim($fileKey, '/');
+
+            $structure[$entry] = [
+                'type' => 'file',
+                'path' => $relativePath,
+            ];
+        }
+
+        return $this->sortStructure($structure);
+    }
+
+    protected function sortStructure(array $structure): array
+    {
         uksort($structure, function ($a, $b) use ($structure) {
             $aIsDir = $structure[$a]['type'] === 'directory';
             $bIsDir = $structure[$b]['type'] === 'directory';
@@ -154,7 +231,7 @@ new class extends Component {
 
 }; ?>
 
-<div class="relative flex flex-col h-full text-sm select-none bg-background scrollbar-hide" x-data="directoryTree(@js($readonly), @js($writeToken))" x-init="init()" @if(!$readonly) @dt-start-creating.window="startCreating($event.detail.type)" @dt-delete-selected.window="deleteSelected()" @endif>
+<div class="relative flex flex-col h-full text-sm select-none scrollbar-hide" x-data="directoryTree(@js($readonly), @js($writeToken))" x-init="init()" @refresh-directory-tree.window="$wire.refreshTree()" @if(!$readonly) @dt-start-creating.window="startCreating($event.detail.type)" @dt-delete-selected.window="deleteSelected()" @endif>
     @if($showToolbar && !$readonly)
     <div class="flex items-center justify-end gap-1 px-3 pt-2 pb-1 shrink-0">
         <button
@@ -163,20 +240,20 @@ new class extends Component {
             :disabled="(selectedFile === null && (selectedDirectory === null || selectedDirectory === '')) || creatingType !== null || isDeleting"
             class="p-1 rounded transition-all duration-200"
             :class="(selectedFile === null && (selectedDirectory === null || selectedDirectory === '')) || creatingType !== null || isDeleting
-                ? 'text-muted-foreground/20 pointer-events-none'
-                : 'text-muted-foreground/60 hover:bg-red-500/10 hover:text-red-500 dark:hover:text-red-400'"
+                ? 'text-zinc-300 dark:text-zinc-700 pointer-events-none'
+                : 'text-zinc-500 hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400'"
             @click="deleteSelected()"
         >
             <svg x-show="!isDeleting" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-            <svg x-show="isDeleting" x-cloak xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 animate-spin text-muted-foreground/40" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            <svg x-show="isDeleting" x-cloak xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 animate-spin text-zinc-400" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
         </button>
-        <div class="w-px h-3 bg-border/40 mx-0.5 transition-opacity duration-200" :class="(selectedFile !== null || (selectedDirectory !== null && selectedDirectory !== '')) && creatingType === null ? 'opacity-100' : 'opacity-0'"></div>
+        <div class="mx-0.5 h-3 w-px bg-zinc-200 transition-opacity duration-200 dark:bg-zinc-800" :class="(selectedFile !== null || (selectedDirectory !== null && selectedDirectory !== '')) && creatingType === null ? 'opacity-100' : 'opacity-0'"></div>
         <button
             type="button"
             title="New File"
             :disabled="creatingType !== null"
-            :class="creatingType !== null ? 'opacity-30 cursor-not-allowed' : 'hover:bg-muted hover:text-accent-foreground'"
-            class="p-1 rounded text-muted-foreground transition-colors"
+            :class="creatingType !== null ? 'opacity-30 cursor-not-allowed' : 'hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100'"
+            class="p-1 rounded text-zinc-500 transition-colors"
             @click="startCreating('file')"
         >
             <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="M9 15h6"/></svg>
@@ -185,8 +262,8 @@ new class extends Component {
             type="button"
             title="New Folder"
             :disabled="creatingType !== null"
-            :class="creatingType !== null ? 'opacity-30 cursor-not-allowed' : 'hover:bg-muted hover:text-accent-foreground'"
-            class="p-1 rounded text-muted-foreground transition-colors"
+            :class="creatingType !== null ? 'opacity-30 cursor-not-allowed' : 'hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100'"
+            class="p-1 rounded text-zinc-500 transition-colors"
             @click="startCreating('folder')"
         >
             <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 10v6"/><path d="M9 13h6"/><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
@@ -226,7 +303,7 @@ new class extends Component {
                     @keydown.enter.prevent="confirmCreation()"
                     @keydown.escape.prevent="cancelCreation()"
                     @blur="creatingName.trim() ? confirmCreation() : cancelCreation()"
-                    class="flex-1 px-1 py-0 text-sm bg-muted border border-border rounded-md text-foreground outline-none focus:border-ring"
+                    class="flex-1 rounded-md border border-zinc-300 bg-white px-2 py-0.5 text-sm text-zinc-900 outline-none focus:border-zinc-500 focus:ring-2 focus:ring-zinc-900/5 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:border-zinc-400 dark:focus:ring-white/5"
                     placeholder="Enter name..."
                 />
             </div>
@@ -235,8 +312,9 @@ new class extends Component {
     </div>
 </div>
 
+@script
 <script>
-function directoryTree(readonly, writeToken) {
+window.directoryTree = function directoryTree(readonly, writeToken) {
     return {
         readonly: readonly || false,
         writeToken: writeToken || null,
@@ -353,18 +431,22 @@ function directoryTree(readonly, writeToken) {
             this.isCreating = true;
             const type = this.creatingType;
             const parentPath = this.creatingInPath;
+            const newPath = parentPath ? parentPath + '/' + name : name;
             const endpoint = type === 'file' ? '/katana/directory-create-file' : '/katana/directory-create-folder';
 
-            const csrfToken = document.querySelector('meta[name=csrf-token]');
-
-            // Dim the input to show processing state
-            const inputEl = parentPath === ''
-                ? this.$refs.rootCreationInput
-                : this.$el.querySelector('[data-creation-input="' + (parentPath ? CSS.escape(parentPath) : '') + '"]');
-            if (inputEl) {
-                inputEl.disabled = true;
-                inputEl.style.opacity = '0.5';
+            // OPTIMISTIC UI — dismiss the input and (for files) open the
+            // editor on the empty new file before the server round-trip.
+            // The actual S3 write and tree refresh happen below; the tree
+            // gets the real DOM node when refreshTree morphs it in.
+            this.cancelCreation();
+            if (type === 'file') {
+                this.selectFile(newPath);
+                this.$dispatch('file-selected', [{ file: newPath, content: '', focus: true }]);
+            } else {
+                this.selectDirectory(newPath);
             }
+
+            const csrfToken = document.querySelector('meta[name=csrf-token]');
 
             try {
                 const response = await fetch(endpoint, {
@@ -386,30 +468,26 @@ function directoryTree(readonly, writeToken) {
 
                 if (data.error) {
                     this.$dispatch('directory-tree-error', { message: data.error });
-                    this.cancelCreation();
                     return;
                 }
 
-                // Refresh tree FIRST — the new item appears in the DOM
-                // while the creation input is still visible as a placeholder.
                 await this.$wire.refreshTree();
                 this.rebuildPrefetchCache();
 
-                // NOW dismiss the input — the new item is already in the tree
-                this.cancelCreation();
-
-                // Select the newly created item
-                if (type === 'file') {
-                    this.selectFile(data.path);
-                } else {
-                    this.selectDirectory(data.path);
+                // refreshTree only walks 2 levels deep, so creates inside
+                // nested folders (parentPath like "foo/bar") leave the parent's
+                // children container empty in the morphed DOM AND wipe its
+                // prefetchCache entry, which surfaces as an infinite spinner.
+                // Force-refresh that container directly so the new item shows
+                // without requiring a manual collapse+expand.
+                if (parentPath.includes('/')) {
+                    await this.refreshDirectory(parentPath);
                 }
 
                 this.$dispatch('directory-tree-created', { type, path: data.path, name });
             } catch (err) {
                 console.error('Error creating ' + type + ':', err);
                 this.$dispatch('directory-tree-error', { message: 'Failed to create ' + type });
-                this.cancelCreation();
             } finally {
                 this.isCreating = false;
             }
@@ -609,13 +687,14 @@ function directoryTree(readonly, writeToken) {
         injectChildren(path, containerEl, data) {
             if (!containerEl || !data) return;
 
-            containerEl.innerHTML = data.html || '';
-            containerEl.setAttribute('data-loaded', 'true');
-
-            // Initialize Alpine on the new DOM elements
+            // Only replace innerHTML when we actually have content to inject.
+            // An empty assignment would destroy sibling templates (e.g. the
+            // Loading spinner) that depend on Alpine state.
             if (data.html) {
+                containerEl.innerHTML = data.html;
                 Alpine.initTree(containerEl);
             }
+            containerEl.setAttribute('data-loaded', 'true');
         },
 
         prefetchVisibleChildren(parentPath) {
@@ -725,3 +804,4 @@ function directoryTree(readonly, writeToken) {
     }
 }
 </script>
+@endscript
