@@ -8,6 +8,8 @@ components:
       name: Alert
     - id: audio-player
       name: Audio Player
+    - id: avatar-upload
+      name: Avatar Upload
     - id: audio-upload
       name: Audio Upload
     - id: badge
@@ -20,6 +22,8 @@ components:
       name: Checkbox
     - id: command
       name: Command
+    - id: counter
+      name: Counter
     - id: directory-tree
       name: Directory Tree
     - id: drawer

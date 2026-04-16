@@ -21,8 +21,9 @@
     $innerLabelAttribute = $clickable ? 'span' : 'label for="' . $id . '"';
 @endphp
 
-<{!! $containerAttribute !!} x-data="{ checked: {{ $checked ? 'true' : 'false' }} }" 
+<{!! $containerAttribute !!} x-data="{ checked: {{ $checked ? 'true' : 'false' }} }"
     x-init="
+        $nextTick(() => { checked = $refs.checkbox.checked });
         const checkFunction = function(){ checked = true };
         $refs.checkbox.check = checkFunction;
         const unCheckFunction = function(){ checked = false };

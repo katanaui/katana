@@ -1,7 +1,4 @@
 component: Checkbox
-studio:
-  defaults:
-    label: "Accept terms and conditions"
 props:
   - name: label
     description: The label text for the checkbox
@@ -31,3 +28,6 @@ props:
     description: Whether the checkbox is hidden
     type: boolean
     default: false
+studio:
+  defaults:
+    label: "Accept terms and conditions"

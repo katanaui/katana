@@ -20,4 +20,4 @@ slots:
           Yes! All Katana UI components are Livewire-friendly. You can bind state or dispatch events directly from the component.
       </x-katana.accordion.item>'
 studio:
-  container: <div class="w-full max-w-md mx-auto border border-stone-200 rounded-xl overflow-hidden">{{component}}</div>
+  container: <div class="w-full max-w-md mx-auto border border-border rounded-xl overflow-hidden">{{component}}</div>
