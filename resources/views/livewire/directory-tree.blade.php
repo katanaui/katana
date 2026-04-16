@@ -14,19 +14,19 @@ new class extends Component {
     public $currentPath = '';
     public $files = [];
     public bool $showToolbar = true;
-    public bool $readonly = false;
+    public bool $isReadonly = false;
     public bool $animateCollapse = false;
     public ?string $writeToken = null;
 
-    public function mount($disk = 'local', $baseDir = '', $exclude = null, $lazyDirs = null, $showToolbar = true, $readonly = false, $animateCollapse = false)
+    public function mount($disk = 'local', $baseDir = '', $exclude = null, $lazyDirs = null, $showToolbar = true, $isReadonly = false, $animateCollapse = false)
     {
         $this->disk = $disk;
         $this->baseDir = $baseDir;
         $this->showToolbar = $showToolbar;
-        $this->readonly = $readonly;
+        $this->isReadonly = $isReadonly;
         $this->animateCollapse = $animateCollapse;
 
-        if (!$this->readonly) {
+        if (!$this->isReadonly) {
             $this->writeToken = Crypt::encryptString(json_encode([
                 'writable' => true,
                 'disk' => $this->disk,
@@ -154,8 +154,8 @@ new class extends Component {
 
 }; ?>
 
-<div class="relative flex flex-col h-full text-sm select-none bg-background scrollbar-hide" x-data="directoryTree(@js($readonly), @js($writeToken))" x-init="init()" @if(!$readonly) @dt-start-creating.window="startCreating($event.detail.type)" @dt-delete-selected.window="deleteSelected()" @endif>
-    @if($showToolbar && !$readonly)
+<div class="relative flex flex-col h-full text-sm select-none bg-background scrollbar-hide" x-data="directoryTree(@js($isReadonly), @js($writeToken))" x-init="init()" @if(!$isReadonly) @dt-start-creating.window="startCreating($event.detail.type)" @dt-delete-selected.window="deleteSelected()" @endif>
+    @if($showToolbar && !$isReadonly)
     <div class="flex items-center justify-end gap-1 px-3 pt-2 pb-1 shrink-0">
         <button
             type="button"
@@ -200,13 +200,13 @@ new class extends Component {
                     :name="$name"
                     :item="$item"
                     :level="0"
-                    :readonly="$readonly"
+                    :readonly="$isReadonly"
                     :animateCollapse="$animateCollapse"
                 />
             @endforeach
         </div>
 
-        @if(!$readonly)
+        @if(!$isReadonly)
         {{-- Root-level inline creation input (outside container so it survives innerHTML refresh) --}}
         <template x-if="creatingType && creatingInPath === ''">
             <div class="flex items-center px-2 py-1 ml-0">
@@ -629,6 +629,7 @@ function directoryTree(readonly, writeToken) {
                     this.fetchChildren(childPath, parentDepth + 1);
                 }
             });
+
         },
 
         // File content fetching — disabled automatically if the endpoint returns 404

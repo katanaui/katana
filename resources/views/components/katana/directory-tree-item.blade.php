@@ -92,15 +92,20 @@
             @endif
         </div>
     @else
-        <div class="text-foreground/80 hover:text-foreground flex cursor-pointer items-center truncate rounded px-2 py-1" :class="selectedFile === '{{ $escapedPath }}' ? 'bg-blue-50 dark:bg-blue-500/15 hover:bg-blue-100 dark:hover:bg-blue-500/25 !text-blue-600 dark:!text-blue-400' : 'hover:bg-accent/50 hover:text-accent-foreground'" @mouseover="
+        <div data-file-path="{{ $escapedPath }}" class="text-foreground/80 hover:text-foreground flex cursor-pointer items-center truncate rounded px-2 py-1" :class="selectedFile === '{{ $escapedPath }}' ? 'bg-blue-50 dark:bg-blue-500/15 hover:bg-blue-100 dark:hover:bg-blue-500/25 !text-blue-600 dark:!text-blue-400' : 'hover:bg-accent/50 hover:text-accent-foreground'" @mouseover="
                 const fullPath = '{{ $escapedPath }}';
                 fetchFileContent(fullPath);
             " @click="
                 const fullPath = '{{ $escapedPath }}';
                 selectFile(fullPath);
-                fetchFileContent(fullPath).then(content => {
-                    $dispatch('file-selected', [{ file: fullPath, content }]);
-                });
+                const cached = files[fullPath];
+                if (cached !== undefined) {
+                    $dispatch('file-selected', [{ file: fullPath, content: cached }]);
+                } else {
+                    fetchFileContent(fullPath).then(content => {
+                        $dispatch('file-selected', [{ file: fullPath, content }]);
+                    });
+                }
             ">
             <span class="w-3 shrink-0"></span>
             <span class="ml-0.5 mr-1.5">

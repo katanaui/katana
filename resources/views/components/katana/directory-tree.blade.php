@@ -62,6 +62,6 @@
         </div>
     @endif
     <div class="min-h-0 flex-1">
-        <livewire:directory-tree :disk="$disk" :base-dir="$baseDir" :exclude="$exclude" :lazy-dirs="$lazyDirs" :show-toolbar="false" :readonly="$readonly" :animate-collapse="$animateCollapse" />
+        <livewire:directory-tree :disk="$disk" :base-dir="$baseDir" :exclude="$exclude" :lazy-dirs="$lazyDirs" :show-toolbar="false" :is-readonly="$readonly" :animate-collapse="$animateCollapse" />
     </div>
 </section>

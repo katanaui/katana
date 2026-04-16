@@ -39,9 +39,13 @@ class KatanaServiceProvider extends ServiceProvider
         }
 
         // Register Volt single-file Livewire components
+        $packagesLivewirePath = base_path('packages/katanaui/katana/resources/views/livewire');
+        $vendorLivewirePath = dirname(__DIR__).'/resources/views/livewire';
+        $livewireDir = is_dir($packagesLivewirePath) ? $packagesLivewirePath : $vendorLivewirePath;
+
         if (class_exists(\Livewire\Volt\Volt::class)) {
             \Livewire\Volt\Volt::mount([
-                dirname(__DIR__).'/resources/views/livewire',
+                $livewireDir,
             ]);
         }
 
