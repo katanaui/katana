@@ -54,7 +54,7 @@
              fetchChildren responses (innerHTML = '') can't wipe the template
              — same pattern the root uses. --}}
         <div x-show="expanded['{{ $escapedPath }}']" x-cloak class="ml-4" @if ($animateCollapse) x-collapse @endif>
-            <div data-children-for="{{ $escapedPath }}" @if ($hasChildren) data-loaded="true" @endif>
+            <div data-children-for="{{ $escapedPath }}" @if ($hasChildren || !empty($item['loaded'])) data-loaded="true" @endif>
                 @if ($hasChildren)
                     @foreach ($item['children'] as $childName => $child)
                         <x-katana.directory-tree-item

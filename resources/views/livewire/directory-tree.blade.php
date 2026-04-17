@@ -112,10 +112,10 @@ new class extends Component {
                 }
 
                 $isLazy = in_array($entry, $this->lazyDirs);
+                $scanned = $depth > 1 && !$isLazy;
                 $children = [];
 
-                // Recurse into non-lazy directories when depth > 1
-                if ($depth > 1 && !$isLazy) {
+                if ($scanned) {
                     $children = $this->getDirectoryStructure($diskPath, $depth - 1);
                 }
 
@@ -123,6 +123,7 @@ new class extends Component {
                     'type' => 'directory',
                     'path' => $relativePath,
                     'lazy' => $isLazy,
+                    'loaded' => $scanned,
                     'children' => $children,
                 ];
             } else {
@@ -159,9 +160,10 @@ new class extends Component {
                 : ltrim($dirKeyChild, '/');
 
             $isLazy = in_array($entry, $this->lazyDirs);
+            $scanned = $depth > 1 && !$isLazy;
             $children = [];
 
-            if ($depth > 1 && !$isLazy) {
+            if ($scanned) {
                 $children = $this->getDirectoryStructure($dirKeyChild, $depth - 1);
             }
 
@@ -169,6 +171,7 @@ new class extends Component {
                 'type' => 'directory',
                 'path' => $relativePath,
                 'lazy' => $isLazy,
+                'loaded' => $scanned,
                 'children' => $children,
             ];
         }
@@ -378,6 +381,8 @@ window.directoryTree = function directoryTree(readonly, writeToken) {
 
         init() {
             this.rebuildPrefetchCache();
+            // Pre-fetch children of all visible root-level directories
+            this.prefetchVisibleChildren('');
             // Broadcast creating state so the wrapper toolbar can disable buttons
             this.$watch('creatingType', (value) => {
                 this.$dispatch('dt-creating-state', { creating: value !== null });
