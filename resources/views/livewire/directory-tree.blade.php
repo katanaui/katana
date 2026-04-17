@@ -310,6 +310,35 @@ new class extends Component {
         </template>
         @endif
     </div>
+
+    @if(!$isReadonly)
+    {{-- Optimistic insert templates. Rendered server-side once with
+         __KATANA_DT_PATH__ / __KATANA_DT_NAME__ placeholders, then cloned and
+         token-replaced in JS so confirmCreation() can insert a new item into
+         the DOM instantly — no server round-trip in the critical path. --}}
+    @php
+        $optimisticTemplates = [
+            'folder-root' => ['type' => 'directory', 'level' => 0],
+            'folder-nested' => ['type' => 'directory', 'level' => 1],
+            'file-root' => ['type' => 'file', 'level' => 0],
+            'file-nested' => ['type' => 'file', 'level' => 1],
+        ];
+    @endphp
+    @foreach($optimisticTemplates as $templateKey => $cfg)
+        @php
+            $tplItem = $cfg['type'] === 'directory'
+                ? ['type' => 'directory', 'path' => '__KATANA_DT_PATH__', 'lazy' => false, 'children' => []]
+                : ['type' => 'file', 'path' => '__KATANA_DT_PATH__'];
+        @endphp
+        <template data-katana-dt-template="{{ $templateKey }}">{!! view('katana::katana.directory-tree-item', [
+            'name' => '__KATANA_DT_NAME__',
+            'item' => $tplItem,
+            'level' => $cfg['level'],
+            'readonly' => $isReadonly,
+            'animateCollapse' => $animateCollapse,
+        ])->render() !!}</template>
+    @endforeach
+    @endif
 </div>
 
 @script
@@ -447,23 +476,64 @@ window.directoryTree = function directoryTree(readonly, writeToken) {
                 return;
             }
 
+            // Client-side validation mirroring the server. Blocking quotes
+            // keeps the hand-replaced attribute templates safe too — a path
+            // containing a single quote would break the embedded Alpine
+            // expressions after token replacement.
+            if (name === '.' || name === '..' || /[\/\\'"<>]/.test(name)) {
+                this.$dispatch('directory-tree-error', { message: 'Invalid name' });
+                return;
+            }
+
             this.isCreating = true;
             const type = this.creatingType;
             const parentPath = this.creatingInPath;
             const newPath = parentPath ? parentPath + '/' + name : name;
             const endpoint = type === 'file' ? '/katana/directory-create-file' : '/katana/directory-create-folder';
 
-            // OPTIMISTIC UI — dismiss the input and (for files) open the
-            // editor on the empty new file before the server round-trip.
-            // The actual S3 write and tree refresh happen below; the tree
-            // gets the real DOM node when refreshTree morphs it in.
+            // ——— OPTIMISTIC UI ———
+            // Dismiss the input, insert the new item node into the DOM in
+            // sorted order, and update internal caches — all synchronously,
+            // before the server round-trip. The item appears instantly.
             this.cancelCreation();
+            const optimisticNode = this.insertOptimisticItem(parentPath, name, newPath, type);
+
+            const parentCache = this.prefetchCache[parentPath];
+            if (parentCache) {
+                if (type === 'folder') {
+                    parentCache.childDirs = [...(parentCache.childDirs || []), newPath];
+                } else {
+                    parentCache.childFiles = [...(parentCache.childFiles || []), newPath];
+                }
+            }
+
             if (type === 'file') {
+                this.files[newPath] = '';
                 this.selectFile(newPath);
                 this.$dispatch('file-selected', [{ file: newPath, content: '', focus: true }]);
             } else {
                 this.selectDirectory(newPath);
             }
+
+            // Rollback helper — undoes the optimistic state if the server
+            // rejects the create (name collision, permission, disk error).
+            const rollback = () => {
+                if (optimisticNode && optimisticNode.isConnected) {
+                    optimisticNode.remove();
+                }
+                if (parentCache) {
+                    if (type === 'folder') {
+                        parentCache.childDirs = (parentCache.childDirs || []).filter(p => p !== newPath);
+                    } else {
+                        parentCache.childFiles = (parentCache.childFiles || []).filter(p => p !== newPath);
+                    }
+                }
+                if (type === 'file') {
+                    delete this.files[newPath];
+                }
+                if (this.selectedFile === newPath) this.selectedFile = null;
+                if (this.selectedDirectory === newPath) this.selectedDirectory = null;
+            };
 
             const csrfToken = document.querySelector('meta[name=csrf-token]');
 
@@ -486,30 +556,95 @@ window.directoryTree = function directoryTree(readonly, writeToken) {
                 const data = await response.json();
 
                 if (data.error) {
+                    rollback();
                     this.$dispatch('directory-tree-error', { message: data.error });
                     return;
                 }
 
-                await this.$wire.refreshTree();
-                this.rebuildPrefetchCache();
-
-                // refreshTree only walks 2 levels deep, so creates inside
-                // nested folders (parentPath like "foo/bar") leave the parent's
-                // children container empty in the morphed DOM AND wipe its
-                // prefetchCache entry, which surfaces as an infinite spinner.
-                // Force-refresh that container directly so the new item shows
-                // without requiring a manual collapse+expand.
-                if (parentPath.includes('/')) {
-                    await this.refreshDirectory(parentPath);
+                // Success — the optimistic node stays; drop its transient marker.
+                if (optimisticNode) {
+                    optimisticNode.removeAttribute('data-optimistic');
                 }
-
                 this.$dispatch('directory-tree-created', { type, path: data.path, name });
             } catch (err) {
+                rollback();
                 console.error('Error creating ' + type + ':', err);
                 this.$dispatch('directory-tree-error', { message: 'Failed to create ' + type });
             } finally {
                 this.isCreating = false;
             }
+        },
+
+        insertOptimisticItem(parentPath, name, newPath, type) {
+            const selector = parentPath === ''
+                ? '[data-children-for=""]'
+                : '[data-children-for="' + CSS.escape(parentPath) + '"]';
+            const container = document.querySelector(selector);
+            if (!container) return null;
+
+            const isRoot = parentPath === '';
+            const templateKey = type === 'folder'
+                ? (isRoot ? 'folder-root' : 'folder-nested')
+                : (isRoot ? 'file-root' : 'file-nested');
+            const tmpl = document.querySelector('template[data-katana-dt-template="' + templateKey + '"]');
+            if (!tmpl) return null;
+
+            // Our name validator blocks quote characters, but parent paths
+            // created before the validator existed may legitimately contain
+            // '&' '<' '>'. HTML-escape both tokens on replacement so the
+            // attribute values and visible text stay well-formed. (Alpine
+            // decodes the attribute entities when evaluating expressions.)
+            const escapeHtml = (s) => s
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+            const html = tmpl.innerHTML
+                .replaceAll('__KATANA_DT_PATH__', escapeHtml(newPath))
+                .replaceAll('__KATANA_DT_NAME__', escapeHtml(name));
+
+            const tmp = document.createElement('div');
+            tmp.innerHTML = html.trim();
+            const node = tmp.firstElementChild;
+            if (!node) return null;
+
+            node.setAttribute('data-optimistic', 'true');
+
+            // Sort insertion matches the server's sortStructure(): directories
+            // first, alphabetical within each group (case-insensitive).
+            const lowerName = name.toLowerCase();
+            let anchor = null;
+            for (const sibling of container.children) {
+                if (sibling.tagName === 'TEMPLATE') continue;
+                const sibIsDir = sibling.hasAttribute('data-dir-path');
+                const sibPath = sibling.getAttribute('data-dir-path') || sibling.getAttribute('data-file-path') || '';
+                const sibName = (sibPath.split('/').pop() || '').toLowerCase();
+
+                if (type === 'folder') {
+                    if (!sibIsDir) { anchor = sibling; break; }
+                    if (sibName > lowerName) { anchor = sibling; break; }
+                } else {
+                    if (sibIsDir) continue;
+                    if (sibName > lowerName) { anchor = sibling; break; }
+                }
+            }
+
+            if (anchor) container.insertBefore(node, anchor);
+            else container.appendChild(node);
+
+            // Subtle fade+slide entrance so the new row doesn't pop in abruptly.
+            node.style.opacity = '0';
+            node.style.transform = 'translateY(-2px)';
+            node.style.transition = 'opacity 150ms ease-out, transform 150ms ease-out';
+
+            Alpine.initTree(node);
+
+            requestAnimationFrame(() => {
+                node.style.opacity = '';
+                node.style.transform = '';
+                setTimeout(() => { node.style.transition = ''; }, 200);
+            });
+
+            return node;
         },
 
         cancelCreation() {
@@ -610,12 +745,17 @@ window.directoryTree = function directoryTree(readonly, writeToken) {
             // have its content cached.
             delete this.fetchedDirectories[path];
 
-            // Find the container element for this directory
-            // Note: CSS.escape('') throws, so we handle empty string directly
+            // Find the container element for this directory.
+            // Note: CSS.escape('') throws, so we handle empty string directly.
+            // We query against `document` rather than `this.$el` because
+            // Livewire's post-mount re-render can replace the component root,
+            // leaving Alpine's $el detached from the live DOM — in which case
+            // this.$el.querySelector(...) silently returns null and the new
+            // item is never injected.
             const selector = path === ''
                 ? '[data-children-for=""]'
                 : '[data-children-for="' + CSS.escape(path) + '"]';
-            const containerEl = this.$el.querySelector(selector);
+            const containerEl = document.querySelector(selector);
             if (containerEl) {
                 containerEl.removeAttribute('data-loaded');
             }
