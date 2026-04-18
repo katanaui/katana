@@ -84,6 +84,35 @@ function katanaIsLocalDisk(string $disk): bool
 }
 
 /**
+ * Map a KatanaUI baseDir back to a div Project, when the app model is
+ * available. baseDir is server-trusted (set in the editor's mount() after
+ * Gate::authorize) and is either `{slug}` (plain mode) or `{slug}/src`
+ * (SSG mode), so the leading segment is always the project slug.
+ *
+ * Returns null when:
+ *   - the App\Models\Project class isn't present (KatanaUI used outside div),
+ *   - baseDir is empty,
+ *   - the slug doesn't resolve to a project.
+ *
+ * Callers fall back to a raw Storage write in that case.
+ */
+function katanaResolveProject(string $baseDir): ?\App\Models\Project
+{
+    if (!class_exists(\App\Models\Project::class)) {
+        return null;
+    }
+
+    $baseDir = trim($baseDir, '/');
+    if ($baseDir === '') {
+        return null;
+    }
+
+    $slug = explode('/', $baseDir, 2)[0];
+
+    return \App\Models\Project::where('slug', $slug)->first();
+}
+
+/**
  * Read a file off a disk for the tree's content-prefetch endpoints.
  *
  * Returns one of:
@@ -374,7 +403,19 @@ Route::post('/katana/directory-create-file', function (Request $request) {
 
     $relativePath = $parentPath ? rtrim($parentPath, '/') . '/' . $name : $name;
 
-    if (katanaIsLocalDisk($disk)) {
+    // Prefer ProjectStorage across both drivers so SSG mirroring happens
+    // regardless of whether the project is on S3 or a local disk.
+    $project = katanaResolveProject($baseDir);
+    if ($project !== null) {
+        $diskPath = katanaJoinDiskPath($baseDir, $relativePath);
+        if ($diskPath === false) {
+            return response()->json(['error' => 'Invalid path'], 422);
+        }
+        if (Storage::disk($disk)->exists($diskPath)) {
+            return response()->json(['error' => 'A file or folder with that name already exists'], 422);
+        }
+        app(\App\Services\ProjectStorage::class)->createEmptyFile($project, $relativePath);
+    } elseif (katanaIsLocalDisk($disk)) {
         $root = rtrim($diskConfig['root'] ?? '', '/');
         $parentDiskPath = $baseDir
             ? ($parentPath ? rtrim($baseDir, '/') . '/' . ltrim($parentPath, '/') : $baseDir)
@@ -407,7 +448,6 @@ Route::post('/katana/directory-create-file', function (Request $request) {
         if ($storage->exists($diskPath)) {
             return response()->json(['error' => 'A file or folder with that name already exists'], 422);
         }
-
         $storage->put($diskPath, '', ['visibility' => 'public', 'CacheControl' => 'no-cache, max-age=0']);
     }
 
@@ -442,6 +482,21 @@ Route::post('/katana/directory-create-folder', function (Request $request) {
     }
 
     $relativePath = $parentPath ? rtrim($parentPath, '/') . '/' . $name : $name;
+
+    $project = katanaResolveProject($baseDir);
+    if ($project !== null) {
+        $diskPath = katanaJoinDiskPath($baseDir, $relativePath);
+        if ($diskPath === false) {
+            return response()->json(['error' => 'Invalid path'], 422);
+        }
+        $storage = Storage::disk($disk);
+        $marker = $diskPath.'/.gitkeep';
+        if ($storage->exists($marker) || in_array($diskPath, $storage->directories(dirname($diskPath) ?: ''), true)) {
+            return response()->json(['error' => 'A file or folder with that name already exists'], 422);
+        }
+        app(\App\Services\ProjectStorage::class)->createFolder($project, $relativePath);
+        return response()->json(['success' => true, 'path' => $relativePath]);
+    }
 
     if (katanaIsLocalDisk($disk)) {
         $root = rtrim($diskConfig['root'] ?? '', '/');
@@ -478,7 +533,6 @@ Route::post('/katana/directory-create-folder', function (Request $request) {
         if ($storage->exists($marker) || in_array($diskPath, $storage->directories(dirname($diskPath) ?: ''), true)) {
             return response()->json(['error' => 'A file or folder with that name already exists'], 422);
         }
-
         $storage->put($marker, '', ['visibility' => 'public', 'CacheControl' => 'no-cache, max-age=0']);
     }
 
@@ -506,6 +560,16 @@ Route::post('/katana/directory-delete', function (Request $request) {
     $diskConfig = config("filesystems.disks.{$disk}");
     if (!$diskConfig) {
         return response()->json(['error' => 'Invalid disk'], 422);
+    }
+
+    $project = katanaResolveProject($baseDir);
+    if ($project !== null) {
+        $normalized = katanaNormalizeDiskPath($path);
+        if ($normalized === false || $normalized === '') {
+            return response()->json(['error' => 'Invalid path'], 422);
+        }
+        app(\App\Services\ProjectStorage::class)->deleteFile($project, $path, $type);
+        return response()->json(['success' => true, 'path' => $path]);
     }
 
     if (katanaIsLocalDisk($disk)) {
@@ -553,10 +617,11 @@ Route::post('/katana/directory-delete', function (Request $request) {
 
         $storage = Storage::disk($disk);
 
+        if ($type === 'file' && !$storage->exists($diskPath)) {
+            return response()->json(['error' => 'File not found'], 404);
+        }
+
         if ($type === 'file') {
-            if (!$storage->exists($diskPath)) {
-                return response()->json(['error' => 'File not found'], 404);
-            }
             $storage->delete($diskPath);
         } else {
             // deleteDirectory removes the prefix and everything under it,
