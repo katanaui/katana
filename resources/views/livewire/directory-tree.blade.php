@@ -344,7 +344,7 @@ new class extends Component {
     @endif
 </div>
 
-@script
+@assets
 <script>
 window.directoryTree = function directoryTree(readonly, writeToken) {
     return {
@@ -485,7 +485,7 @@ window.directoryTree = function directoryTree(readonly, writeToken) {
             // keeps the hand-replaced attribute templates safe too — a path
             // containing a single quote would break the embedded Alpine
             // expressions after token replacement.
-            if (name === '.' || name === '..' || /[\/\\'"<>]/.test(name)) {
+            if (name === '.' || name === '..' || /[\/\\\\'"<>]/.test(name)) {
                 this.$dispatch('directory-tree-error', { message: 'Invalid name' });
                 return;
             }
@@ -996,4 +996,4 @@ window.directoryTree = function directoryTree(readonly, writeToken) {
     }
 }
 </script>
-@endscript
+@endassets

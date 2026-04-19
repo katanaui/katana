@@ -1,0 +1,27 @@
+component: Background Liquid Chrome
+description: A WebGL shader background that renders a fluid, chrome-like distortion pattern driven by a per-frame time uniform. Optionally interactive — mouse/touch position ripples the shader. Ported from React Bits (reactbits.dev/backgrounds/liquid-chrome) using the ogl library loaded via esm.sh CDN.
+props:
+  - name: baseColor
+    description: RGB triplet (floats 0–1) used as the base color multiplier in the fragment shader
+    type: array
+    default: "[0.1, 0.1, 0.1]"
+  - name: speed
+    description: Time multiplier — controls how fast the liquid pattern animates
+    type: number
+    default: 0.2
+  - name: amplitude
+    description: Magnitude of the shader's distortion waves
+    type: number
+    default: 0.3
+  - name: frequencyX
+    description: Horizontal wave frequency
+    type: number
+    default: 3
+  - name: frequencyY
+    description: Vertical wave frequency
+    type: number
+    default: 3
+  - name: interactive
+    description: When true, mouse/touch position influences the ripple effect
+    type: boolean
+    default: true
