@@ -1,0 +1,51 @@
+component: Background Light Rays
+description: A WebGL god-rays / volumetric light background. Origin-anchored rays that can follow the pointer, pulse, and pick up noise/distortion. Ported from React Bits (reactbits.dev/backgrounds/light-rays) using the ogl library loaded via esm.sh CDN. WebGL init is deferred until the container enters the viewport (IntersectionObserver).
+props:
+  - name: raysOrigin
+    description: "Where the rays emanate from: 'top-center' (default), 'top-left', 'top-right', 'left', 'right', 'bottom-left', 'bottom-center', 'bottom-right'"
+    type: text
+    default: top-center
+  - name: raysColor
+    description: Ray tint as a hex color string
+    type: text
+    default: "#ffffff"
+  - name: raysSpeed
+    description: Animation speed multiplier
+    type: number
+    default: 1
+  - name: lightSpread
+    description: Angular spread of the rays — higher = wider fan
+    type: number
+    default: 1
+  - name: rayLength
+    description: Multiplier against iResolution.x controlling how far rays travel before fading out
+    type: number
+    default: 2
+  - name: pulsating
+    description: When true, ray intensity pulses over time
+    type: boolean
+    default: false
+  - name: fadeDistance
+    description: Multiplier against iResolution.x controlling the distance at which rays fade
+    type: number
+    default: 1.0
+  - name: saturation
+    description: Color saturation (1 = full color, 0 = grayscale)
+    type: number
+    default: 1.0
+  - name: followMouse
+    description: When true, rays bend toward the pointer
+    type: boolean
+    default: true
+  - name: mouseInfluence
+    description: How strongly the pointer bends the ray direction (0 disables)
+    type: number
+    default: 0.1
+  - name: noiseAmount
+    description: Per-pixel noise strength (0 disables)
+    type: number
+    default: 0.0
+  - name: distortion
+    description: Shader-level angular distortion amount (0 disables)
+    type: number
+    default: 0.0
