@@ -234,7 +234,7 @@ new class extends Component {
 
 }; ?>
 
-<div class="relative flex flex-col h-full text-sm select-none scrollbar-hide" x-data="directoryTree(@js($isReadonly), @js($writeToken))" x-init="init()" @refresh-directory-tree.window="$wire.refreshTree()" @if(!$isReadonly) @dt-start-creating.window="startCreating($event.detail.type)" @dt-delete-selected.window="deleteSelected()" @endif>
+<div class="relative flex flex-col h-full text-sm select-none scrollbar-hide" x-data="directoryTree(@js($isReadonly), @js($writeToken))" x-init="init()" @refresh-directory-tree.window="$wire.refreshTree()" @katana-file-cache-set.window="if ($event.detail?.path) files[$event.detail.path] = $event.detail.content ?? null" @katana-file-cache-invalidate.window="if ($event.detail?.path) delete files[$event.detail.path]" @if(!$isReadonly) @dt-start-creating.window="startCreating($event.detail.type)" @dt-delete-selected.window="deleteSelected()" @endif>
     @if($showToolbar && !$isReadonly)
     <div class="flex items-center justify-end gap-1 px-3 pt-2 pb-1 shrink-0">
         <button
