@@ -38,11 +38,18 @@ class KatanaServiceProvider extends ServiceProvider
             $this->loadViewsFrom($componentsPath, $namespace);
         }
 
-        // Register Volt single-file Livewire components
+        $livewireDir = __DIR__.'/../resources/views/livewire';
+
+        // Register inline Livewire components (single-file component style).
+        // Volt 1 (standalone package) uses Volt::mount(); Livewire 4 ships SFC
+        // support natively and resolves top-level components via the finder.
         if (class_exists(\Livewire\Volt\Volt::class)) {
-            \Livewire\Volt\Volt::mount([
-                dirname(__DIR__).'/resources/views/livewire',
-            ]);
+            \Livewire\Volt\Volt::mount([$livewireDir]);
+        } elseif (class_exists(\Livewire\Livewire::class)) {
+            $this->app->booted(function () use ($livewireDir) {
+                app('livewire.finder')->addLocation(viewPath: $livewireDir);
+                app('view')->addLocation($livewireDir);
+            });
         }
 
         if ($this->app->runningInConsole()) {

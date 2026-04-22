@@ -1,0 +1,63 @@
+component: Background Prism
+description: A WebGL ray-marched prism background with glow, noise, hue-shift, and three animation modes (rotate, 3drotate, hover). Ported from React Bits (reactbits.dev/backgrounds/prism) using the ogl library loaded via esm.sh CDN.
+props:
+  - name: height
+    description: Pyramid height in shader units
+    type: number
+    default: 3.5
+  - name: baseWidth
+    description: Pyramid base width in shader units
+    type: number
+    default: 5.5
+  - name: animationType
+    description: "'rotate' (base wobble), '3drotate' (full Euler rotation), or 'hover' (pointer-driven tilt)"
+    type: text
+    default: rotate
+  - name: glow
+    description: Glow intensity multiplier
+    type: number
+    default: 1
+  - name: offset
+    description: Pixel offset as { x, y } — shifts the shape from screen center
+    type: object
+    default: "{ x: 0, y: 0 }"
+  - name: noise
+    description: Per-pixel noise strength
+    type: number
+    default: 0.5
+  - name: transparent
+    description: Alpha-enabled canvas (lets background show through)
+    type: boolean
+    default: true
+  - name: scale
+    description: View-space scale — lower zooms in, higher zooms out
+    type: number
+    default: 3.6
+  - name: hueShift
+    description: Hue rotation in radians
+    type: number
+    default: 0
+  - name: colorFrequency
+    description: Spatial frequency of the color ripples
+    type: number
+    default: 1
+  - name: hoverStrength
+    description: Tilt amplitude for animationType=hover
+    type: number
+    default: 2
+  - name: inertia
+    description: Lerp factor for hover follow (0 = frozen, 1 = instant)
+    type: number
+    default: 0.05
+  - name: bloom
+    description: Additional glow multiplier stacked on uGlow
+    type: number
+    default: 1
+  - name: suspendWhenOffscreen
+    description: Pause requestAnimationFrame while the container is outside the viewport
+    type: boolean
+    default: false
+  - name: timeScale
+    description: Global time multiplier for shader animation
+    type: number
+    default: 0.5

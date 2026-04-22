@@ -358,13 +358,38 @@ window.KatanaMonacoEditor = function (config) {
 
             el.editor.getModel().onDidChangeContent(() => {
                 const content = el.editor.getValue();
+                const programmatic = !!this._programmaticSet;
+                this._programmaticSet = false;
                 window.dispatchEvent(new CustomEvent('monaco-content-changed', {
-                    detail: { id: this.monacoId, content: content },
+                    detail: { id: this.monacoId, content: content, programmatic: programmatic },
                 }));
             });
 
             window.addEventListener('monaco-editor-height-update', (event) => {
                 this.$refs.monacoEditorElement.style.height = event.detail.height;
+            });
+
+            // Imperatively set the editor's value. Skip if an `id` is supplied
+            // that doesn't match this instance — useful when multiple editors
+            // share the page.
+            window.addEventListener('set-code', (event) => {
+                const detail = event.detail || {};
+                if (detail.id && detail.id !== this.monacoId) return;
+                const code = detail.code ?? detail.content ?? '';
+                this._programmaticSet = true;
+                el.editor.setValue(code);
+            });
+
+            // Swap the editor's language (e.g., when opening a different file).
+            window.addEventListener('set-language', (event) => {
+                const detail = event.detail || {};
+                if (detail.id && detail.id !== this.monacoId) return;
+                const lang = detail.language;
+                if (!lang) return;
+                const model = el.editor.getModel();
+                if (model) {
+                    monaco.editor.setModelLanguage(model, lang);
+                }
             });
 
             // Watch for dark mode changes when theme is 'auto'

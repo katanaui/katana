@@ -90,7 +90,7 @@ if (!window.KatanaMonacoEditor) {
         scriptUrl: '{{ asset('katana/monaco-editor.js') }}'
     })"
     class="flex flex-col items-center relative justify-start @if($theme == 'auto') bg-white dark:bg-stone-900 @elseif($theme == 'light') bg-white @else bg-stone-900 @endif overflow-hidden w-full h-full"
-    style="height:{{ $height }}px"
+    style="height:{{ is_numeric($height) ? $height.'px' : $height }}"
     @update-placeholder-text.window="monacoPlaceholderText=$event.detail.placeholderText"
     @focus-editor.window="monacoEditorFocus()"
     >

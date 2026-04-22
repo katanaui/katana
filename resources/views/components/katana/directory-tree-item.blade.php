@@ -25,9 +25,9 @@
 @endphp
 
 <div class="@if ($level !== 0) ml-2 @endif relative font-light transition-all duration-200" :class="{ 'opacity-20 scale-[0.98] pointer-events-none': deletingPath === '{{ $escapedPath }}' }" @if ($item['type'] === 'directory') data-dir-path="{{ $item['path'] }}"
-        @if ($isLazy) data-lazy="true" @endif @endif>
+        @if ($isLazy) data-lazy="true" @endif @else data-file-path="{{ $item['path'] }}" @endif>
     @if ($item['type'] === 'directory')
-        <div x-on:click="selectDirectory('{{ $escapedPath }}'); toggle('{{ $escapedPath }}', {{ $isLazy ? 'true' : 'false' }}, {{ $isSymlink ? 'true' : 'false' }}, {{ $level + 1 }}, $el.parentElement.querySelector('[data-children-for=&quot;{{ $escapedPath }}&quot;]'))" class="text-foreground/80 hover:text-accent-foreground hover:bg-accent/50 flex cursor-pointer items-center truncate rounded px-2 py-1" :class="selectedDirectory === '{{ $escapedPath }}' ? 'bg-accent/50 !text-accent-foreground' : ''">
+        <div x-on:click="selectDirectory('{{ $escapedPath }}'); toggle('{{ $escapedPath }}', {{ $isLazy ? 'true' : 'false' }}, {{ $isSymlink ? 'true' : 'false' }}, {{ $level + 1 }}, $el.parentElement.querySelector('[data-children-for=&quot;{{ $escapedPath }}&quot;]'))" class="flex cursor-pointer items-center truncate rounded px-2 py-1 text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100" :class="selectedDirectory === '{{ $escapedPath }}' ? '!bg-zinc-200 !text-zinc-900 dark:!bg-zinc-700 dark:!text-zinc-100' : ''">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 shrink-0 scale-110 stroke-current transition-all duration-150 ease-out" :class="{ 'rotate-90': expanded['{{ $escapedPath }}'] }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="m9 18 6-6-6-6" />
             </svg>
@@ -42,33 +42,41 @@
 
             <span>{{ $name }}</span>
             @if ($isSymlink)
-                <span class="text-muted-foreground/50 ml-1 text-xs">(symlink)</span>
+                <span class="ml-1 text-xs text-zinc-400">(symlink)</span>
             @endif
         </div>
         {{-- Vertical Left Line in Tree --}}
         <span x-show="expanded['{{ $escapedPath }}']" x-cloak class="absolute top-0 ml-3 h-full w-px translate-x-0.5 overflow-hidden pt-7">
-            <span class="bg-border relative block h-full w-px"></span>
+            <span class="relative block h-full w-px bg-zinc-200 dark:bg-zinc-800"></span>
         </span>
-        <div x-show="expanded['{{ $escapedPath }}']" x-cloak class="ml-4" data-children-for="{{ $escapedPath }}" @if ($hasChildren) data-loaded="true" @endif @if ($animateCollapse) x-collapse @endif>
-            @if ($hasChildren)
-                @foreach ($item['children'] as $childName => $child)
-                    <x-katana.directory-tree-item
-                        :name="$childName" :item="$child" :level="$level + 1" :readonly="$readonly" :animateCollapse="$animateCollapse" />
-                @endforeach
-            @else
-                @if (!$isSymlink)
-                    <div x-show="!prefetchCache?.['{{ $escapedPath }}']?.loaded && !prefetchCache?.['{{ $escapedPath }}']?.preloaded" class="text-muted-foreground/50 ml-2 flex items-center px-2 py-1">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-3 w-3 animate-spin" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        <span class="text-xs">Loading...</span>
-                    </div>
+        {{-- x-show/x-collapse on outer wrapper. The children-container div
+             is a sibling of the inline creation template so that empty
+             fetchChildren responses (innerHTML = '') can't wipe the template
+             — same pattern the root uses. --}}
+        <div x-show="expanded['{{ $escapedPath }}']" x-cloak class="ml-4" @if ($animateCollapse) x-collapse @endif>
+            <div data-children-for="{{ $escapedPath }}" @if ($hasChildren || !empty($item['loaded'])) data-loaded="true" @endif>
+                @if ($hasChildren)
+                    @foreach ($item['children'] as $childName => $child)
+                        <x-katana.directory-tree-item
+                            :name="$childName" :item="$child" :level="$level + 1" :readonly="$readonly" :animateCollapse="$animateCollapse" />
+                    @endforeach
+                @else
+                    @if (!$isSymlink)
+                        <div x-show="!prefetchCache?.['{{ $escapedPath }}']?.loaded && !prefetchCache?.['{{ $escapedPath }}']?.preloaded" class="ml-2 flex items-center px-2 py-1 text-zinc-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-3 w-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span class="text-xs">Loading...</span>
+                        </div>
+                    @endif
                 @endif
-            @endif
+            </div>
 
             @if (!$readonly)
-                {{-- Inline creation input for this directory --}}
+                {{-- Inline creation input for this directory (sibling, NOT
+                     inside data-children-for). Sibling placement lets it
+                     survive injectChildren's innerHTML reset. --}}
                 <template x-if="creatingType && creatingInPath === '{{ $escapedPath }}'">
                     <div class="ml-2 flex items-center px-2 py-1">
                         <span class="w-3 shrink-0"></span>
@@ -86,21 +94,26 @@
                             </template>
                         </span>
                         <input
-                            x-model="creatingName" class="bg-muted border-border text-foreground focus:border-ring flex-1 rounded-md border px-1 py-0 text-sm outline-none" type="text" data-creation-input="{{ $escapedPath }}" @keydown.enter.prevent="confirmCreation()" @keydown.escape.prevent="cancelCreation()" @blur="creatingName.trim() ? confirmCreation() : cancelCreation()" placeholder="Enter name..." />
+                            x-model="creatingName" class="flex-1 rounded-md border border-zinc-300 bg-white px-2 py-0.5 text-sm text-zinc-900 outline-none focus:border-zinc-500 focus:ring-2 focus:ring-zinc-900/5 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:border-zinc-400 dark:focus:ring-white/5" type="text" data-creation-input="{{ $escapedPath }}" @keydown.enter.prevent="confirmCreation()" @keydown.escape.prevent="cancelCreation()" @blur="creatingName.trim() ? confirmCreation() : cancelCreation()" placeholder="Enter name..." />
                     </div>
                 </template>
             @endif
         </div>
     @else
-        <div class="text-foreground/80 hover:text-foreground flex cursor-pointer items-center truncate rounded px-2 py-1" :class="selectedFile === '{{ $escapedPath }}' ? 'bg-blue-50 dark:bg-blue-500/15 hover:bg-blue-100 dark:hover:bg-blue-500/25 !text-blue-600 dark:!text-blue-400' : 'hover:bg-accent/50 hover:text-accent-foreground'" @mouseover="
+        <div class="flex cursor-pointer items-center truncate rounded px-2 py-1 text-zinc-700 transition-colors dark:text-zinc-300" :class="selectedFile === '{{ $escapedPath }}' ? 'bg-blue-50 !text-blue-600 hover:bg-blue-100 dark:bg-blue-500/15 dark:!text-blue-400 dark:hover:bg-blue-500/25' : 'hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100'" @mouseover="
                 const fullPath = '{{ $escapedPath }}';
                 fetchFileContent(fullPath);
             " @click="
                 const fullPath = '{{ $escapedPath }}';
                 selectFile(fullPath);
-                fetchFileContent(fullPath).then(content => {
-                    $dispatch('file-selected', [{ file: fullPath, content }]);
-                });
+                const cached = files[fullPath];
+                if (cached !== undefined) {
+                    $dispatch('file-selected', [{ file: fullPath, content: cached }]);
+                } else {
+                    fetchFileContent(fullPath).then(content => {
+                        $dispatch('file-selected', [{ file: fullPath, content }]);
+                    });
+                }
             ">
             <span class="w-3 shrink-0"></span>
             <span class="ml-0.5 mr-1.5">

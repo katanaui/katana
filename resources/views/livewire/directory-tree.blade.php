@@ -14,19 +14,19 @@ new class extends Component {
     public $currentPath = '';
     public $files = [];
     public bool $showToolbar = true;
-    public bool $readonly = false;
+    public bool $isReadonly = false;
     public bool $animateCollapse = false;
     public ?string $writeToken = null;
 
-    public function mount($disk = 'local', $baseDir = '', $exclude = null, $lazyDirs = null, $showToolbar = true, $readonly = false, $animateCollapse = false)
+    public function mount($disk = 'local', $baseDir = '', $exclude = null, $lazyDirs = null, $showToolbar = true, $isReadonly = false, $animateCollapse = false)
     {
         $this->disk = $disk;
         $this->baseDir = $baseDir;
         $this->showToolbar = $showToolbar;
-        $this->readonly = $readonly;
+        $this->isReadonly = $isReadonly;
         $this->animateCollapse = $animateCollapse;
 
-        if (!$this->readonly) {
+        if (!$this->isReadonly) {
             $this->writeToken = Crypt::encryptString(json_encode([
                 'writable' => true,
                 'disk' => $this->disk,
@@ -56,7 +56,20 @@ new class extends Component {
         return rtrim($diskConfig['root'] ?? '', '/');
     }
 
+    protected function isLocalDisk(): bool
+    {
+        $driver = config("filesystems.disks.{$this->disk}.driver");
+        return $driver === 'local';
+    }
+
     protected function getDirectoryStructure($baseDir, $depth = 1)
+    {
+        return $this->isLocalDisk()
+            ? $this->getLocalDirectoryStructure($baseDir, $depth)
+            : $this->getDiskDirectoryStructure($baseDir, $depth);
+    }
+
+    protected function getLocalDirectoryStructure($baseDir, $depth = 1)
     {
         $structure = [];
         $root = $this->getDiskRootPath();
@@ -99,10 +112,10 @@ new class extends Component {
                 }
 
                 $isLazy = in_array($entry, $this->lazyDirs);
+                $scanned = $depth > 1 && !$isLazy;
                 $children = [];
 
-                // Recurse into non-lazy directories when depth > 1
-                if ($depth > 1 && !$isLazy) {
+                if ($scanned) {
                     $children = $this->getDirectoryStructure($diskPath, $depth - 1);
                 }
 
@@ -110,6 +123,7 @@ new class extends Component {
                     'type' => 'directory',
                     'path' => $relativePath,
                     'lazy' => $isLazy,
+                    'loaded' => $scanned,
                     'children' => $children,
                 ];
             } else {
@@ -120,6 +134,72 @@ new class extends Component {
             }
         }
 
+        return $this->sortStructure($structure);
+    }
+
+    /**
+     * Disk-abstracted directory walk. Works for any filesystem driver
+     * (s3, ftp, sftp, etc.) via Laravel's Storage facade.
+     */
+    protected function getDiskDirectoryStructure($baseDir, $depth = 1)
+    {
+        $disk = Storage::disk($this->disk);
+        $dirKey = ltrim(rtrim((string) $baseDir, '/'), '/');
+        $baseDirPrefix = rtrim($this->baseDir, '/');
+        $structure = [];
+
+        foreach ($disk->directories($dirKey) as $dirKeyChild) {
+            $entry = basename($dirKeyChild);
+
+            if ($entry === '' || $entry[0] === '.' || in_array($entry, $this->exclude)) {
+                continue;
+            }
+
+            $relativePath = $baseDirPrefix !== ''
+                ? ltrim(substr($dirKeyChild, strlen($baseDirPrefix)), '/')
+                : ltrim($dirKeyChild, '/');
+
+            $isLazy = in_array($entry, $this->lazyDirs);
+            $scanned = $depth > 1 && !$isLazy;
+            $children = [];
+
+            if ($scanned) {
+                $children = $this->getDirectoryStructure($dirKeyChild, $depth - 1);
+            }
+
+            $structure[$entry] = [
+                'type' => 'directory',
+                'path' => $relativePath,
+                'lazy' => $isLazy,
+                'loaded' => $scanned,
+                'children' => $children,
+            ];
+        }
+
+        foreach ($disk->files($dirKey) as $fileKey) {
+            $entry = basename($fileKey);
+
+            // Skip hidden files (including the .gitkeep markers used to
+            // persist empty directories on blob storage).
+            if ($entry === '' || $entry[0] === '.') {
+                continue;
+            }
+
+            $relativePath = $baseDirPrefix !== ''
+                ? ltrim(substr($fileKey, strlen($baseDirPrefix)), '/')
+                : ltrim($fileKey, '/');
+
+            $structure[$entry] = [
+                'type' => 'file',
+                'path' => $relativePath,
+            ];
+        }
+
+        return $this->sortStructure($structure);
+    }
+
+    protected function sortStructure(array $structure): array
+    {
         uksort($structure, function ($a, $b) use ($structure) {
             $aIsDir = $structure[$a]['type'] === 'directory';
             $bIsDir = $structure[$b]['type'] === 'directory';
@@ -154,8 +234,8 @@ new class extends Component {
 
 }; ?>
 
-<div class="relative flex flex-col h-full text-sm select-none bg-background scrollbar-hide" x-data="directoryTree(@js($readonly), @js($writeToken))" x-init="init()" @if(!$readonly) @dt-start-creating.window="startCreating($event.detail.type)" @dt-delete-selected.window="deleteSelected()" @endif>
-    @if($showToolbar && !$readonly)
+<div class="relative flex flex-col h-full text-sm select-none scrollbar-hide" x-data="directoryTree(@js($isReadonly), @js($writeToken))" x-init="init()" @refresh-directory-tree.window="$wire.refreshTree()" @katana-file-cache-set.window="if ($event.detail?.path) files[$event.detail.path] = $event.detail.content ?? null" @katana-file-cache-invalidate.window="if ($event.detail?.path) delete files[$event.detail.path]" @if(!$isReadonly) @dt-start-creating.window="startCreating($event.detail.type)" @dt-delete-selected.window="deleteSelected()" @endif>
+    @if($showToolbar && !$isReadonly)
     <div class="flex items-center justify-end gap-1 px-3 pt-2 pb-1 shrink-0">
         <button
             type="button"
@@ -163,20 +243,20 @@ new class extends Component {
             :disabled="(selectedFile === null && (selectedDirectory === null || selectedDirectory === '')) || creatingType !== null || isDeleting"
             class="p-1 rounded transition-all duration-200"
             :class="(selectedFile === null && (selectedDirectory === null || selectedDirectory === '')) || creatingType !== null || isDeleting
-                ? 'text-muted-foreground/20 pointer-events-none'
-                : 'text-muted-foreground/60 hover:bg-red-500/10 hover:text-red-500 dark:hover:text-red-400'"
+                ? 'text-zinc-300 dark:text-zinc-700 pointer-events-none'
+                : 'text-zinc-500 hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400'"
             @click="deleteSelected()"
         >
             <svg x-show="!isDeleting" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-            <svg x-show="isDeleting" x-cloak xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 animate-spin text-muted-foreground/40" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            <svg x-show="isDeleting" x-cloak xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 animate-spin text-zinc-400" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
         </button>
-        <div class="w-px h-3 bg-border/40 mx-0.5 transition-opacity duration-200" :class="(selectedFile !== null || (selectedDirectory !== null && selectedDirectory !== '')) && creatingType === null ? 'opacity-100' : 'opacity-0'"></div>
+        <div class="mx-0.5 h-3 w-px bg-zinc-200 transition-opacity duration-200 dark:bg-zinc-800" :class="(selectedFile !== null || (selectedDirectory !== null && selectedDirectory !== '')) && creatingType === null ? 'opacity-100' : 'opacity-0'"></div>
         <button
             type="button"
             title="New File"
             :disabled="creatingType !== null"
-            :class="creatingType !== null ? 'opacity-30 cursor-not-allowed' : 'hover:bg-muted hover:text-accent-foreground'"
-            class="p-1 rounded text-muted-foreground transition-colors"
+            :class="creatingType !== null ? 'opacity-30 cursor-not-allowed' : 'hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100'"
+            class="p-1 rounded text-zinc-500 transition-colors"
             @click="startCreating('file')"
         >
             <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="M9 15h6"/></svg>
@@ -185,8 +265,8 @@ new class extends Component {
             type="button"
             title="New Folder"
             :disabled="creatingType !== null"
-            :class="creatingType !== null ? 'opacity-30 cursor-not-allowed' : 'hover:bg-muted hover:text-accent-foreground'"
-            class="p-1 rounded text-muted-foreground transition-colors"
+            :class="creatingType !== null ? 'opacity-30 cursor-not-allowed' : 'hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100'"
+            class="p-1 rounded text-zinc-500 transition-colors"
             @click="startCreating('folder')"
         >
             <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 10v6"/><path d="M9 13h6"/><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
@@ -200,13 +280,13 @@ new class extends Component {
                     :name="$name"
                     :item="$item"
                     :level="0"
-                    :readonly="$readonly"
+                    :readonly="$isReadonly"
                     :animateCollapse="$animateCollapse"
                 />
             @endforeach
         </div>
 
-        @if(!$readonly)
+        @if(!$isReadonly)
         {{-- Root-level inline creation input (outside container so it survives innerHTML refresh) --}}
         <template x-if="creatingType && creatingInPath === ''">
             <div class="flex items-center px-2 py-1 ml-0">
@@ -226,17 +306,47 @@ new class extends Component {
                     @keydown.enter.prevent="confirmCreation()"
                     @keydown.escape.prevent="cancelCreation()"
                     @blur="creatingName.trim() ? confirmCreation() : cancelCreation()"
-                    class="flex-1 px-1 py-0 text-sm bg-muted border border-border rounded-md text-foreground outline-none focus:border-ring"
+                    class="flex-1 rounded-md border border-zinc-300 bg-white px-2 py-0.5 text-sm text-zinc-900 outline-none focus:border-zinc-500 focus:ring-2 focus:ring-zinc-900/5 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:border-zinc-400 dark:focus:ring-white/5"
                     placeholder="Enter name..."
                 />
             </div>
         </template>
         @endif
     </div>
+
+    @if(!$isReadonly)
+    {{-- Optimistic insert templates. Rendered server-side once with
+         __KATANA_DT_PATH__ / __KATANA_DT_NAME__ placeholders, then cloned and
+         token-replaced in JS so confirmCreation() can insert a new item into
+         the DOM instantly — no server round-trip in the critical path. --}}
+    @php
+        $optimisticTemplates = [
+            'folder-root' => ['type' => 'directory', 'level' => 0],
+            'folder-nested' => ['type' => 'directory', 'level' => 1],
+            'file-root' => ['type' => 'file', 'level' => 0],
+            'file-nested' => ['type' => 'file', 'level' => 1],
+        ];
+    @endphp
+    @foreach($optimisticTemplates as $templateKey => $cfg)
+        @php
+            $tplItem = $cfg['type'] === 'directory'
+                ? ['type' => 'directory', 'path' => '__KATANA_DT_PATH__', 'lazy' => false, 'children' => []]
+                : ['type' => 'file', 'path' => '__KATANA_DT_PATH__'];
+        @endphp
+        <template data-katana-dt-template="{{ $templateKey }}">{!! view('katana::katana.directory-tree-item', [
+            'name' => '__KATANA_DT_NAME__',
+            'item' => $tplItem,
+            'level' => $cfg['level'],
+            'readonly' => $isReadonly,
+            'animateCollapse' => $animateCollapse,
+        ])->render() !!}</template>
+    @endforeach
+    @endif
 </div>
 
+@assets
 <script>
-function directoryTree(readonly, writeToken) {
+window.directoryTree = function directoryTree(readonly, writeToken) {
     return {
         readonly: readonly || false,
         writeToken: writeToken || null,
@@ -271,6 +381,8 @@ function directoryTree(readonly, writeToken) {
 
         init() {
             this.rebuildPrefetchCache();
+            // Pre-fetch children of all visible root-level directories
+            this.prefetchVisibleChildren('');
             // Broadcast creating state so the wrapper toolbar can disable buttons
             this.$watch('creatingType', (value) => {
                 this.$dispatch('dt-creating-state', { creating: value !== null });
@@ -280,21 +392,40 @@ function directoryTree(readonly, writeToken) {
         rebuildPrefetchCache() {
             // Mark server-rendered directories as preloaded
             this.prefetchCache = {};
+            // Root may have new files after refreshTree — reset so content
+            // prefetch re-runs for the visible top level.
+            delete this.fetchedDirectories[''];
+
             this.$el.querySelectorAll('[data-loaded]').forEach(el => {
                 const path = el.getAttribute('data-children-for');
-                if (path !== null) {
-                    // Collect child dirs from the rendered HTML
-                    const childDirs = [];
-                    el.querySelectorAll(':scope > [data-dir-path]').forEach(child => {
-                        const dirPath = child.getAttribute('data-dir-path');
-                        const isLazy = child.getAttribute('data-lazy') === 'true';
-                        if (dirPath && !isLazy) {
-                            childDirs.push(dirPath);
-                        }
-                    });
-                    this.prefetchCache[path] = { html: null, childDirs: childDirs, preloaded: true };
-                }
+                if (path === null) return;
+
+                const childDirs = [];
+                el.querySelectorAll(':scope > [data-dir-path]').forEach(child => {
+                    const dirPath = child.getAttribute('data-dir-path');
+                    const isLazy = child.getAttribute('data-lazy') === 'true';
+                    if (dirPath && !isLazy) {
+                        childDirs.push(dirPath);
+                    }
+                });
+
+                const childFiles = [];
+                el.querySelectorAll(':scope > [data-file-path]').forEach(child => {
+                    const filePath = child.getAttribute('data-file-path');
+                    if (filePath) childFiles.push(filePath);
+                });
+
+                this.prefetchCache[path] = { html: null, childDirs, childFiles, preloaded: true };
             });
+
+            // Eagerly prefetch only root-level file content. Sub-folder files
+            // are batch-prefetched lazily when the user expands their parent
+            // (via prefetchVisibleChildren), which avoids hammering the disk
+            // for folders the user never opens.
+            const rootCache = this.prefetchCache[''];
+            if (rootCache && rootCache.childFiles && rootCache.childFiles.length > 0) {
+                this.fetchFilesInDirectory('', rootCache.childFiles);
+            }
         },
 
         selectFile(path) {
@@ -350,21 +481,66 @@ function directoryTree(readonly, writeToken) {
                 return;
             }
 
+            // Client-side validation mirroring the server. Blocking quotes
+            // keeps the hand-replaced attribute templates safe too — a path
+            // containing a single quote would break the embedded Alpine
+            // expressions after token replacement.
+            if (name === '.' || name === '..' || /[\/\\\\'"<>]/.test(name)) {
+                this.$dispatch('directory-tree-error', { message: 'Invalid name' });
+                return;
+            }
+
             this.isCreating = true;
             const type = this.creatingType;
             const parentPath = this.creatingInPath;
+            const newPath = parentPath ? parentPath + '/' + name : name;
             const endpoint = type === 'file' ? '/katana/directory-create-file' : '/katana/directory-create-folder';
 
-            const csrfToken = document.querySelector('meta[name=csrf-token]');
+            // ——— OPTIMISTIC UI ———
+            // Dismiss the input, insert the new item node into the DOM in
+            // sorted order, and update internal caches — all synchronously,
+            // before the server round-trip. The item appears instantly.
+            this.cancelCreation();
+            const optimisticNode = this.insertOptimisticItem(parentPath, name, newPath, type);
 
-            // Dim the input to show processing state
-            const inputEl = parentPath === ''
-                ? this.$refs.rootCreationInput
-                : this.$el.querySelector('[data-creation-input="' + (parentPath ? CSS.escape(parentPath) : '') + '"]');
-            if (inputEl) {
-                inputEl.disabled = true;
-                inputEl.style.opacity = '0.5';
+            const parentCache = this.prefetchCache[parentPath];
+            if (parentCache) {
+                if (type === 'folder') {
+                    parentCache.childDirs = [...(parentCache.childDirs || []), newPath];
+                } else {
+                    parentCache.childFiles = [...(parentCache.childFiles || []), newPath];
+                }
             }
+
+            if (type === 'file') {
+                this.files[newPath] = '';
+                this.selectFile(newPath);
+                this.$dispatch('file-selected', [{ file: newPath, content: '', focus: true }]);
+            } else {
+                this.selectDirectory(newPath);
+            }
+
+            // Rollback helper — undoes the optimistic state if the server
+            // rejects the create (name collision, permission, disk error).
+            const rollback = () => {
+                if (optimisticNode && optimisticNode.isConnected) {
+                    optimisticNode.remove();
+                }
+                if (parentCache) {
+                    if (type === 'folder') {
+                        parentCache.childDirs = (parentCache.childDirs || []).filter(p => p !== newPath);
+                    } else {
+                        parentCache.childFiles = (parentCache.childFiles || []).filter(p => p !== newPath);
+                    }
+                }
+                if (type === 'file') {
+                    delete this.files[newPath];
+                }
+                if (this.selectedFile === newPath) this.selectedFile = null;
+                if (this.selectedDirectory === newPath) this.selectedDirectory = null;
+            };
+
+            const csrfToken = document.querySelector('meta[name=csrf-token]');
 
             try {
                 const response = await fetch(endpoint, {
@@ -385,34 +561,95 @@ function directoryTree(readonly, writeToken) {
                 const data = await response.json();
 
                 if (data.error) {
+                    rollback();
                     this.$dispatch('directory-tree-error', { message: data.error });
-                    this.cancelCreation();
                     return;
                 }
 
-                // Refresh tree FIRST — the new item appears in the DOM
-                // while the creation input is still visible as a placeholder.
-                await this.$wire.refreshTree();
-                this.rebuildPrefetchCache();
-
-                // NOW dismiss the input — the new item is already in the tree
-                this.cancelCreation();
-
-                // Select the newly created item
-                if (type === 'file') {
-                    this.selectFile(data.path);
-                } else {
-                    this.selectDirectory(data.path);
+                // Success — the optimistic node stays; drop its transient marker.
+                if (optimisticNode) {
+                    optimisticNode.removeAttribute('data-optimistic');
                 }
-
                 this.$dispatch('directory-tree-created', { type, path: data.path, name });
             } catch (err) {
+                rollback();
                 console.error('Error creating ' + type + ':', err);
                 this.$dispatch('directory-tree-error', { message: 'Failed to create ' + type });
-                this.cancelCreation();
             } finally {
                 this.isCreating = false;
             }
+        },
+
+        insertOptimisticItem(parentPath, name, newPath, type) {
+            const selector = parentPath === ''
+                ? '[data-children-for=""]'
+                : '[data-children-for="' + CSS.escape(parentPath) + '"]';
+            const container = document.querySelector(selector);
+            if (!container) return null;
+
+            const isRoot = parentPath === '';
+            const templateKey = type === 'folder'
+                ? (isRoot ? 'folder-root' : 'folder-nested')
+                : (isRoot ? 'file-root' : 'file-nested');
+            const tmpl = document.querySelector('template[data-katana-dt-template="' + templateKey + '"]');
+            if (!tmpl) return null;
+
+            // Our name validator blocks quote characters, but parent paths
+            // created before the validator existed may legitimately contain
+            // '&' '<' '>'. HTML-escape both tokens on replacement so the
+            // attribute values and visible text stay well-formed. (Alpine
+            // decodes the attribute entities when evaluating expressions.)
+            const escapeHtml = (s) => s
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+            const html = tmpl.innerHTML
+                .replaceAll('__KATANA_DT_PATH__', escapeHtml(newPath))
+                .replaceAll('__KATANA_DT_NAME__', escapeHtml(name));
+
+            const tmp = document.createElement('div');
+            tmp.innerHTML = html.trim();
+            const node = tmp.firstElementChild;
+            if (!node) return null;
+
+            node.setAttribute('data-optimistic', 'true');
+
+            // Sort insertion matches the server's sortStructure(): directories
+            // first, alphabetical within each group (case-insensitive).
+            const lowerName = name.toLowerCase();
+            let anchor = null;
+            for (const sibling of container.children) {
+                if (sibling.tagName === 'TEMPLATE') continue;
+                const sibIsDir = sibling.hasAttribute('data-dir-path');
+                const sibPath = sibling.getAttribute('data-dir-path') || sibling.getAttribute('data-file-path') || '';
+                const sibName = (sibPath.split('/').pop() || '').toLowerCase();
+
+                if (type === 'folder') {
+                    if (!sibIsDir) { anchor = sibling; break; }
+                    if (sibName > lowerName) { anchor = sibling; break; }
+                } else {
+                    if (sibIsDir) continue;
+                    if (sibName > lowerName) { anchor = sibling; break; }
+                }
+            }
+
+            if (anchor) container.insertBefore(node, anchor);
+            else container.appendChild(node);
+
+            // Subtle fade+slide entrance so the new row doesn't pop in abruptly.
+            node.style.opacity = '0';
+            node.style.transform = 'translateY(-2px)';
+            node.style.transition = 'opacity 150ms ease-out, transform 150ms ease-out';
+
+            Alpine.initTree(node);
+
+            requestAnimationFrame(() => {
+                node.style.opacity = '';
+                node.style.transform = '';
+                setTimeout(() => { node.style.transition = ''; }, 200);
+            });
+
+            return node;
         },
 
         cancelCreation() {
@@ -508,13 +745,22 @@ function directoryTree(readonly, writeToken) {
             // Clear prefetch cache for this path so it re-fetches
             delete this.prefetchCache[path];
             delete this.pendingFetches[path];
+            // Allow the post-refresh batch prefetch to run — without this, a
+            // newly-created file in an already-prefetched folder would never
+            // have its content cached.
+            delete this.fetchedDirectories[path];
 
-            // Find the container element for this directory
-            // Note: CSS.escape('') throws, so we handle empty string directly
+            // Find the container element for this directory.
+            // Note: CSS.escape('') throws, so we handle empty string directly.
+            // We query against `document` rather than `this.$el` because
+            // Livewire's post-mount re-render can replace the component root,
+            // leaving Alpine's $el detached from the live DOM — in which case
+            // this.$el.querySelector(...) silently returns null and the new
+            // item is never injected.
             const selector = path === ''
                 ? '[data-children-for=""]'
                 : '[data-children-for="' + CSS.escape(path) + '"]';
-            const containerEl = this.$el.querySelector(selector);
+            const containerEl = document.querySelector(selector);
             if (containerEl) {
                 containerEl.removeAttribute('data-loaded');
             }
@@ -524,6 +770,7 @@ function directoryTree(readonly, writeToken) {
             const data = await this.fetchChildren(path, depth);
             if (data && containerEl) {
                 this.injectChildren(path, containerEl, data);
+                this.prefetchVisibleChildren(path);
             }
         },
 
@@ -590,6 +837,7 @@ function directoryTree(readonly, writeToken) {
                 this.prefetchCache[path] = {
                     html: data.html || '',
                     childDirs: data.childDirs || [],
+                    childFiles: data.childFiles || [],
                     preloaded: false,
                     loaded: true,
                 };
@@ -609,113 +857,136 @@ function directoryTree(readonly, writeToken) {
         injectChildren(path, containerEl, data) {
             if (!containerEl || !data) return;
 
-            containerEl.innerHTML = data.html || '';
-            containerEl.setAttribute('data-loaded', 'true');
-
-            // Initialize Alpine on the new DOM elements
+            // Only replace innerHTML when we actually have content to inject.
+            // An empty assignment would destroy sibling templates (e.g. the
+            // Loading spinner) that depend on Alpine state.
             if (data.html) {
+                containerEl.innerHTML = data.html;
                 Alpine.initTree(containerEl);
             }
+            containerEl.setAttribute('data-loaded', 'true');
         },
 
         prefetchVisibleChildren(parentPath) {
             const cached = this.prefetchCache[parentPath];
-            if (!cached || !cached.childDirs) return;
+            if (!cached) return;
 
-            cached.childDirs.forEach(childPath => {
+            // Structure-level prefetch: grab the HTML of nested dirs so the
+            // next expand doesn't round-trip.
+            (cached.childDirs || []).forEach(childPath => {
                 if (!this.prefetchCache[childPath] && !this.pendingFetches[childPath]) {
-                    // Determine the level from the path depth
                     const parentDepth = parentPath.split('/').length;
                     this.fetchChildren(childPath, parentDepth + 1);
                 }
             });
+
+            // Content-level prefetch: batch-read the files visible at this
+            // level so clicking any one of them is instant.
+            if ((cached.childFiles || []).length > 0) {
+                this.fetchFilesInDirectory(parentPath, cached.childFiles);
+            }
         },
 
-        // File content fetching — disabled automatically if the endpoint returns 404
-        _fileContentAvailable: null,
+        // File content prefetch & cache.
+        //
+        // `this.files[path]` values:
+        //   undefined — never fetched
+        //   null      — fetched but unavailable (binary, too large, or error)
+        //   string    — file contents (empty string is a valid cached value)
+        //
+        // Callers must check `!== undefined`, not truthiness — empty files are
+        // real cache hits.
 
         fetchFileContent(fullPath) {
-            // If we've detected the endpoint doesn't exist, bail out silently
-            if (this._fileContentAvailable === false) {
-                return Promise.resolve(null);
-            }
-            if (this.files[fullPath]) {
+            if (this.files[fullPath] !== undefined) {
                 return Promise.resolve(this.files[fullPath]);
             }
+            // If a batch prefetch is already reading this path, reuse its
+            // Promise so a hover during a batch doesn't fire a second request.
             if (this.pendingFetches['file:' + fullPath]) {
                 return this.pendingFetches['file:' + fullPath];
             }
+
             const csrfToken = document.querySelector('meta[name=csrf-token]');
-            this.pendingFetches['file:' + fullPath] = fetch('/file-content', {
+            const promise = fetch('/katana/file-content', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': csrfToken ? csrfToken.content : '',
                 },
-                body: JSON.stringify({ path: fullPath })
+                body: JSON.stringify({
+                    disk: this.config.disk,
+                    baseDir: this.config.baseDir,
+                    path: fullPath,
+                }),
             })
-            .then(response => {
-                if (response.status === 404) {
-                    this._fileContentAvailable = false;
-                    return null;
-                }
-                this._fileContentAvailable = true;
-                return response.json();
-            })
+            .then(response => response.json().catch(() => ({ error: 'Bad response' })))
             .then(data => {
-                if (!data) return null;
-                if (!data.error) {
-                    this.files[fullPath] = data.content;
-                    return data.content;
-                }
-                return null;
+                const content = (data && typeof data.content === 'string') ? data.content : null;
+                this.files[fullPath] = content;
+                return content;
             })
-            .catch(error => {
+            .catch(() => {
+                this.files[fullPath] = null;
                 return null;
             })
             .finally(() => {
                 delete this.pendingFetches['file:' + fullPath];
             });
-            return this.pendingFetches['file:' + fullPath];
+
+            this.pendingFetches['file:' + fullPath] = promise;
+            return promise;
         },
 
         fetchFilesInDirectory(dirPath, files) {
-            if (this._fileContentAvailable === false) return;
             if (this.fetchedDirectories[dirPath]) return;
 
-            const filesToFetch = files.filter(f =>
-                !this.files[f] && !this.pendingFetches['file:' + f]
+            const filesToFetch = (files || []).filter(f =>
+                this.files[f] === undefined && !this.pendingFetches['file:' + f]
             );
+
             if (filesToFetch.length === 0) {
                 this.fetchedDirectories[dirPath] = true;
                 return;
             }
-            filesToFetch.forEach(f => { this.pendingFetches['file:' + f] = true; });
+
+            // Per-file resolver so a concurrent fetchFileContent() hover can
+            // await the in-flight batch rather than starting a duplicate fetch.
+            const resolvers = {};
+            filesToFetch.forEach(f => {
+                this.pendingFetches['file:' + f] = new Promise(resolve => {
+                    resolvers[f] = resolve;
+                });
+            });
+
+            const settle = (f, content) => {
+                this.files[f] = content;
+                resolvers[f](content);
+            };
+
             const csrfToken = document.querySelector('meta[name=csrf-token]');
-            fetch('/batch-file-content', {
+            fetch('/katana/batch-file-content', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': csrfToken ? csrfToken.content : '',
                 },
-                body: JSON.stringify({ paths: filesToFetch })
+                body: JSON.stringify({
+                    disk: this.config.disk,
+                    baseDir: this.config.baseDir,
+                    paths: filesToFetch,
+                }),
             })
-            .then(response => {
-                if (response.status === 404) {
-                    this._fileContentAvailable = false;
-                    return null;
-                }
-                return response.json();
-            })
+            .then(response => response.json())
             .then(data => {
-                if (!data) return;
-                const contents = data.contents || {};
-                Object.entries(contents).forEach(([file, content]) => {
-                    this.files[file] = content;
+                const contents = (data && data.contents) || {};
+                filesToFetch.forEach(f => {
+                    const content = typeof contents[f] === 'string' ? contents[f] : null;
+                    settle(f, content);
                 });
             })
-            .catch(error => {
-                // Silently handle — endpoint may not exist
+            .catch(() => {
+                filesToFetch.forEach(f => settle(f, null));
             })
             .finally(() => {
                 filesToFetch.forEach(f => { delete this.pendingFetches['file:' + f]; });
@@ -725,3 +996,4 @@ function directoryTree(readonly, writeToken) {
     }
 }
 </script>
+@endassets
