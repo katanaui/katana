@@ -1,10 +1,13 @@
 <?php
 
+use App\Models\Project;
+use App\Services\ProjectStorage;
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Contracts\Encryption\DecryptException;
 
 // Bounds the payload of /katana/file-content and /katana/batch-file-content.
 // A batch of 50 × 1MB worst-case is 50MB — still JSON-safe, and in practice
@@ -15,7 +18,7 @@ const KATANA_MAX_BATCH_FILE_COUNT = 50;
 function validateWriteToken(Request $request): bool
 {
     $token = $request->input('_write_token');
-    if (!$token) {
+    if (! $token) {
         return false;
     }
 
@@ -25,7 +28,7 @@ function validateWriteToken(Request $request): bool
         return false;
     }
 
-    if (!is_array($payload) || empty($payload['writable'])) {
+    if (! is_array($payload) || empty($payload['writable'])) {
         return false;
     }
 
@@ -72,9 +75,16 @@ function katanaJoinDiskPath(string $baseDir, string $relative): string|false
         return false;
     }
 
-    if ($base === '' && $rel === '') return '';
-    if ($base === '') return $rel;
-    if ($rel === '') return $base;
+    if ($base === '' && $rel === '') {
+        return '';
+    }
+    if ($base === '') {
+        return $rel;
+    }
+    if ($rel === '') {
+        return $base;
+    }
+
     return $base.'/'.$rel;
 }
 
@@ -96,9 +106,9 @@ function katanaIsLocalDisk(string $disk): bool
  *
  * Callers fall back to a raw Storage write in that case.
  */
-function katanaResolveProject(string $baseDir): ?\App\Models\Project
+function katanaResolveProject(string $baseDir): ?Project
 {
-    if (!class_exists(\App\Models\Project::class)) {
+    if (! class_exists(Project::class)) {
         return null;
     }
 
@@ -109,7 +119,38 @@ function katanaResolveProject(string $baseDir): ?\App\Models\Project
 
     $slug = explode('/', $baseDir, 2)[0];
 
-    return \App\Models\Project::where('slug', $slug)->first();
+    return Project::where('slug', $slug)->first();
+}
+
+/**
+ * Project-scoped authorization for the KatanaUI tree routes.
+ *
+ * When KatanaUI is used inside the div app, every baseDir maps to a Project
+ * (first segment = slug). We must authorize the requester against the
+ * ProjectPolicy before any read or write — the encrypted `_write_token` only
+ * proves the *page* knew the baseDir, not that *this requester* can act on it.
+ * Without this gate, a viewer of a public project can grab the write token
+ * out of the rendered HTML and mutate the owner's files; an unauthenticated
+ * visitor can read the source of any project just by knowing its slug.
+ *
+ * Returns true when access is allowed (or when the request isn't tied to a
+ * div Project — preserves the package's portability for non-div consumers).
+ * Returns false when the request resolved to a project but the requester
+ * isn't permitted; the caller should respond 403.
+ */
+function katanaAuthorizeProject(string $baseDir, string $ability): bool
+{
+    $project = katanaResolveProject($baseDir);
+    if ($project === null) {
+        // baseDir doesn't map to a div project — fall through. If KatanaUI is
+        // ever used standalone this preserves the open behavior; inside div,
+        // editor mount() always feeds a real project slug so a null here from
+        // a div-shaped request is itself suspect — but the existing path
+        // sandbox + write-token still apply.
+        return true;
+    }
+
+    return Gate::allows($ability, $project);
 }
 
 /**
@@ -129,22 +170,22 @@ function katanaResolveProject(string $baseDir): ?\App\Models\Project
 function katanaReadFileSafely(string $diskName, string $baseDir, string $path): array
 {
     $diskConfig = config("filesystems.disks.{$diskName}");
-    if (!$diskConfig) {
+    if (! $diskConfig) {
         return ['error' => 'Invalid disk'];
     }
 
     if (katanaIsLocalDisk($diskName)) {
         $root = rtrim($diskConfig['root'] ?? '', '/');
-        $diskPath = $baseDir ? rtrim($baseDir, '/') . '/' . ltrim($path, '/') : $path;
-        $fullPath = $root . '/' . ltrim($diskPath, '/');
+        $diskPath = $baseDir ? rtrim($baseDir, '/').'/'.ltrim($path, '/') : $path;
+        $fullPath = $root.'/'.ltrim($diskPath, '/');
 
         $realRoot = realpath($root);
         $realPath = realpath($fullPath);
-        if (!$realRoot || !$realPath || !str_starts_with($realPath, $realRoot)) {
+        if (! $realRoot || ! $realPath || ! str_starts_with($realPath, $realRoot)) {
             return ['error' => 'Invalid path'];
         }
 
-        if (!is_file($realPath)) {
+        if (! is_file($realPath)) {
             return ['error' => 'Not a file'];
         }
 
@@ -168,7 +209,7 @@ function katanaReadFileSafely(string $diskName, string $baseDir, string $path): 
         }
 
         $storage = Storage::disk($diskName);
-        if (!$storage->exists($diskPath)) {
+        if (! $storage->exists($diskPath)) {
             return ['error' => 'Not a file'];
         }
 
@@ -191,7 +232,7 @@ function katanaReadFileSafely(string $diskName, string $baseDir, string $path): 
         return ['binary' => true, 'size' => $size];
     }
 
-    if (!mb_check_encoding($content, 'UTF-8')) {
+    if (! mb_check_encoding($content, 'UTF-8')) {
         return ['binary' => true, 'size' => $size];
     }
 
@@ -217,8 +258,12 @@ Route::post('/katana/directory-children', function (Request $request) {
     $level = $validated['level'] ?? 1;
     $animateCollapse = $validated['animateCollapse'] ?? false;
 
+    if (! katanaAuthorizeProject($baseDir, 'view')) {
+        return response()->json(['error' => 'Forbidden'], 403);
+    }
+
     $diskConfig = config("filesystems.disks.{$disk}");
-    if (!$diskConfig) {
+    if (! $diskConfig) {
         return response()->json(['error' => 'Invalid disk'], 422);
     }
 
@@ -237,6 +282,7 @@ Route::post('/katana/directory-children', function (Request $request) {
         if ($aIsDir !== $bIsDir) {
             return $aIsDir ? -1 : 1;
         }
+
         return strcasecmp($a, $b);
     });
 
@@ -271,16 +317,16 @@ Route::post('/katana/directory-children', function (Request $request) {
 function katanaListChildrenLocal(array $diskConfig, string $baseDir, string $path, array $exclude, array $lazyDirs): array|false
 {
     $root = rtrim($diskConfig['root'] ?? '', '/');
-    $diskPath = $baseDir ? rtrim($baseDir, '/') . '/' . ltrim($path, '/') : $path;
-    $fullDir = $root . '/' . ltrim($diskPath, '/');
+    $diskPath = $baseDir ? rtrim($baseDir, '/').'/'.ltrim($path, '/') : $path;
+    $fullDir = $root.'/'.ltrim($diskPath, '/');
 
     $realRoot = realpath($root);
     $realDir = realpath($fullDir);
-    if (!$realRoot || !$realDir || !str_starts_with($realDir, $realRoot)) {
+    if (! $realRoot || ! $realDir || ! str_starts_with($realDir, $realRoot)) {
         return false;
     }
 
-    if (!is_dir($realDir)) {
+    if (! is_dir($realDir)) {
         return false;
     }
 
@@ -293,8 +339,8 @@ function katanaListChildrenLocal(array $diskConfig, string $baseDir, string $pat
             continue;
         }
 
-        $entryFullPath = $realDir . '/' . $entry;
-        $entryDiskPath = $diskPath ? rtrim($diskPath, '/') . '/' . $entry : $entry;
+        $entryFullPath = $realDir.'/'.$entry;
+        $entryDiskPath = $diskPath ? rtrim($diskPath, '/').'/'.$entry : $entry;
         $relativePath = $baseDirPrefix !== ''
             ? ltrim(substr($entryDiskPath, strlen($baseDirPrefix)), '/')
             : ltrim($entryDiskPath, '/');
@@ -308,7 +354,9 @@ function katanaListChildrenLocal(array $diskConfig, string $baseDir, string $pat
                 'children' => [],
             ];
         } elseif (is_dir($entryFullPath)) {
-            if (in_array($entry, $exclude)) continue;
+            if (in_array($entry, $exclude)) {
+                continue;
+            }
             $items[$entry] = [
                 'type' => 'directory',
                 'path' => $relativePath,
@@ -383,7 +431,11 @@ Route::post('/katana/directory-create-file', function (Request $request) {
         '_write_token' => 'required|string',
     ]);
 
-    if (!validateWriteToken($request)) {
+    if (! validateWriteToken($request)) {
+        return response()->json(['error' => 'Forbidden'], 403);
+    }
+
+    if (! katanaAuthorizeProject($validated['baseDir'] ?? '', 'update')) {
         return response()->json(['error' => 'Forbidden'], 403);
     }
 
@@ -397,11 +449,11 @@ Route::post('/katana/directory-create-file', function (Request $request) {
     }
 
     $diskConfig = config("filesystems.disks.{$disk}");
-    if (!$diskConfig) {
+    if (! $diskConfig) {
         return response()->json(['error' => 'Invalid disk'], 422);
     }
 
-    $relativePath = $parentPath ? rtrim($parentPath, '/') . '/' . $name : $name;
+    $relativePath = $parentPath ? rtrim($parentPath, '/').'/'.$name : $name;
 
     // Prefer ProjectStorage across both drivers so SSG mirroring happens
     // regardless of whether the project is on S3 or a local disk.
@@ -414,25 +466,25 @@ Route::post('/katana/directory-create-file', function (Request $request) {
         if (Storage::disk($disk)->exists($diskPath)) {
             return response()->json(['error' => 'A file or folder with that name already exists'], 422);
         }
-        app(\App\Services\ProjectStorage::class)->createEmptyFile($project, $relativePath);
+        app(ProjectStorage::class)->createEmptyFile($project, $relativePath);
     } elseif (katanaIsLocalDisk($disk)) {
         $root = rtrim($diskConfig['root'] ?? '', '/');
         $parentDiskPath = $baseDir
-            ? ($parentPath ? rtrim($baseDir, '/') . '/' . ltrim($parentPath, '/') : $baseDir)
+            ? ($parentPath ? rtrim($baseDir, '/').'/'.ltrim($parentPath, '/') : $baseDir)
             : $parentPath;
-        $parentFullPath = $root . ($parentDiskPath ? '/' . ltrim($parentDiskPath, '/') : '');
+        $parentFullPath = $root.($parentDiskPath ? '/'.ltrim($parentDiskPath, '/') : '');
 
         $realRoot = realpath($root);
         $realParent = realpath($parentFullPath);
-        if (!$realRoot || !$realParent || !str_starts_with($realParent, $realRoot)) {
+        if (! $realRoot || ! $realParent || ! str_starts_with($realParent, $realRoot)) {
             return response()->json(['error' => 'Invalid path'], 422);
         }
 
-        if (!is_dir($realParent)) {
+        if (! is_dir($realParent)) {
             return response()->json(['error' => 'Parent directory does not exist'], 422);
         }
 
-        $targetFullPath = $realParent . '/' . $name;
+        $targetFullPath = $realParent.'/'.$name;
         if (file_exists($targetFullPath)) {
             return response()->json(['error' => 'A file or folder with that name already exists'], 422);
         }
@@ -463,7 +515,11 @@ Route::post('/katana/directory-create-folder', function (Request $request) {
         '_write_token' => 'required|string',
     ]);
 
-    if (!validateWriteToken($request)) {
+    if (! validateWriteToken($request)) {
+        return response()->json(['error' => 'Forbidden'], 403);
+    }
+
+    if (! katanaAuthorizeProject($validated['baseDir'] ?? '', 'update')) {
         return response()->json(['error' => 'Forbidden'], 403);
     }
 
@@ -477,11 +533,11 @@ Route::post('/katana/directory-create-folder', function (Request $request) {
     }
 
     $diskConfig = config("filesystems.disks.{$disk}");
-    if (!$diskConfig) {
+    if (! $diskConfig) {
         return response()->json(['error' => 'Invalid disk'], 422);
     }
 
-    $relativePath = $parentPath ? rtrim($parentPath, '/') . '/' . $name : $name;
+    $relativePath = $parentPath ? rtrim($parentPath, '/').'/'.$name : $name;
 
     $project = katanaResolveProject($baseDir);
     if ($project !== null) {
@@ -494,28 +550,29 @@ Route::post('/katana/directory-create-folder', function (Request $request) {
         if ($storage->exists($marker) || in_array($diskPath, $storage->directories(dirname($diskPath) ?: ''), true)) {
             return response()->json(['error' => 'A file or folder with that name already exists'], 422);
         }
-        app(\App\Services\ProjectStorage::class)->createFolder($project, $relativePath);
+        app(ProjectStorage::class)->createFolder($project, $relativePath);
+
         return response()->json(['success' => true, 'path' => $relativePath]);
     }
 
     if (katanaIsLocalDisk($disk)) {
         $root = rtrim($diskConfig['root'] ?? '', '/');
         $parentDiskPath = $baseDir
-            ? ($parentPath ? rtrim($baseDir, '/') . '/' . ltrim($parentPath, '/') : $baseDir)
+            ? ($parentPath ? rtrim($baseDir, '/').'/'.ltrim($parentPath, '/') : $baseDir)
             : $parentPath;
-        $parentFullPath = $root . ($parentDiskPath ? '/' . ltrim($parentDiskPath, '/') : '');
+        $parentFullPath = $root.($parentDiskPath ? '/'.ltrim($parentDiskPath, '/') : '');
 
         $realRoot = realpath($root);
         $realParent = realpath($parentFullPath);
-        if (!$realRoot || !$realParent || !str_starts_with($realParent, $realRoot)) {
+        if (! $realRoot || ! $realParent || ! str_starts_with($realParent, $realRoot)) {
             return response()->json(['error' => 'Invalid path'], 422);
         }
 
-        if (!is_dir($realParent)) {
+        if (! is_dir($realParent)) {
             return response()->json(['error' => 'Parent directory does not exist'], 422);
         }
 
-        $targetFullPath = $realParent . '/' . $name;
+        $targetFullPath = $realParent.'/'.$name;
         if (file_exists($targetFullPath)) {
             return response()->json(['error' => 'A file or folder with that name already exists'], 422);
         }
@@ -548,7 +605,11 @@ Route::post('/katana/directory-delete', function (Request $request) {
         '_write_token' => 'required|string',
     ]);
 
-    if (!validateWriteToken($request)) {
+    if (! validateWriteToken($request)) {
+        return response()->json(['error' => 'Forbidden'], 403);
+    }
+
+    if (! katanaAuthorizeProject($validated['baseDir'] ?? '', 'update')) {
         return response()->json(['error' => 'Forbidden'], 403);
     }
 
@@ -558,7 +619,7 @@ Route::post('/katana/directory-delete', function (Request $request) {
     $type = $validated['type'];
 
     $diskConfig = config("filesystems.disks.{$disk}");
-    if (!$diskConfig) {
+    if (! $diskConfig) {
         return response()->json(['error' => 'Invalid disk'], 422);
     }
 
@@ -568,18 +629,19 @@ Route::post('/katana/directory-delete', function (Request $request) {
         if ($normalized === false || $normalized === '') {
             return response()->json(['error' => 'Invalid path'], 422);
         }
-        app(\App\Services\ProjectStorage::class)->deleteFile($project, $path, $type);
+        app(ProjectStorage::class)->deleteFile($project, $path, $type);
+
         return response()->json(['success' => true, 'path' => $path]);
     }
 
     if (katanaIsLocalDisk($disk)) {
         $root = rtrim($diskConfig['root'] ?? '', '/');
-        $diskPath = $baseDir ? rtrim($baseDir, '/') . '/' . ltrim($path, '/') : $path;
-        $fullPath = $root . '/' . ltrim($diskPath, '/');
+        $diskPath = $baseDir ? rtrim($baseDir, '/').'/'.ltrim($path, '/') : $path;
+        $fullPath = $root.'/'.ltrim($diskPath, '/');
 
         $realRoot = realpath($root);
         $realPath = realpath($fullPath);
-        if (!$realRoot || !$realPath || !str_starts_with($realPath, $realRoot)) {
+        if (! $realRoot || ! $realPath || ! str_starts_with($realPath, $realRoot)) {
             return response()->json(['error' => 'Invalid path'], 422);
         }
 
@@ -588,17 +650,17 @@ Route::post('/katana/directory-delete', function (Request $request) {
         }
 
         if ($type === 'file') {
-            if (!is_file($realPath)) {
+            if (! is_file($realPath)) {
                 return response()->json(['error' => 'File not found'], 404);
             }
             unlink($realPath);
         } else {
-            if (!is_dir($realPath)) {
+            if (! is_dir($realPath)) {
                 return response()->json(['error' => 'Directory not found'], 404);
             }
-            $iterator = new \RecursiveIteratorIterator(
-                new \RecursiveDirectoryIterator($realPath, \RecursiveDirectoryIterator::SKIP_DOTS),
-                \RecursiveIteratorIterator::CHILD_FIRST
+            $iterator = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($realPath, RecursiveDirectoryIterator::SKIP_DOTS),
+                RecursiveIteratorIterator::CHILD_FIRST
             );
             foreach ($iterator as $item) {
                 if ($item->isDir()) {
@@ -617,7 +679,7 @@ Route::post('/katana/directory-delete', function (Request $request) {
 
         $storage = Storage::disk($disk);
 
-        if ($type === 'file' && !$storage->exists($diskPath)) {
+        if ($type === 'file' && ! $storage->exists($diskPath)) {
             return response()->json(['error' => 'File not found'], 404);
         }
 
@@ -640,6 +702,10 @@ Route::post('/katana/file-content', function (Request $request) {
         'path' => 'required|string',
     ]);
 
+    if (! katanaAuthorizeProject($validated['baseDir'] ?? '', 'view')) {
+        return response()->json(['error' => 'Forbidden'], 403);
+    }
+
     $result = katanaReadFileSafely(
         $validated['disk'],
         $validated['baseDir'] ?? '',
@@ -648,6 +714,7 @@ Route::post('/katana/file-content', function (Request $request) {
 
     if (isset($result['error'])) {
         $status = $result['error'] === 'Invalid disk' || $result['error'] === 'Invalid path' ? 422 : 404;
+
         return response()->json(['error' => $result['error']], $status);
     }
 
@@ -661,6 +728,10 @@ Route::post('/katana/batch-file-content', function (Request $request) {
         'paths' => 'required|array|max:'.KATANA_MAX_BATCH_FILE_COUNT,
         'paths.*' => 'required|string',
     ]);
+
+    if (! katanaAuthorizeProject($validated['baseDir'] ?? '', 'view')) {
+        return response()->json(['error' => 'Forbidden'], 403);
+    }
 
     $disk = $validated['disk'];
     $baseDir = $validated['baseDir'] ?? '';
@@ -676,9 +747,9 @@ Route::post('/katana/batch-file-content', function (Request $request) {
 
         if (isset($result['content'])) {
             $contents[$path] = $result['content'];
-        } elseif (!empty($result['binary'])) {
+        } elseif (! empty($result['binary'])) {
             $binary[] = $path;
-        } elseif (!empty($result['tooLarge'])) {
+        } elseif (! empty($result['tooLarge'])) {
             $tooLarge[] = $path;
         } else {
             // Soft-fail individual entries so one bad path doesn't sink the whole batch.
