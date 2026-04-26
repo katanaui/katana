@@ -14,7 +14,7 @@
             $loaderClasses = 'size-3';
             break;
         case 'sm':
-            $sizeClasses = 'px-3 py-1.5 leading-4 text-xs rounded';
+            $sizeClasses = 'px-3 py-[5px] leading-4 text-xs rounded';
             $loaderClasses = 'size-3';
             break;
         case 'md':
@@ -110,7 +110,8 @@
         <span class="flex absolute justify-center items-center w-full h-full" wire:loading.flex wire:target="{{ $wireTarget }}"><svg xmlns="http://www.w3.org/2000/svg" class="{{ $loaderClasses }} animate-spin" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg></span>
+            </svg>
+        </span>
     @endif
-    <span @class(['flex items-center', 'opacity-0' => $loading]) wire:loading.class="opacity-0" wire:target="{{ $wireTarget }}">{{ $slot }}</span>
+    <span @class(['flex items-center', 'opacity-0' => $loading]) @if ($loader ?? false) wire:loading.class="opacity-0" wire:target="{{ $wireTarget }}" @endif>{{ $slot }}</span>
 </{{ $typeClose }}>

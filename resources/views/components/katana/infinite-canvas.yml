@@ -1,1 +1,11 @@
 component: Infinite Canvas
+studio:
+  container: |
+    <div class="w-full bg-stone-100 h-screen">
+        <x-katana.infinite-canvas>
+              <div class="bg-white rounded-xl w-full max-w-md mx-auto p-10">
+                  <h3 class="text-2xl text-stone-900 font-semibold mb-1 leading-tight">Infinite Canvas Component</h3>
+                  <p class="text-sm text-stone-400">With this component you can create an infinite canvas that users can pan and zoom. Keyboard shortcuts available out of the box. Add this to any application that needs a canvas to work with.</p>
+              </div>
+          </x-katana.infinite-canvas>
+      </div>

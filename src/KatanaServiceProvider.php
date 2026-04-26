@@ -18,20 +18,38 @@ class KatanaServiceProvider extends ServiceProvider
         // $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'katana');
         // $this->loadViewsFrom(__DIR__.'/../resources/views', 'katana');
         // $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
-        // $this->loadRoutesFrom(__DIR__.'/routes.php');
+        $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
 
         // Get the configurable namespace for components
         $namespace = config('katana.components.namespace', 'katana');
 
-        if (empty($namespace)) {
+        // Prefer packages/ path (editable in playground) over vendor/ (read-only copy)
+        $packagesPath = base_path('packages/katanaui/katana/resources/views/components');
+        $vendorPath = __DIR__.'/../resources/views/components';
+        $componentsPath = is_dir($packagesPath) ? $packagesPath : $vendorPath;
 
+        if (empty($namespace)) {
             // No namespace - load components from root (e.g., <x-button>)
-            Blade::anonymousComponentPath(__DIR__.'/../resources/views/components/katana');
-            $this->loadViewsFrom(__DIR__.'/../resources/views/components/katana', '');
+            Blade::anonymousComponentPath($componentsPath.'/katana');
+            $this->loadViewsFrom($componentsPath.'/katana', '');
         } else {
             // Use configured namespace (e.g., <x-katana.button> or <x-ui.button>)
-            Blade::anonymousComponentPath(__DIR__.'/../resources/views/components', $namespace);
-            $this->loadViewsFrom(__DIR__.'/../resources/views/components', $namespace);
+            Blade::anonymousComponentPath($componentsPath, $namespace);
+            $this->loadViewsFrom($componentsPath, $namespace);
+        }
+
+        $livewireDir = __DIR__.'/../resources/views/livewire';
+
+        // Register inline Livewire components (single-file component style).
+        // Volt 1 (standalone package) uses Volt::mount(); Livewire 4 ships SFC
+        // support natively and resolves top-level components via the finder.
+        if (class_exists(\Livewire\Volt\Volt::class)) {
+            \Livewire\Volt\Volt::mount([$livewireDir]);
+        } elseif (class_exists(\Livewire\Livewire::class)) {
+            $this->app->booted(function () use ($livewireDir) {
+                app('livewire.finder')->addLocation(viewPath: $livewireDir);
+                app('view')->addLocation($livewireDir);
+            });
         }
 
         if ($this->app->runningInConsole()) {

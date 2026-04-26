@@ -11,7 +11,8 @@
     "@tiptap/extension-link": "^2.0.0",
     "@tiptap/extension-underline": "^2.27.2",
     "@tiptap/pm": "^2.0.0",
-    "@tiptap/starter-kit": "^2.0.0"
+    "@tiptap/starter-kit": "^2.0.0",
+    "monaco-editor": "^0.55.1"
   },
   "devDependencies": {
     "esbuild": "^0.19.0"

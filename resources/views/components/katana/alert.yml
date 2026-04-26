@@ -23,3 +23,5 @@ props:
     description: The description below the alert title
     type: textarea
     default: "A short description here will give them context about the alert."
+studio:
+  container: <div class="w-full max-w-lg mx-auto">{{component}}</div>

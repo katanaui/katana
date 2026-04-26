@@ -12,3 +12,5 @@ props:
     description: Optional unique ID for the player. If not provided, one is auto-generated (e.g., audio-player-<uniqid>).
     type: text
     default: null
+studio:
+  container: <div class="w-full max-w-lg mx-auto">{{component}}</div>

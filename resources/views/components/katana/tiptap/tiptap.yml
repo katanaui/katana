@@ -1,1 +1,3 @@
 component: TipTap
+studio:
+  container: '<div class="w-full max-w-2xl mx-auto">{{component}}</div>'

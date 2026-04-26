@@ -4,3 +4,20 @@ props:
     description: If true, only allow one accordion item to be open at a time
     type: boolean
     default: false
+slots:
+  - name: slot
+    description: Accordion items
+    default: '<x-katana.accordion.item title="What is Katana UI?">
+          Katana UI is a Blade component library that helps you move fast and craft consistent, elegant UIs for your Laravel apps.
+      </x-katana.accordion.item>
+      <x-katana.accordion.item title="How do I install it?">
+          Simply require it with composer, and start using the <code>&lt;<span>x-katana.*</span>&gt;</code> components. They are fully customizable and easy to make your own.
+      </x-katana.accordion.item>
+      <x-katana.accordion.item title="Can I customize the styles?">
+          Absolutely. Since it is built on Tailwind, you can override colors, radius, spacing, and more. You can also specify classes for many different elements of the component.
+      </x-katana.accordion.item>
+      <x-katana.accordion.item title="Does it work with Livewire?">
+          Yes! All Katana UI components are Livewire-friendly. You can bind state or dispatch events directly from the component.
+      </x-katana.accordion.item>'
+studio:
+  container: <div class="w-full max-w-md mx-auto border border-border rounded-xl overflow-hidden">{{component}}</div>
