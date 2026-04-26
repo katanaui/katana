@@ -1,0 +1,1 @@
+(()=>{console.log("running once");var t=class extends HTMLElement{connectedCallback(){let e=this.firstElementChild;e&&this.hasAttribute("content")&&e.setAttribute("title",this.getAttribute("content")),console.log("made it")}};customElements.define("katana-tooltip",t);})();
