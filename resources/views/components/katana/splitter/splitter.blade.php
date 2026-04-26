@@ -5,24 +5,31 @@
 ])
 
 @php
-    $classes = \Illuminate\Support\Arr::toCssClasses([
-        'flex w-full h-full items-stretch justify-stretch',
-        'flex-col' => $direction == 'vertical'
-    ]);
+    $baseClasses = 'flex w-full h-full items-stretch justify-stretch';
 @endphp
 
 <div
     x-data="{
-    initailizeSplitter(){
-        const panes = [...$el.querySelectorAll('.katana-split-pane')]
+        splitInstance: null,
+        direction: '{{ $direction }}',
+        initailizeSplitter(){
+            const panes = [...$el.querySelectorAll(':scope > .katana-split-pane')]
             if (panes.length < 2) return
 
             const sizes = panes.map(p => parseFloat(p.dataset.size) || (100 / panes.length))
 
-            
+            // Tear down any prior instance so re-init swaps orientations cleanly.
+            if (this.splitInstance) {
+                try { this.splitInstance.destroy(); } catch (e) {}
+                this.splitInstance = null;
+            }
+            // Strip inline sizes Split.js may have left on the panes.
+            panes.forEach(p => { p.style.removeProperty('width'); p.style.removeProperty('height'); });
+            // Drop any stray gutters Split.js missed.
+            $el.querySelectorAll(':scope > .gutter').forEach(g => g.remove());
 
-            Split(panes, {
-                direction: '{{ $direction }}',
+            this.splitInstance = Split(panes, {
+                direction: this.direction,
                 sizes: sizes,
                 gutterSize: {{ $gutterSize }},
                 minSize: {{ $minSize }},
@@ -48,11 +55,19 @@
         initailizeSplitter()
     "
     @splitter-init.window="initailizeSplitter()"
-    {{ $attributes->twMerge($classes) }}
+    @splitter-set-direction.window="
+        const d = $event.detail?.direction;
+        if ((d === 'horizontal' || d === 'vertical') && d !== direction) {
+            direction = d;
+            $nextTick(() => initailizeSplitter());
+        }
+    "
+    :class="direction === 'vertical' ? 'flex-col' : ''"
+    {{ $attributes->twMerge($baseClasses) }}
     wire:ignore.self
 >
     {{ $slot }}
- 
+
 </div>
 
 @once
