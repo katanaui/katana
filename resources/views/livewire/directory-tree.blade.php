@@ -273,7 +273,7 @@ new class extends Component {
         </button>
     </div>
     @endif
-    <div class="flex-1 p-3 overflow-y-auto scrollbar-hide">
+    <div class="flex-1 p-1 overflow-y-auto scrollbar-hide">
         <div data-children-for="" data-loaded="true">
             @foreach($structure as $name => $item)
                 <x-katana.directory-tree-item

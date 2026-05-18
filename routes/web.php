@@ -432,10 +432,25 @@ Route::post('/katana/directory-create-file', function (Request $request) {
     ]);
 
     if (! validateWriteToken($request)) {
+        \Log::warning('katana/create-file: write token failed', [
+            'baseDir' => $validated['baseDir'] ?? '',
+            'disk' => $validated['disk'] ?? '',
+            'auth_id' => auth()->id(),
+        ]);
+
         return response()->json(['error' => 'Forbidden'], 403);
     }
 
     if (! katanaAuthorizeProject($validated['baseDir'] ?? '', 'update')) {
+        $proj = katanaResolveProject($validated['baseDir'] ?? '');
+        \Log::warning('katana/create-file: project authorize failed', [
+            'baseDir' => $validated['baseDir'] ?? '',
+            'auth_id' => auth()->id(),
+            'project_id' => $proj?->id,
+            'project_user_id' => $proj?->user_id,
+            'is_locked' => $proj?->isLocked(),
+        ]);
+
         return response()->json(['error' => 'Forbidden'], 403);
     }
 
@@ -516,10 +531,25 @@ Route::post('/katana/directory-create-folder', function (Request $request) {
     ]);
 
     if (! validateWriteToken($request)) {
+        \Log::warning('katana/create-folder: write token failed', [
+            'baseDir' => $validated['baseDir'] ?? '',
+            'disk' => $validated['disk'] ?? '',
+            'auth_id' => auth()->id(),
+        ]);
+
         return response()->json(['error' => 'Forbidden'], 403);
     }
 
     if (! katanaAuthorizeProject($validated['baseDir'] ?? '', 'update')) {
+        $proj = katanaResolveProject($validated['baseDir'] ?? '');
+        \Log::warning('katana/create-folder: project authorize failed', [
+            'baseDir' => $validated['baseDir'] ?? '',
+            'auth_id' => auth()->id(),
+            'project_id' => $proj?->id,
+            'project_user_id' => $proj?->user_id,
+            'is_locked' => $proj?->isLocked(),
+        ]);
+
         return response()->json(['error' => 'Forbidden'], 403);
     }
 
