@@ -12,7 +12,31 @@
     x-data="{
         splitInstance: null,
         direction: '{{ $direction }}',
+        _splitRetries: 0,
         initailizeSplitter(){
+            // Split.js loads from CDN via the asset tag at the bottom of this
+            // file. On a wire:navigate transition the asset is injected into
+            // the DOM but loads async, while Alpine fires this directive
+            // synchronously — meaning the first call can run before
+            // window.Split exists. Poll briefly until it does (or give up
+            // after ~5s), then proceed. Hard reload never hits this path
+            // because the asset is cached and parsed before Alpine boots.
+            // NB. Do not include the literal characters s-c-r-i-p-t (or
+            // s-t-y-l-e) wrapped in angle brackets anywhere in this comment
+            // — Livewire's multi-root detector regex-strips those tag pairs
+            // before counting roots, and a stray substring inside this
+            // attribute value will match the next real closing tag and
+            // tear chunks of the rendered DOM out with it.
+            if (typeof window.Split === 'undefined') {
+                this._splitRetries = (this._splitRetries || 0) + 1;
+                if (this._splitRetries < 100) {
+                    return setTimeout(() => this.initailizeSplitter(), 50);
+                }
+                console.warn('Split.js unavailable after retry; splitter init aborted.');
+                return;
+            }
+            this._splitRetries = 0;
+
             const panes = [...$el.querySelectorAll(':scope > .katana-split-pane')]
             if (panes.length < 2) return
 
@@ -71,7 +95,10 @@
 </div>
 
 @once
-    <script src="https://cdn.jsdelivr.net/npm/split.js/dist/split.min.js"></script>
+    {{-- Split.js is now bundled via resources/js/app.js so window.Split is
+         available synchronously before Alpine fires. The retry guard in the
+         x-data block above stays as a safety net in case the bundle is ever
+         removed or fails to evaluate before this directive runs. --}}
     <style>
         .split {
             display: flex;
@@ -80,46 +107,26 @@
             flex-direction: column;
         }
         /*
-         * Gutter: generous hit area (full gutterSize width/height) with a
-         * restrained 1px hairline in the center. On hover / while dragging,
-         * the hairline thickens to 2px and an accent pill appears — a clear
-         * affordance that this seam is draggable, CodePen-style.
+         * Gutter: the gutter element ITSELF is the visible divider — a thin
+         * black line that doubles as the drag handle. Hover / drag turns it
+         * blue. A transparent ::before extends the pointer hit area a few
+         * pixels each side so the handle is comfortable to grab even when
+         * the visible line is only 2px thin.
          */
         .gutter {
             position: relative;
-            background-color: transparent;
-            background-repeat: no-repeat;
-            background-position: 50%;
-            transition: background-color 150ms ease;
+            z-index: 5;
+            background-color: rgb(10 10 10); /* near-black ink */
+            transition: background-color 120ms ease;
         }
-        .gutter::before,
-        .gutter::after {
+        .gutter::before {
             content: '';
             position: absolute;
-            pointer-events: none;
-            transition: background-color 150ms ease, opacity 150ms ease, width 150ms ease, height 150ms ease;
-        }
-        /* The hairline divider in the middle of the gutter. */
-        .gutter::before {
-            background-color: rgb(228 228 231); /* zinc-200 */
-        }
-        /* The grip pill — only visible on hover / drag. */
-        .gutter::after {
-            background-color: rgb(113 113 122); /* zinc-500 */
-            border-radius: 9999px;
-            opacity: 0;
+            pointer-events: auto;
         }
         .gutter:hover,
         .gutter.gutter-dragging {
-            background-color: rgba(99, 102, 241, 0.04);
-        }
-        .gutter:hover::before,
-        .gutter.gutter-dragging::before {
-            background-color: rgb(99 102 241); /* indigo-500 */
-        }
-        .gutter:hover::after,
-        .gutter.gutter-dragging::after {
-            opacity: 1;
+            background-color: rgb(59 130 246); /* blue-500 */
         }
 
         /* Horizontal (vertical seam between side-by-side panes). */
@@ -130,20 +137,8 @@
         .gutter.gutter-horizontal::before {
             top: 0;
             bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 1px;
-        }
-        .gutter.gutter-horizontal:hover::before,
-        .gutter.gutter-horizontal.gutter-dragging::before {
-            width: 2px;
-        }
-        .gutter.gutter-horizontal::after {
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 3px;
-            height: 40px;
+            left: -3px;
+            right: -3px;
         }
 
         /* Vertical (horizontal seam between stacked panes). */
@@ -154,20 +149,8 @@
         .gutter.gutter-vertical::before {
             left: 0;
             right: 0;
-            top: 50%;
-            transform: translateY(-50%);
-            height: 1px;
-        }
-        .gutter.gutter-vertical:hover::before,
-        .gutter.gutter-vertical.gutter-dragging::before {
-            height: 2px;
-        }
-        .gutter.gutter-vertical::after {
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            height: 3px;
-            width: 40px;
+            top: -3px;
+            bottom: -3px;
         }
 
         /* While a gutter is being dragged, suppress text selection and keep
@@ -176,11 +159,14 @@
         .gutter-dragging-body .split.flex-col ~ *,
         .gutter-dragging-body.flex-col .gutter-vertical ~ * { cursor: row-resize; }
 
+        /* Dark mode: flip the ink so the divider stays visible against the
+           dark zinc backdrop. Hover stays blue in both modes. */
         @media (prefers-color-scheme: dark) {
-            .gutter::before { background-color: rgb(63 63 70); /* zinc-700 */ }
-            .gutter:hover, .gutter.gutter-dragging { background-color: rgba(129, 140, 248, 0.06); }
-            .gutter:hover::before, .gutter.gutter-dragging::before { background-color: rgb(129 140 248); /* indigo-400 */ }
-            .gutter::after { background-color: rgb(161 161 170); /* zinc-400 */ }
+            .gutter { background-color: rgb(244 244 245); /* zinc-100 */ }
+            .gutter:hover, .gutter.gutter-dragging { background-color: rgb(96 165 250); /* blue-400 */ }
         }
+        .dark .gutter { background-color: rgb(244 244 245); /* zinc-100 */ }
+        .dark .gutter:hover,
+        .dark .gutter.gutter-dragging { background-color: rgb(96 165 250); /* blue-400 */ }
     </style>
 @endonce
