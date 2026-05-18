@@ -22,8 +22,6 @@ components:
       name: Checkbox
     - id: command
       name: Command
-    - id: counter
-      name: Counter
     - id: directory-tree
       name: Directory Tree
     - id: drawer
