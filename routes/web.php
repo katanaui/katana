@@ -1,5 +1,7 @@
 <?php
 
+use App\Exceptions\FileTooLargeException;
+use App\Exceptions\UnsupportedExtensionException;
 use App\Models\Project;
 use App\Services\ProjectStorage;
 use Illuminate\Contracts\Encryption\DecryptException;
@@ -432,7 +434,7 @@ Route::post('/katana/directory-create-file', function (Request $request) {
     ]);
 
     if (! validateWriteToken($request)) {
-        \Log::warning('katana/create-file: write token failed', [
+        Log::warning('katana/create-file: write token failed', [
             'baseDir' => $validated['baseDir'] ?? '',
             'disk' => $validated['disk'] ?? '',
             'auth_id' => auth()->id(),
@@ -443,7 +445,7 @@ Route::post('/katana/directory-create-file', function (Request $request) {
 
     if (! katanaAuthorizeProject($validated['baseDir'] ?? '', 'update')) {
         $proj = katanaResolveProject($validated['baseDir'] ?? '');
-        \Log::warning('katana/create-file: project authorize failed', [
+        Log::warning('katana/create-file: project authorize failed', [
             'baseDir' => $validated['baseDir'] ?? '',
             'auth_id' => auth()->id(),
             'project_id' => $proj?->id,
@@ -474,6 +476,18 @@ Route::post('/katana/directory-create-file', function (Request $request) {
     // regardless of whether the project is on S3 or a local disk.
     $project = katanaResolveProject($baseDir);
     if ($project !== null) {
+        // Allowlist gate — fail fast on disallowed extensions so the user
+        // doesn't end up with a phantom file in the tree they can't save.
+        // Same source of truth used by ProjectStorage::writeFile.
+        $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+        if (! ProjectStorage::extensionAllowed($ext)) {
+            $label = $ext === '' ? 'with no extension' : "with the .{$ext} extension";
+
+            return response()->json([
+                'error' => "Files {$label} aren't supported on div.so.",
+            ], 422);
+        }
+
         $diskPath = katanaJoinDiskPath($baseDir, $relativePath);
         if ($diskPath === false) {
             return response()->json(['error' => 'Invalid path'], 422);
@@ -521,17 +535,27 @@ Route::post('/katana/directory-create-file', function (Request $request) {
     return response()->json(['success' => true, 'path' => $relativePath]);
 })->middleware('web');
 
-Route::post('/katana/directory-create-folder', function (Request $request) {
+/**
+ * Drag-and-drop file upload. Mirrors `/katana/directory-create-file` but
+ * accepts base64-encoded `content` so binary uploads (images, fonts, pdfs)
+ * survive the JSON envelope without a multipart boundary. Div-project-only
+ * — non-div KatanaUI consumers get 422 (parity with the read-only design
+ * elsewhere; uploads always go through ProjectStorage to keep SSG mirroring
+ * + cache-control headers consistent with every other write site).
+ */
+Route::post('/katana/file-upload', function (Request $request) {
     $validated = $request->validate([
         'disk' => 'required|string',
         'baseDir' => 'nullable|string',
         'parentPath' => 'nullable|string',
         'name' => 'required|string|max:255',
+        'content' => 'required|string',
+        'encoding' => 'nullable|in:utf8,base64',
         '_write_token' => 'required|string',
     ]);
 
     if (! validateWriteToken($request)) {
-        \Log::warning('katana/create-folder: write token failed', [
+        Log::warning('katana/file-upload: write token failed', [
             'baseDir' => $validated['baseDir'] ?? '',
             'disk' => $validated['disk'] ?? '',
             'auth_id' => auth()->id(),
@@ -542,7 +566,244 @@ Route::post('/katana/directory-create-folder', function (Request $request) {
 
     if (! katanaAuthorizeProject($validated['baseDir'] ?? '', 'update')) {
         $proj = katanaResolveProject($validated['baseDir'] ?? '');
-        \Log::warning('katana/create-folder: project authorize failed', [
+        Log::warning('katana/file-upload: project authorize failed', [
+            'baseDir' => $validated['baseDir'] ?? '',
+            'auth_id' => auth()->id(),
+            'project_id' => $proj?->id,
+            'project_user_id' => $proj?->user_id,
+            'is_locked' => $proj?->isLocked(),
+        ]);
+
+        return response()->json(['error' => 'Forbidden'], 403);
+    }
+
+    $disk = $validated['disk'];
+    $baseDir = $validated['baseDir'] ?? '';
+    $parentPath = $validated['parentPath'] ?? '';
+    $name = $validated['name'];
+    $encoding = $validated['encoding'] ?? 'base64';
+
+    if (str_contains($name, '/') || str_contains($name, '\\') || $name === '.' || $name === '..') {
+        return response()->json(['error' => 'Invalid filename'], 422);
+    }
+
+    $project = katanaResolveProject($baseDir);
+    if ($project === null) {
+        // KatanaUI hosted outside div — uploads have no canonical write path
+        // (no ProjectStorage, no SSG mirroring). Reject loudly rather than
+        // silently sidestepping the storage rules of the parent project.
+        return response()->json(['error' => 'Uploads not supported on this surface'], 422);
+    }
+
+    // Extension preflight — match `create-file`'s allowlist so users see a
+    // friendly toast instead of a generic 500 if they drop a .exe.
+    $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+    if (! ProjectStorage::extensionAllowed($ext)) {
+        $label = $ext === '' ? 'with no extension' : "with the .{$ext} extension";
+
+        return response()->json([
+            'error' => "Files {$label} aren't supported on div.so.",
+        ], 422);
+    }
+
+    // Size preflight on the *encoded* payload, before we decode. Base64
+    // inflates by ~4/3, so cap the encoded length at `1.4 * max_file_bytes`
+    // (slight pad covers `==` padding chars + line breaks if any). Without
+    // this a 30 MB base64 string would happily decode to a 22 MB blob just
+    // to be rejected by writeFile's own cap a moment later.
+    $cap = (int) config('cli.max_file_bytes');
+    $encodedLen = strlen($validated['content']);
+    if ($encoding === 'base64' && $cap > 0 && $encodedLen > (int) ($cap * 1.4)) {
+        return response()->json([
+            'error' => 'File too large.',
+            'tooLarge' => true,
+            'maxBytes' => $cap,
+        ], 413);
+    }
+    if ($encoding === 'utf8' && $cap > 0 && $encodedLen > $cap) {
+        return response()->json([
+            'error' => 'File too large.',
+            'tooLarge' => true,
+            'maxBytes' => $cap,
+        ], 413);
+    }
+
+    $bytes = $encoding === 'base64'
+        ? base64_decode($validated['content'], true)
+        : $validated['content'];
+
+    if ($bytes === false) {
+        return response()->json(['error' => 'Invalid file payload'], 422);
+    }
+
+    $relativePath = $parentPath ? rtrim($parentPath, '/').'/'.$name : $name;
+    $diskPath = katanaJoinDiskPath($baseDir, $relativePath);
+    if ($diskPath === false) {
+        return response()->json(['error' => 'Invalid path'], 422);
+    }
+
+    if (Storage::disk($disk)->exists($diskPath)) {
+        return response()->json([
+            'error' => 'A file with that name already exists.',
+            'exists' => true,
+        ], 409);
+    }
+
+    try {
+        $timestamp = app(ProjectStorage::class)->writeFile($project, $relativePath, $bytes);
+    } catch (FileTooLargeException $e) {
+        return response()->json(['error' => 'File too large.', 'tooLarge' => true, 'maxBytes' => $cap], 413);
+    } catch (UnsupportedExtensionException $e) {
+        return response()->json(['error' => 'Files with the .'.$ext.' extension aren\'t supported on div.so.'], 422);
+    }
+
+    return response()->json([
+        'ok' => true,
+        'path' => $relativePath,
+        'parentPath' => $parentPath,
+        'name' => $name,
+        'size' => strlen($bytes),
+        'timestamp' => $timestamp,
+    ]);
+})->middleware('web');
+
+/**
+ * Rename a file in-place. Mirrors create-file's auth pattern (write-token
+ * scope + project gate). v1 supports files only; type=directory returns
+ * 422. Extension changes are rejected at ProjectStorage to avoid the
+ * SSG rerender edge case — caller should surface a friendly message and
+ * suggest delete-and-recreate.
+ */
+Route::post('/katana/directory-rename', function (Request $request) {
+    $validated = $request->validate([
+        'disk' => 'required|string',
+        'baseDir' => 'nullable|string',
+        'from' => 'required|string|max:1024',
+        'to' => 'required|string|max:1024',
+        'type' => 'nullable|in:file,directory',
+        '_write_token' => 'required|string',
+    ]);
+
+    if (! validateWriteToken($request)) {
+        Log::warning('katana/rename: write token failed', [
+            'baseDir' => $validated['baseDir'] ?? '',
+            'disk' => $validated['disk'] ?? '',
+            'auth_id' => auth()->id(),
+        ]);
+
+        return response()->json(['error' => 'Forbidden'], 403);
+    }
+
+    if (! katanaAuthorizeProject($validated['baseDir'] ?? '', 'update')) {
+        $proj = katanaResolveProject($validated['baseDir'] ?? '');
+        Log::warning('katana/rename: project authorize failed', [
+            'baseDir' => $validated['baseDir'] ?? '',
+            'auth_id' => auth()->id(),
+            'project_id' => $proj?->id,
+            'project_user_id' => $proj?->user_id,
+            'is_locked' => $proj?->isLocked(),
+        ]);
+
+        return response()->json(['error' => 'Forbidden'], 403);
+    }
+
+    $type = $validated['type'] ?? 'file';
+    if ($type === 'directory') {
+        return response()->json([
+            'error' => 'Renaming folders is not supported yet.',
+        ], 422);
+    }
+
+    $disk = $validated['disk'];
+    $baseDir = $validated['baseDir'] ?? '';
+    $from = $validated['from'];
+    $to = $validated['to'];
+
+    $project = katanaResolveProject($baseDir);
+    if ($project === null) {
+        return response()->json(['error' => 'Rename not supported on this surface.'], 422);
+    }
+
+    $newName = basename($to);
+    if (str_contains($newName, '/') || str_contains($newName, '\\') || $newName === '.' || $newName === '..') {
+        return response()->json(['error' => 'Invalid filename.'], 422);
+    }
+
+    // Same path-segment validation the rest of the routes use, so users
+    // can't slip a `..` into the target string to break out of the slug.
+    if (katanaNormalizeDiskPath($from) === false || katanaNormalizeDiskPath($to) === false) {
+        return response()->json(['error' => 'Invalid path.'], 422);
+    }
+
+    // Extension allowlist on the target (ProjectStorage::writeFile catches
+    // this too, but a friendly toast is better than the generic catch).
+    $ext = strtolower(pathinfo($newName, PATHINFO_EXTENSION));
+    if (! ProjectStorage::extensionAllowed($ext)) {
+        $label = $ext === '' ? 'with no extension' : "with the .{$ext} extension";
+
+        return response()->json([
+            'error' => "Files {$label} aren't supported on div.so.",
+        ], 422);
+    }
+
+    // Source must exist; target must not — catch collisions before
+    // ProjectStorage starts mutating disk state.
+    $fromDiskPath = katanaJoinDiskPath($baseDir, $from);
+    $toDiskPath = katanaJoinDiskPath($baseDir, $to);
+    if ($fromDiskPath === false || $toDiskPath === false) {
+        return response()->json(['error' => 'Invalid path.'], 422);
+    }
+    if (! Storage::disk($disk)->exists($fromDiskPath)) {
+        return response()->json(['error' => 'Source file not found.'], 404);
+    }
+    if ($fromDiskPath !== $toDiskPath && Storage::disk($disk)->exists($toDiskPath)) {
+        return response()->json([
+            'error' => 'A file with that name already exists.',
+            'exists' => true,
+        ], 409);
+    }
+
+    try {
+        $timestamp = app(ProjectStorage::class)->moveFile($project, $from, $to);
+    } catch (FileTooLargeException $e) {
+        return response()->json(['error' => 'File too large.', 'tooLarge' => true], 413);
+    } catch (UnsupportedExtensionException $e) {
+        return response()->json(['error' => 'Unsupported extension.'], 422);
+    } catch (InvalidArgumentException $e) {
+        return response()->json(['error' => $e->getMessage()], 422);
+    }
+
+    return response()->json([
+        'ok' => true,
+        'from' => $from,
+        'to' => $to,
+        'name' => $newName,
+        'timestamp' => $timestamp,
+    ]);
+})->middleware('web');
+
+Route::post('/katana/directory-create-folder', function (Request $request) {
+    $validated = $request->validate([
+        'disk' => 'required|string',
+        'baseDir' => 'nullable|string',
+        'parentPath' => 'nullable|string',
+        'name' => 'required|string|max:255',
+        '_write_token' => 'required|string',
+    ]);
+
+    if (! validateWriteToken($request)) {
+        Log::warning('katana/create-folder: write token failed', [
+            'baseDir' => $validated['baseDir'] ?? '',
+            'disk' => $validated['disk'] ?? '',
+            'auth_id' => auth()->id(),
+        ]);
+
+        return response()->json(['error' => 'Forbidden'], 403);
+    }
+
+    if (! katanaAuthorizeProject($validated['baseDir'] ?? '', 'update')) {
+        $proj = katanaResolveProject($validated['baseDir'] ?? '');
+        Log::warning('katana/create-folder: project authorize failed', [
             'baseDir' => $validated['baseDir'] ?? '',
             'auth_id' => auth()->id(),
             'project_id' => $proj?->id,

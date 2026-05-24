@@ -25,8 +25,17 @@
                     <h3 class="truncate pl-0.5 text-[11px] font-semibold uppercase tracking-widest text-zinc-500/80">{{ $computedTitle }}</h3>
                 @endif
             </div>
-            {{-- Right: toolbar actions --}}
+            {{-- Right: toolbar actions.
+                 Apps can prepend extra actions via the `toolbarActions`
+                 named slot — the slot's markup is evaluated in the parent
+                 Blade scope, so Alpine handlers inside it resolve against
+                 whatever x-data ancestor the host page provides (e.g. the
+                 editor's divEditor scope for an "Upload file" button).
+                 Slot content sits left of the built-in delete/new buttons. --}}
             <div class="flex shrink-0 items-center gap-0.5">
+                @if (isset($toolbarActions) && !$toolbarActions->isEmpty())
+                    {{ $toolbarActions }}
+                @endif
                 <button
                     class="rounded-md p-1.5 transition-all duration-200" type="button" title="Delete" :disabled="!dtHasSelection || dtCreating || dtIsDeleting" :class="!dtHasSelection || dtCreating || dtIsDeleting ?
                         'text-zinc-300 dark:text-zinc-700 pointer-events-none' :
