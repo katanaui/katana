@@ -16,7 +16,7 @@
 <section
     x-data="{ dtCreating: false, dtHasSelection: false, dtIsDeleting: false }" class="flex h-full w-full select-none flex-col text-sm" @dt-creating-state.window="dtCreating = $event.detail.creating" @dt-deleting-state.window="dtIsDeleting = $event.detail.deleting" @directory-tree-selection-changed.window="dtHasSelection = $event.detail.file !== null || ($event.detail.directory !== null && $event.detail.directory !== '')">
     @if ($showToolbar && !$readonly)
-        <div class="flex shrink-0 items-center px-5 pt-3">
+        <div {{ $attributes->twMergeFor('header', 'flex shrink-0 items-center px-5 pt-3') }}>
             {{-- Left: header slot or title --}}
             <div class="min-w-0 flex-1">
                 @if (isset($header) && !$header->isEmpty())
@@ -62,6 +62,6 @@
         </div>
     @endif
     <div class="min-h-0 flex-1">
-        <livewire:directory-tree :disk="$disk" :base-dir="$baseDir" :exclude="$exclude" :lazy-dirs="$lazyDirs" :show-toolbar="false" :readonly="$readonly" :animate-collapse="$animateCollapse" />
+        <livewire:directory-tree {{ $attributes }} :disk="$disk" :base-dir="$baseDir" :exclude="$exclude" :lazy-dirs="$lazyDirs" :show-toolbar="false" :readonly="$readonly" :animate-collapse="$animateCollapse" />
     </div>
 </section>
