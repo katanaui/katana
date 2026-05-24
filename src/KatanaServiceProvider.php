@@ -38,7 +38,14 @@ class KatanaServiceProvider extends ServiceProvider
             $this->loadViewsFrom($componentsPath, $namespace);
         }
 
-        $livewireDir = __DIR__.'/../resources/views/livewire';
+        // Prefer packages/ path (editable in playground) over vendor/ (read-only
+        // copy) — same pattern as the anonymous-component branch above. Without
+        // this the Livewire finder only knows about the vendor copy and any
+        // edits the host app makes to packages/katanaui/katana/resources/views/
+        // livewire/*.blade.php are invisible until a composer install round-trip.
+        $packagesLivewireDir = base_path('packages/katanaui/katana/resources/views/livewire');
+        $vendorLivewireDir = __DIR__.'/../resources/views/livewire';
+        $livewireDir = is_dir($packagesLivewireDir) ? $packagesLivewireDir : $vendorLivewireDir;
 
         // Register inline Livewire components (single-file component style).
         // Volt 1 (standalone package) uses Volt::mount(); Livewire 4 ships SFC

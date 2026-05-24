@@ -107,29 +107,48 @@
             flex-direction: column;
         }
         /*
-         * Gutter: the gutter element ITSELF is the visible divider — a thin
-         * black line that doubles as the drag handle. Hover / drag turns it
-         * blue. A transparent ::before extends the pointer hit area a few
-         * pixels each side so the handle is comfortable to grab even when
-         * the visible line is only 2px thin.
+         * Gutter: a comfortably-wide invisible hit zone with a hairline 1px
+         * line painted in the middle. The gutter ELEMENT is transparent and
+         * sized to {{ $gutterSize }}px (Split.js relies on that for pane
+         * math). The visible line is a centered ::after — 1px wide at rest,
+         * 3px on hover (still discreet, but obviously grabbable), 3px in
+         * accent blue while dragging. ::before extends the hit area 6px
+         * beyond the gutter on each side so even with the visible line
+         * down at 1px the click target is ~{{ $gutterSize + 12 }}px wide.
+         *
+         * The "wider on hover" effect uses transform: scaleX on ::after,
+         * not a width change, so the visible line grows from its center
+         * without nudging the panes — Split.js would otherwise see a
+         * size delta and recompute. transform is paint-only.
          */
         .gutter {
             position: relative;
             z-index: 5;
-            background-color: rgb(10 10 10); /* near-black ink */
-            transition: background-color 120ms ease;
+            background: transparent;
         }
-        .gutter::before {
+        .gutter::before,
+        .gutter::after {
             content: '';
             position: absolute;
+        }
+        .gutter::before {
+            /* Invisible hit-area extender. pointer-events: auto so this
+               area registers drag starts even though it has no visible
+               fill of its own. */
             pointer-events: auto;
         }
-        .gutter:hover,
-        .gutter.gutter-dragging {
-            background-color: rgb(59 130 246); /* blue-500 */
+        .gutter::after {
+            /* The painted hairline. pointer-events: none so it never
+               steals drag events from ::before / the gutter element. */
+            pointer-events: none;
+            background-color: rgb(228 228 231); /* zinc-200 */
+            transform-origin: center center;
+            transition:
+                background-color 150ms ease,
+                transform 150ms ease;
         }
 
-        /* Horizontal (vertical seam between side-by-side panes). */
+        /* ── Horizontal: vertical seam between side-by-side panes ── */
         .gutter.gutter-horizontal {
             cursor: col-resize;
             width: {{ $gutterSize }}px;
@@ -137,11 +156,26 @@
         .gutter.gutter-horizontal::before {
             top: 0;
             bottom: 0;
-            left: -3px;
-            right: -3px;
+            left: -6px;
+            right: -6px;
+        }
+        .gutter.gutter-horizontal::after {
+            top: 0;
+            bottom: 0;
+            left: 50%;
+            width: 1px;
+            transform: translateX(-50%);
+        }
+        .gutter.gutter-horizontal:hover::after {
+            transform: translateX(-50%) scaleX(3);
+            background-color: rgb(161 161 170); /* zinc-400 */
+        }
+        .gutter.gutter-horizontal.gutter-dragging::after {
+            transform: translateX(-50%) scaleX(3);
+            background-color: rgb(59 130 246); /* blue-500 */
         }
 
-        /* Vertical (horizontal seam between stacked panes). */
+        /* ── Vertical: horizontal seam between stacked panes ── */
         .gutter.gutter-vertical {
             cursor: row-resize;
             height: {{ $gutterSize }}px;
@@ -149,8 +183,23 @@
         .gutter.gutter-vertical::before {
             left: 0;
             right: 0;
-            top: -3px;
-            bottom: -3px;
+            top: -6px;
+            bottom: -6px;
+        }
+        .gutter.gutter-vertical::after {
+            left: 0;
+            right: 0;
+            top: 50%;
+            height: 1px;
+            transform: translateY(-50%);
+        }
+        .gutter.gutter-vertical:hover::after {
+            transform: translateY(-50%) scaleY(3);
+            background-color: rgb(161 161 170); /* zinc-400 */
+        }
+        .gutter.gutter-vertical.gutter-dragging::after {
+            transform: translateY(-50%) scaleY(3);
+            background-color: rgb(59 130 246); /* blue-500 */
         }
 
         /* While a gutter is being dragged, suppress text selection and keep
@@ -159,14 +208,15 @@
         .gutter-dragging-body .split.flex-col ~ *,
         .gutter-dragging-body.flex-col .gutter-vertical ~ * { cursor: row-resize; }
 
-        /* Dark mode: flip the ink so the divider stays visible against the
-           dark zinc backdrop. Hover stays blue in both modes. */
+        /* Dark mode: lift the hairline to zinc-700 so it sits readably on
+           the dark editor canvas; hover/drag colors hold up in both modes. */
         @media (prefers-color-scheme: dark) {
-            .gutter { background-color: rgb(244 244 245); /* zinc-100 */ }
-            .gutter:hover, .gutter.gutter-dragging { background-color: rgb(96 165 250); /* blue-400 */ }
+            .gutter::after { background-color: rgb(63 63 70); /* zinc-700 */ }
+            .gutter:hover::after { background-color: rgb(113 113 122); /* zinc-500 */ }
+            .gutter.gutter-dragging::after { background-color: rgb(96 165 250); /* blue-400 */ }
         }
-        .dark .gutter { background-color: rgb(244 244 245); /* zinc-100 */ }
-        .dark .gutter:hover,
-        .dark .gutter.gutter-dragging { background-color: rgb(96 165 250); /* blue-400 */ }
+        .dark .gutter::after { background-color: rgb(63 63 70); }
+        .dark .gutter:hover::after { background-color: rgb(113 113 122); }
+        .dark .gutter.gutter-dragging::after { background-color: rgb(96 165 250); }
     </style>
 @endonce
