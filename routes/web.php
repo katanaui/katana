@@ -314,7 +314,7 @@ Route::post('/katana/directory-children', function (Request $request) {
         'childDirs' => $childDirs,
         'childFiles' => $childFiles,
     ]);
-})->middleware('web');
+})->middleware(['web', 'throttle:120,1']);
 
 function katanaListChildrenLocal(array $diskConfig, string $baseDir, string $path, array $exclude, array $lazyDirs): array|false
 {
@@ -533,7 +533,7 @@ Route::post('/katana/directory-create-file', function (Request $request) {
     }
 
     return response()->json(['success' => true, 'path' => $relativePath]);
-})->middleware('web');
+})->middleware(['web', 'throttle:120,1']);
 
 /**
  * Drag-and-drop file upload. Mirrors `/katana/directory-create-file` but
@@ -665,7 +665,7 @@ Route::post('/katana/file-upload', function (Request $request) {
         'size' => strlen($bytes),
         'timestamp' => $timestamp,
     ]);
-})->middleware('web');
+})->middleware(['web', 'throttle:120,1']);
 
 /**
  * Rename a file in-place. Mirrors create-file's auth pattern (write-token
@@ -830,7 +830,7 @@ Route::post('/katana/directory-rename', function (Request $request) {
         'type' => 'file',
         'timestamp' => $timestamp,
     ]);
-})->middleware('web');
+})->middleware(['web', 'throttle:120,1']);
 
 Route::post('/katana/directory-create-folder', function (Request $request) {
     $validated = $request->validate([
@@ -935,7 +935,7 @@ Route::post('/katana/directory-create-folder', function (Request $request) {
     }
 
     return response()->json(['success' => true, 'path' => $relativePath]);
-})->middleware('web');
+})->middleware(['web', 'throttle:120,1']);
 
 Route::post('/katana/directory-delete', function (Request $request) {
     $validated = $request->validate([
@@ -1034,7 +1034,7 @@ Route::post('/katana/directory-delete', function (Request $request) {
     }
 
     return response()->json(['success' => true, 'path' => $path]);
-})->middleware('web');
+})->middleware(['web', 'throttle:120,1']);
 
 Route::post('/katana/file-content', function (Request $request) {
     $validated = $request->validate([
@@ -1060,7 +1060,7 @@ Route::post('/katana/file-content', function (Request $request) {
     }
 
     return response()->json($result);
-})->middleware('web');
+})->middleware(['web', 'throttle:120,1']);
 
 Route::post('/katana/batch-file-content', function (Request $request) {
     $validated = $request->validate([
@@ -1104,4 +1104,4 @@ Route::post('/katana/batch-file-content', function (Request $request) {
         'tooLarge' => $tooLarge,
         'errors' => $errors,
     ]);
-})->middleware('web');
+})->middleware(['web', 'throttle:120,1']);
