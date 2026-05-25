@@ -234,7 +234,34 @@ new class extends Component {
 
 }; ?>
 
-<div class="relative flex flex-col h-full text-sm select-none scrollbar-hide" x-data="directoryTree(@js($isReadonly), @js($writeToken))" x-init="init()" @refresh-directory-tree.window="$wire.refreshTree()" @katana-file-cache-set.window="if ($event.detail?.path) files[$event.detail.path] = $event.detail.content ?? null" @katana-file-cache-invalidate.window="if ($event.detail?.path) delete files[$event.detail.path]" @if(!$isReadonly) @dt-start-creating.window="startCreating($event.detail.type)" @dt-delete-selected.window="deleteSelected()" @endif>
+<div class="relative flex flex-col h-full text-sm select-none scrollbar-hide" x-data="directoryTree(@js($isReadonly), @js($writeToken))" x-init="init()" @refresh-directory-tree.window="$wire.refreshTree()" @katana-file-cache-set.window="if ($event.detail?.path) files[$event.detail.path] = $event.detail.content ?? null" @katana-file-cache-invalidate.window="if ($event.detail?.path) delete files[$event.detail.path]" @keydown.escape.window="closeContextMenu(); cancelRename()" @mousedown.window="if (contextMenu.open && !$event.target.closest('[data-katana-context-menu]')) closeContextMenu()" @if(!$isReadonly) @dt-start-creating.window="startCreating($event.detail.type)" @dt-delete-selected.window="deleteSelected()" @dt-insert-uploaded.window="
+            // Cross-component optimistic insert for drag-and-drop uploads.
+            // The dropzone (in the editor scope) POSTs to /katana/file-upload
+            // first, then fires this event on success — so by the time we
+            // render the row the file already exists server-side. We still
+            // route through insertOptimisticItem() for the fade-in animation
+            // and sorted-insertion logic, then drop the data-optimistic
+            // marker immediately since the server has already confirmed.
+            // Returns silently when the parent isn't expanded (no DOM
+            // container to inject into — the tree will pick up the file the
+            // next time that folder is opened or refreshed).
+            (() => {
+                const d = $event.detail || {};
+                if (!d.path || !d.name) return;
+                const parentPath = d.parentPath || '';
+                const type = d.type === 'folder' ? 'folder' : 'file';
+                const node = insertOptimisticItem(parentPath, d.name, d.path, type);
+                if (node) node.removeAttribute('data-optimistic');
+                const cache = prefetchCache[parentPath];
+                if (cache) {
+                    if (type === 'folder') {
+                        cache.childDirs = [...(cache.childDirs || []), d.path];
+                    } else {
+                        cache.childFiles = [...(cache.childFiles || []), d.path];
+                    }
+                }
+            })()
+        " @endif>
     @if($showToolbar && !$isReadonly)
     <div class="flex items-center justify-end gap-1 px-3 pt-2 pb-1 shrink-0">
         <button
@@ -273,7 +300,16 @@ new class extends Component {
         </button>
     </div>
     @endif
-    <div {{ $attributes->twMergeFor('tree-container', 'flex-1 p-1 overflow-y-auto scrollbar-hide') }}>
+    <div
+        {{ $attributes->twMergeFor('tree-container', 'flex-1 p-1 overflow-y-auto scrollbar-hide') }}
+        @if (!$isReadonly)
+            @dragover="onTreeDragOver($event)"
+            @dragleave="onTreeDragLeave($event)"
+            @drop="onTreeDrop($event)"
+            @contextmenu.prevent="openContextMenuAtRoot($event)"
+            :class="dragSource && dragOverTarget === '' ? 'ring-2 ring-inset ring-blue-500/40 ring-offset-0 rounded-lg' : ''"
+        @endif
+    >
         <div data-children-for="" data-loaded="true">
             @foreach($structure as $name => $item)
                 <x-katana.directory-tree-item
@@ -342,6 +378,128 @@ new class extends Component {
         ])->render() !!}</template>
     @endforeach
     @endif
+
+    {{-- ─────────────────── Context menu ───────────────────
+         Dark dropdown surfaced on right-click of a tree row. Position is
+         set inline from `contextMenu.x/y` (viewport pixels), recomputed
+         after first paint to avoid clipping near the viewport edges.
+
+         **Teleported to <body>** because the editor's sidebar wrapper
+         applies `transform: translateX(...)` for the focus-mode slide
+         animation, and any ancestor with a transform creates a new
+         containing block for `position: fixed` descendants — without the
+         teleport the menu's viewport-coord positioning gets interpreted
+         relative to that wrapper, landing the menu well below the cursor.
+         The teleport keeps the menu wired to the tree's Alpine scope
+         (contextMenu state, startRename, closeContextMenu) but renders
+         the DOM at <body> root where its `position: fixed` correctly
+         resolves against the viewport.
+
+         Z layer sits at 80 — above the upload notification (40) and
+         dropzone overlay (60), but still below the image lightbox (70).
+         A right-click while the lightbox is open would close the menu
+         anyway via the outside-click handler on the tree's root. --}}
+    @if (!$isReadonly)
+    <template x-teleport="body">
+    <div
+        x-show="contextMenu.open"
+        x-cloak
+        x-transition:enter="transition ease-out duration-100"
+        x-transition:enter-start="opacity-0 scale-95"
+        x-transition:enter-end="opacity-100 scale-100"
+        x-transition:leave="transition ease-in duration-75"
+        x-transition:leave-start="opacity-100 scale-100"
+        x-transition:leave-end="opacity-0 scale-95"
+        data-katana-context-menu
+        role="menu"
+        aria-label="Tree item actions"
+        class="fixed z-[80] min-w-[176px] origin-top-left rounded-xl bg-zinc-900 p-1 text-zinc-100 ring-1 ring-white/10 shadow-[0_24px_50px_-12px_rgba(0,0,0,0.45),0_8px_18px_-8px_rgba(0,0,0,0.25)] dark:bg-zinc-950 dark:ring-white/[0.08]"
+        :style="`top: ${contextMenu.y}px; left: ${contextMenu.x}px;`"
+    >
+        {{-- Target label — tiny truncated header so the user has a clear
+             "you're acting on THIS file" cue. Mono so it tracks the
+             editor's filename styling. Hidden for the empty-area menu. --}}
+        <template x-if="contextMenu.target">
+            <div class="mb-1 max-w-[260px] truncate border-b border-white/[0.06] px-2.5 pb-1.5 pt-1 font-mono text-[10px] tracking-[0.06em] uppercase text-zinc-500" x-text="contextMenu.target.name"></div>
+        </template>
+
+        {{-- New File — always available. Parent path is whatever the right-
+             click landed on: folder → inside it; file → its parent dir;
+             empty tree area → root. Selection has already been updated by
+             openContextMenu / openContextMenuAtRoot, so startCreating()
+             reads the correct selectedDirectory. --}}
+        <button
+            type="button"
+            role="menuitem"
+            @click="closeContextMenu(); startCreating('file')"
+            class="group flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-left text-[13px] text-zinc-100 hover:bg-white/[0.06]"
+        >
+            <svg class="size-3.5 shrink-0 text-zinc-400 group-hover:text-zinc-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/>
+                <path d="M14 2v4a2 2 0 0 0 2 2h4"/>
+                <path d="M12 18v-6"/>
+                <path d="M9 15h6"/>
+            </svg>
+            <span class="flex-1">New File</span>
+        </button>
+
+        {{-- New Folder --}}
+        <button
+            type="button"
+            role="menuitem"
+            @click="closeContextMenu(); startCreating('folder')"
+            class="group flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-left text-[13px] text-zinc-100 hover:bg-white/[0.06]"
+        >
+            <svg class="size-3.5 shrink-0 text-zinc-400 group-hover:text-zinc-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 10v6"/>
+                <path d="M9 13h6"/>
+                <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>
+            </svg>
+            <span class="flex-1">New Folder</span>
+        </button>
+
+        {{-- Rename + Delete are row-scoped — only render when the menu was
+             opened on an actual file or folder. The empty-area menu has
+             nothing to rename or delete. --}}
+        <template x-if="contextMenu.target">
+            <div>
+                <div class="my-1 h-px bg-white/[0.06]"></div>
+
+                {{-- Rename --}}
+                <button
+                    type="button"
+                    role="menuitem"
+                    @click="startRename(contextMenu.target.path, contextMenu.target.type, contextMenu.target.name)"
+                    class="group flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-left text-[13px] text-zinc-100 hover:bg-white/[0.06]"
+                >
+                    <svg class="size-3.5 shrink-0 text-zinc-400 group-hover:text-zinc-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M12 20h9"/>
+                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+                    </svg>
+                    <span class="flex-1">Rename</span>
+                    <span class="font-mono text-[10px] text-zinc-500">↵</span>
+                </button>
+
+                {{-- Delete --}}
+                <button
+                    type="button"
+                    role="menuitem"
+                    @click="closeContextMenu(); $dispatch('dt-delete-selected')"
+                    class="group flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-left text-[13px] text-rose-400 hover:bg-rose-500/[0.12] hover:text-rose-300"
+                >
+                    <svg class="size-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M3 6h18"/>
+                        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+                        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                    </svg>
+                    <span class="flex-1">Delete</span>
+                    <span class="font-mono text-[10px] text-rose-500/60">⌫</span>
+                </button>
+            </div>
+        </template>
+    </div>
+    </template>
+    @endif
 </div>
 
 @assets
@@ -370,6 +528,37 @@ window.directoryTree = function directoryTree(readonly, writeToken) {
         // Deletion state
         isDeleting: false,
         deletingPath: null,
+
+        // Rename state — mirrors the creation state above. `renamingPath`
+        // is the file currently being renamed (null when no rename is
+        // active), `renamingName` is the live input value, `renamingOriginal`
+        // is the unedited filename used to detect "no change" submissions
+        // so a stray Enter doesn't fire a pointless server round-trip.
+        renamingPath: null,
+        renamingName: '',
+        renamingOriginal: '',
+        isRenaming: false,
+
+        // Context menu state — opened via right-click on a tree row.
+        // `target` carries everything the menu items need (path, type,
+        // name) so the same menu DOM can drive actions for either a file
+        // or a folder. Coordinates are viewport-pixel positions; they're
+        // recomputed in $nextTick after first paint to flip the menu
+        // along whichever axis would overflow.
+        contextMenu: { open: false, x: 0, y: 0, target: null },
+
+        // Drag-and-drop state for moving files/folders between folders.
+        // `dragSource` is the path of the node currently being dragged
+        // (null when nothing is in flight). `dragSourceType` is 'file' or
+        // 'directory' — used to gate cycle prevention on folder drags
+        // (a folder can't be dropped into itself or a descendant).
+        // `dragOverTarget` is the folder path the cursor is currently
+        // over ('' for project root, null when nothing is hovered).
+        // All three feed reactive x-class bindings on tree rows so the
+        // dragged node dims and the hovered folder gets a soft ring.
+        dragSource: null,
+        dragSourceType: null,
+        dragOverTarget: null,
 
         config: {
             disk: @js($disk),
@@ -448,26 +637,42 @@ window.directoryTree = function directoryTree(readonly, writeToken) {
             this.creatingName = '';
             this.creatingInPath = this.selectedDirectory ?? '';
 
-            // Auto-expand the target directory if it's not root and not already expanded
+            // Auto-expand the target directory if it's not root and not
+            // already expanded — the inline-create input lives inside
+            // the folder's children container and would be display:none
+            // (via the parent x-show) if the folder were collapsed.
             if (this.creatingInPath !== '' && !this.expanded[this.creatingInPath]) {
                 this.expanded[this.creatingInPath] = true;
             }
 
-            this.$nextTick(() => {
-                // Focus the input — check root input first, then look for directory-scoped inputs
-                const rootInput = this.$refs.rootCreationInput;
-                if (rootInput) {
-                    rootInput.focus();
-                    return;
+            // Focus the matching input. Branch up-front on creatingInPath
+            // instead of probing $refs first — the earlier version always
+            // checked $refs.rootCreationInput before the directory-scoped
+            // query, which meant a stale ref from a prior root creation
+            // could steal focus from the directory-scoped input.
+            // Two-pass: $nextTick handles the common case where Alpine
+            // has already flushed the template x-if; the rAF fallback
+            // covers the auto-expand case where the children container's
+            // x-show needs an extra frame before the input is actually
+            // focusable.
+            const tryFocus = () => {
+                let input = null;
+                if (this.creatingInPath === '') {
+                    input = this.$refs.rootCreationInput || null;
+                } else {
+                    input = this.$el.querySelector(
+                        '[data-creation-input="' + CSS.escape(this.creatingInPath) + '"]'
+                    );
                 }
-                // CSS.escape('') throws, so guard against empty string
-                const escapedPath = this.creatingInPath === ''
-                    ? ''
-                    : CSS.escape(this.creatingInPath);
-                const input = this.$el.querySelector('[data-creation-input="' + escapedPath + '"]');
-                if (input) {
+                if (input && document.contains(input)) {
                     input.focus();
+                    return true;
                 }
+                return false;
+            };
+            this.$nextTick(() => {
+                if (tryFocus()) return;
+                requestAnimationFrame(() => tryFocus());
             });
         },
 
@@ -641,6 +846,18 @@ window.directoryTree = function directoryTree(readonly, writeToken) {
             node.style.transform = 'translateY(-2px)';
             node.style.transition = 'opacity 150ms ease-out, transform 150ms ease-out';
 
+            // The optimistic template is rendered once at PHP-render time
+            // against the placeholder name (__KATANA_DT_NAME__), so the
+            // server-side $isImage check there always sees "false". Swap
+            // the generic file icon for the picture icon in JS now that we
+            // know the real name. Kept in sync with the Blade regex above.
+            if (type === 'file' && /\.(png|jpe?g|gif|webp|avif|svg|bmp|ico)$/i.test(name)) {
+                const iconSvg = node.querySelector('svg');
+                if (iconSvg) {
+                    iconSvg.outerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 stroke-current text-violet-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>';
+                }
+            }
+
             Alpine.initTree(node);
 
             requestAnimationFrame(() => {
@@ -721,6 +938,14 @@ window.directoryTree = function directoryTree(readonly, writeToken) {
                             delete this.files[key];
                         }
                     });
+                    // Mirror the prefetchCache cleanup — without it, a
+                    // future folder created at the same path would be
+                    // mis-identified as already-fetched.
+                    Object.keys(this.fetchedDirectories).forEach(key => {
+                        if (key === path || key.startsWith(path + '/')) {
+                            delete this.fetchedDirectories[key];
+                        }
+                    });
                 }
 
                 // Refresh tree
@@ -735,6 +960,606 @@ window.directoryTree = function directoryTree(readonly, writeToken) {
                 this.isDeleting = false;
                 this.deletingPath = null;
                 this.$dispatch('dt-deleting-state', { deleting: false });
+            }
+        },
+
+        // ─────────────── Context menu ───────────────
+        // Right-click on a tree row routes through openContextMenu, which
+        // first selects the row (so the menu's actions read from the same
+        // selection state the toolbar buttons do) and positions the menu
+        // at cursor coords. After paint we re-measure and flip the menu
+        // along whichever axis would clip — top-right corner of the menu
+        // anchors to the cursor by default, but if the row was clicked
+        // near the right edge of the viewport the menu shifts left, and
+        // similarly for the bottom edge.
+        openContextMenu(event, path, type, name) {
+            if (this.readonly) return;
+            event.preventDefault();
+            event.stopPropagation();
+
+            // Mirror OS-level behavior: right-click selects the row first,
+            // so the same selection feeds delete + any future actions.
+            // selectFile also sets selectedDirectory to the file's parent,
+            // so a subsequent startCreating() drops new items as siblings
+            // of the right-clicked file — matching VS Code / Finder.
+            if (type === 'file') {
+                this.selectFile(path);
+            } else {
+                this.selectDirectory(path);
+            }
+
+            this.contextMenu = {
+                open: true,
+                x: event.clientX,
+                y: event.clientY,
+                target: { path, type, name },
+            };
+
+            this.clampContextMenuToViewport();
+        },
+
+        // Empty-area right-click: opens the context menu with no target
+        // row, so only the "New File" / "New Folder" actions render. The
+        // create actions read from selectedDirectory, which we clear here
+        // so the new item lands at the project root regardless of whatever
+        // file or folder was previously highlighted.
+        openContextMenuAtRoot(event) {
+            if (this.readonly) return;
+            // Don't open the menu while an inline create input is already
+            // up — would race with creatingInPath and leave a stray input.
+            if (this.creatingType !== null) return;
+            event.preventDefault();
+
+            this.selectedFile = null;
+            this.selectedDirectory = null;
+            this.$dispatch('directory-tree-selection-changed', { file: null, directory: null });
+
+            this.contextMenu = {
+                open: true,
+                x: event.clientX,
+                y: event.clientY,
+                target: null,
+            };
+
+            this.clampContextMenuToViewport();
+        },
+
+        // Re-measure the rendered menu and nudge it back inside the
+        // viewport along whichever axis would clip — by default the
+        // menu's top-left anchors to the cursor.
+        clampContextMenuToViewport() {
+            this.$nextTick(() => {
+                const menu = document.querySelector('[data-katana-context-menu]');
+                if (!menu) return;
+                const rect = menu.getBoundingClientRect();
+                const vw = window.innerWidth;
+                const vh = window.innerHeight;
+                const margin = 8;
+                let nx = this.contextMenu.x;
+                let ny = this.contextMenu.y;
+                if (nx + rect.width > vw - margin) nx = Math.max(margin, vw - rect.width - margin);
+                if (ny + rect.height > vh - margin) ny = Math.max(margin, vh - rect.height - margin);
+                if (nx !== this.contextMenu.x || ny !== this.contextMenu.y) {
+                    this.contextMenu = { ...this.contextMenu, x: nx, y: ny };
+                }
+            });
+        },
+
+        closeContextMenu() {
+            if (!this.contextMenu.open) return;
+            // Keep x/y and target at the last open values so the
+            // leave-transition fades the menu in place with its label
+            // and click-targets intact. Resetting x/y to 0 would flicker
+            // the menu over the top-left corner during the 75ms fade.
+            // Resetting target to null would also break the Rename/Delete
+            // buttons mid-fade if the user clicks them while it's still
+            // visible. The next open overwrites all fields anyway.
+            this.contextMenu = { ...this.contextMenu, open: false };
+        },
+
+        // ─────────────── Inline rename ───────────────
+        // Mirrors the inline-create UX: target row's label is swapped for
+        // an input, value seeded with the current name, stem auto-selected
+        // (VS Code behavior — clicking the input's text first selects the
+        // stem so the user can type the new base name without erasing the
+        // extension). Enter confirms, Escape cancels, blur confirms only
+        // if the value changed.
+        startRename(path, type, name) {
+            if (this.readonly) return;
+            // v1 supports file rename only; folders fall through to a
+            // no-op + toast so the menu item can stay visible for the
+            // future v2 without growing a dead button now.
+            if (type !== 'file') {
+                this.$dispatch('directory-tree-error', { message: 'Renaming folders is coming soon.' });
+                this.closeContextMenu();
+                return;
+            }
+            this.closeContextMenu();
+            this.renamingPath = path;
+            this.renamingName = name;
+            this.renamingOriginal = name;
+
+            // Focus + select-stem on the next tick so the input has
+            // mounted. Selecting just the chars before the last '.'
+            // matches VS Code, Finder, and Windows Explorer — the most
+            // common rename action is changing the base name, not the
+            // extension.
+            this.$nextTick(() => {
+                const input = document.querySelector('[data-katana-rename-input="' + CSS.escape(path) + '"]');
+                if (!input) return;
+                input.focus();
+                const dot = name.lastIndexOf('.');
+                if (dot > 0) {
+                    input.setSelectionRange(0, dot);
+                } else {
+                    input.select();
+                }
+            });
+        },
+
+        cancelRename() {
+            this.renamingPath = null;
+            this.renamingName = '';
+            this.renamingOriginal = '';
+        },
+
+        async confirmRename() {
+            if (this.readonly || this.isRenaming) return;
+            if (!this.renamingPath) return;
+
+            const original = this.renamingOriginal;
+            const next = (this.renamingName || '').trim();
+            const oldPath = this.renamingPath;
+
+            // No-change or empty value — treat as cancel. Empty falls
+            // through to a toast so the user knows the rename was
+            // discarded (a silent no-op feels broken).
+            if (next === '' || next === original) {
+                if (next === '') {
+                    this.$dispatch('directory-tree-error', { message: 'Filename can\'t be empty.' });
+                }
+                this.cancelRename();
+                return;
+            }
+
+            // Same name validation as createFile — reject slashes and
+            // navigation segments so the user can't escape their folder.
+            // The '\\\\' is intentional: this whole script lives inside
+            // an assets block (see Blade directive above) whose
+            // preg_replace collapses '\\' to '\', so we need '\\\\' in
+            // source to land as '\\' in the browser (a JS string with a
+            // single literal backslash). See the existing validator at
+            // the top of this script and CLAUDE.md section 9 patch 2.
+            if (next.includes('/') || next.includes('\\\\') || next === '.' || next === '..') {
+                this.$dispatch('directory-tree-error', { message: 'Invalid filename.' });
+                return;
+            }
+
+            const slash = oldPath.lastIndexOf('/');
+            const parent = slash >= 0 ? oldPath.slice(0, slash) : '';
+            const newPath = parent ? parent + '/' + next : next;
+
+            this.isRenaming = true;
+            const csrfToken = document.querySelector('meta[name=csrf-token]');
+
+            try {
+                const response = await fetch('/katana/directory-rename', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken ? csrfToken.content : '',
+                    },
+                    body: JSON.stringify({
+                        disk: this.config.disk,
+                        baseDir: this.config.baseDir,
+                        from: oldPath,
+                        to: newPath,
+                        type: 'file',
+                        _write_token: this.writeToken,
+                    }),
+                });
+
+                const data = await response.json();
+                if (!response.ok || !data?.ok) {
+                    this.$dispatch('directory-tree-error', { message: data?.error || 'Rename failed.' });
+                    return;
+                }
+
+                // DOM swap: remove the old row's node, then re-insert via
+                // insertOptimisticItem so the new row has the correct
+                // click handler / data attributes baked from the template.
+                // Editing in place would require rebinding the @click's
+                // Blade-compiled path string — much heavier than a swap.
+                const oldNode = document.querySelector('[data-file-path="' + CSS.escape(oldPath) + '"]');
+                if (oldNode) oldNode.remove();
+                const newNode = this.insertOptimisticItem(parent, next, newPath, 'file');
+                if (newNode) newNode.removeAttribute('data-optimistic');
+
+                // Hand the content cache over — old path becomes invalid,
+                // new path inherits whatever was cached for old.
+                if (this.files[oldPath] !== undefined) {
+                    this.files[newPath] = this.files[oldPath];
+                    delete this.files[oldPath];
+                }
+                // Swap the entry in the parent's childFiles list so
+                // anything that derives from prefetchCache (the palette,
+                // future siblings) sees the new name immediately.
+                const parentCache = this.prefetchCache[parent];
+                if (parentCache && parentCache.childFiles) {
+                    parentCache.childFiles = parentCache.childFiles.map((p) => p === oldPath ? newPath : p);
+                }
+
+                if (this.selectedFile === oldPath) this.selectedFile = newPath;
+
+                this.cancelRename();
+                this.$dispatch('directory-tree-renamed', { from: oldPath, to: newPath, type: 'file', name: next });
+            } catch (err) {
+                console.error('Error renaming file:', err);
+                this.$dispatch('directory-tree-error', { message: 'Rename failed.' });
+            } finally {
+                this.isRenaming = false;
+            }
+        },
+
+        // ─────────────── Drag-to-move ───────────────
+        // File AND folder rows are draggable. Folder rows and the root
+        // container are drop targets. Drop computes the new parent folder
+        // from the event target (closest folder ancestor, or root) and
+        // reuses the same /katana/directory-rename endpoint that powers
+        // inline rename — moves are just renames where the parent changed.
+        //
+        // Custom dataTransfer types ('application/x-katana-file' or
+        // 'application/x-katana-folder') distinguish internal tree drags
+        // from OS-level file drops (which the editor's full-screen
+        // dropzone handles via the 'Files' type). The two coexist without
+        // stepping on each other because the type check is the first line
+        // of every drag handler.
+        //
+        // Folder drags carry a cycle guard: dropping a folder onto itself
+        // or any of its descendants is suppressed both in dragover (no
+        // highlight) and at the drop handler (no network call).
+
+        _dragHasInternalNode(event) {
+            const types = event && event.dataTransfer ? event.dataTransfer.types : null;
+            if (!types) return false;
+            const arr = Array.from(types);
+            return arr.indexOf('application/x-katana-file') !== -1
+                || arr.indexOf('application/x-katana-folder') !== -1;
+        },
+
+        // Where would a drop on `el` land? Folder row to folder, file row
+        // to file's parent folder, anything else to project root (''). Same
+        // smart routing the upload dropzone uses, so the two affordances
+        // feel symmetric.
+        _moveTargetForElement(el) {
+            if (!el) return '';
+            const folder = el.closest && el.closest('[data-dir-path]');
+            if (folder) return folder.getAttribute('data-dir-path') || '';
+            const file = el.closest && el.closest('[data-file-path]');
+            if (file) {
+                const p = file.getAttribute('data-file-path') || '';
+                const slash = p.lastIndexOf('/');
+                return slash > 0 ? p.slice(0, slash) : '';
+            }
+            return '';
+        },
+
+        // Cycle guard for folder drags. Drops on the folder itself or any
+        // of its own descendants would be ambiguous (or worse, corrupt
+        // the storage). null target means "invalid, don't highlight,
+        // don't drop." Returns the original target for non-folder drags.
+        _resolveDropTargetForDrag(rawTarget) {
+            if (this.dragSourceType !== 'directory' || !this.dragSource) return rawTarget;
+            if (rawTarget === this.dragSource) return null;
+            if (rawTarget && rawTarget.startsWith(this.dragSource + '/')) return null;
+            return rawTarget;
+        },
+
+        onFileDragStart(event, path) {
+            if (this.readonly || this.isRenaming) {
+                event.preventDefault();
+                return;
+            }
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('application/x-katana-file', path);
+            // text/plain fallback — some browsers/platforms refuse drops
+            // to certain targets without it (and it lets a user drag the
+            // filename out to a text-aware app like a note, harmless).
+            event.dataTransfer.setData('text/plain', path);
+            this.dragSource = path;
+            this.dragSourceType = 'file';
+            this.dragOverTarget = null;
+        },
+
+        onFolderDragStart(event, path) {
+            if (this.readonly || this.isRenaming) {
+                event.preventDefault();
+                return;
+            }
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('application/x-katana-folder', path);
+            event.dataTransfer.setData('text/plain', path);
+            this.dragSource = path;
+            this.dragSourceType = 'directory';
+            this.dragOverTarget = null;
+        },
+
+        onFileDragEnd() {
+            this.dragSource = null;
+            this.dragSourceType = null;
+            this.dragOverTarget = null;
+        },
+
+        onFolderDragEnd() {
+            this.dragSource = null;
+            this.dragSourceType = null;
+            this.dragOverTarget = null;
+        },
+
+        // Fires on every dragover inside the tree container. The .prevent
+        // is what tells the browser "yes, this is a valid drop target" —
+        // without it, drop never fires. We update dragOverTarget on every
+        // call (cheap) so the highlight follows the cursor frame-by-frame
+        // as it crosses between folders.
+        onTreeDragOver(event) {
+            if (!this._dragHasInternalNode(event)) return;
+            event.preventDefault();
+            const raw = this._moveTargetForElement(event.target);
+            const target = this._resolveDropTargetForDrag(raw);
+            // Folder-cycle case — set dropEffect to 'none' so the cursor
+            // shows the not-allowed badge, and clear the highlight.
+            if (target === null) {
+                if (event.dataTransfer) event.dataTransfer.dropEffect = 'none';
+                if (this.dragOverTarget !== null) this.dragOverTarget = null;
+                return;
+            }
+            if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+            if (target !== this.dragOverTarget) this.dragOverTarget = target;
+        },
+
+        // Fires when the cursor leaves the tree container entirely.
+        // Inner element transitions also fire dragleave on the parent,
+        // so we guard with relatedTarget containment — if we're still
+        // inside, ignore the event.
+        onTreeDragLeave(event) {
+            if (!this._dragHasInternalNode(event)) return;
+            const related = event.relatedTarget;
+            if (related && event.currentTarget && event.currentTarget.contains(related)) return;
+            this.dragOverTarget = null;
+        },
+
+        async onTreeDrop(event) {
+            if (!this._dragHasInternalNode(event)) return;
+            event.preventDefault();
+
+            // Recover source path from dataTransfer (the canonical source —
+            // survives across iframe / window boundaries) with Alpine
+            // state as a fallback.
+            const sourceFile = event.dataTransfer.getData('application/x-katana-file');
+            const sourceFolder = event.dataTransfer.getData('application/x-katana-folder');
+            const fromPath = sourceFile || sourceFolder || this.dragSource;
+            const type = sourceFile
+                ? 'file'
+                : (sourceFolder ? 'directory' : this.dragSourceType);
+
+            const rawTarget = this._moveTargetForElement(event.target);
+            const targetFolder = this._resolveDropTargetForDrag(rawTarget);
+
+            // Clear visual state right away so the dim+ring don't linger
+            // through the network round-trip.
+            this.dragSource = null;
+            this.dragSourceType = null;
+            this.dragOverTarget = null;
+
+            if (!fromPath || targetFolder === null) return;
+
+            const slash = fromPath.lastIndexOf('/');
+            const name = slash > -1 ? fromPath.slice(slash + 1) : fromPath;
+            const toPath = targetFolder ? targetFolder + '/' + name : name;
+
+            // Same-folder drop is a no-op — no toast, no network call.
+            if (toPath === fromPath) return;
+
+            if (type === 'directory') {
+                await this._moveFolderNode(fromPath, toPath, name, targetFolder);
+            } else {
+                await this._moveFile(fromPath, toPath, name, targetFolder);
+            }
+        },
+
+        async _moveFile(fromPath, toPath, name, parentPath) {
+            if (this.isRenaming) return;
+            this.isRenaming = true;
+
+            // Optimistic DOM swap: lift the source row out, drop a new
+            // optimistic row into the destination. If the destination
+            // folder isn't expanded, insertOptimisticItem returns null
+            // silently — the file moves on the server and shows up the
+            // next time the user opens that folder.
+            const oldNode = document.querySelector('[data-file-path="' + CSS.escape(fromPath) + '"]');
+            const oldParent = oldNode ? oldNode.parentNode : null;
+            const oldNext = oldNode ? oldNode.nextSibling : null;
+            if (oldNode) oldNode.remove();
+            const newNode = this.insertOptimisticItem(parentPath, name, toPath, 'file');
+
+            const restore = () => {
+                if (newNode && newNode.isConnected) newNode.remove();
+                if (oldNode && oldParent) {
+                    if (oldNext) oldParent.insertBefore(oldNode, oldNext);
+                    else oldParent.appendChild(oldNode);
+                }
+            };
+
+            const csrfToken = document.querySelector('meta[name=csrf-token]');
+
+            try {
+                const response = await fetch('/katana/directory-rename', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken ? csrfToken.content : '',
+                    },
+                    body: JSON.stringify({
+                        disk: this.config.disk,
+                        baseDir: this.config.baseDir,
+                        from: fromPath,
+                        to: toPath,
+                        type: 'file',
+                        _write_token: this.writeToken,
+                    }),
+                });
+                const data = await response.json();
+                if (!response.ok || !data || !data.ok) {
+                    restore();
+                    this.$dispatch('directory-tree-error', { message: (data && data.error) || 'Move failed.' });
+                    return;
+                }
+
+                if (newNode) newNode.removeAttribute('data-optimistic');
+
+                // Migrate prefetch cache to the new path so the next
+                // click on the moved file doesn't re-fetch.
+                if (this.files[fromPath] !== undefined) {
+                    this.files[toPath] = this.files[fromPath];
+                    delete this.files[fromPath];
+                }
+                // Keep both parents' prefetchCache child lists in sync —
+                // mirror confirmCreation's approach. Without this, the
+                // OLD parent still thinks it owns the file (toolbar +
+                // palette derive their lists from this cache), and the
+                // NEW parent doesn't know it has a new child until the
+                // next refreshTree+rebuildPrefetchCache.
+                const oldSlash = fromPath.lastIndexOf('/');
+                const oldParentPath = oldSlash > -1 ? fromPath.slice(0, oldSlash) : '';
+                const oldParentCache = this.prefetchCache[oldParentPath];
+                if (oldParentCache && oldParentCache.childFiles) {
+                    oldParentCache.childFiles = oldParentCache.childFiles.filter((p) => p !== fromPath);
+                }
+                const newParentCache = this.prefetchCache[parentPath];
+                if (newParentCache) {
+                    newParentCache.childFiles = [...(newParentCache.childFiles || []), toPath];
+                }
+                if (this.selectedFile === fromPath) this.selectedFile = toPath;
+
+                this.$dispatch('directory-tree-renamed', { from: fromPath, to: toPath, type: 'file', name: name, action: 'move' });
+            } catch (err) {
+                console.error('Move failed:', err);
+                restore();
+                this.$dispatch('directory-tree-error', { message: 'Move failed.' });
+            } finally {
+                this.isRenaming = false;
+            }
+        },
+
+        // Folder move — recursive on the server, so the optimistic UX
+        // diverges from _moveFile. Doing a per-leaf DOM swap would lose
+        // expansion state and leave nested data-* paths stale. Instead
+        // we dim the source folder during the round-trip, then call
+        // refreshTree on success to re-render with the new structure
+        // baked in. Selection state + the prefetch caches are migrated
+        // by prefix so the user's working context survives.
+        async _moveFolderNode(fromPath, toPath, name, parentPath) {
+            if (this.isRenaming) return;
+            this.isRenaming = true;
+
+            const oldNode = document.querySelector('[data-dir-path="' + CSS.escape(fromPath) + '"]');
+            const previousOpacity = oldNode ? oldNode.style.opacity : '';
+            if (oldNode) {
+                oldNode.style.transition = 'opacity 150ms ease-out';
+                oldNode.style.opacity = '0.4';
+            }
+
+            const restoreSource = () => {
+                if (oldNode) {
+                    oldNode.style.opacity = previousOpacity;
+                    setTimeout(() => { oldNode.style.transition = ''; }, 200);
+                }
+            };
+
+            const csrfToken = document.querySelector('meta[name=csrf-token]');
+
+            try {
+                const response = await fetch('/katana/directory-rename', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken ? csrfToken.content : '',
+                    },
+                    body: JSON.stringify({
+                        disk: this.config.disk,
+                        baseDir: this.config.baseDir,
+                        from: fromPath,
+                        to: toPath,
+                        type: 'directory',
+                        _write_token: this.writeToken,
+                    }),
+                });
+                const data = await response.json();
+                if (!response.ok || !data || !data.ok) {
+                    restoreSource();
+                    this.$dispatch('directory-tree-error', { message: (data && data.error) || 'Move failed.' });
+                    return;
+                }
+
+                // Migrate prefix-scoped state: expanded folders, prefetch
+                // cache entries, file content cache, and selection. Walk
+                // each map's keys, rewrite from-prefix to to-prefix.
+                const fromPrefix = fromPath + '/';
+                const toPrefix = toPath + '/';
+                const rewriteKey = (k) => {
+                    if (k === fromPath) return toPath;
+                    if (k.startsWith(fromPrefix)) return toPath + k.slice(fromPath.length);
+                    return null;
+                };
+                // fetchedDirectories included so that re-expanding the
+                // moved folder triggers a fresh prefetch — without the
+                // rewrite, the moved subfolder's entry under the OLD
+                // prefix lingers, and a later folder created at the
+                // OLD path would be mis-identified as already-fetched
+                // and skip its own prefetch.
+                ['expanded', 'prefetchCache', 'files', 'fetchedDirectories'].forEach((bag) => {
+                    const original = this[bag];
+                    const next = {};
+                    Object.keys(original).forEach((k) => {
+                        const nk = rewriteKey(k);
+                        next[nk === null ? k : nk] = original[k];
+                    });
+                    this[bag] = next;
+                });
+                if (this.selectedFile) {
+                    const rewritten = rewriteKey(this.selectedFile);
+                    if (rewritten !== null) this.selectedFile = rewritten;
+                }
+                if (this.selectedDirectory) {
+                    const rewritten = rewriteKey(this.selectedDirectory);
+                    if (rewritten !== null) this.selectedDirectory = rewritten;
+                }
+
+                // Refresh the tree from the server. This re-renders the
+                // structure with the new paths baked into every row's
+                // click handlers + data-* attributes (vs trying to
+                // rebind them in place — much heavier).
+                await this.$wire.refreshTree();
+                // Mirror deleteSelected: rebuild the prefetch cache so
+                // it matches the newly-rendered structure (otherwise a
+                // moved subfolder's row could spin "Loading…" forever
+                // because prefetchCache still has stale loaded markers
+                // under the old prefix).
+                this.rebuildPrefetchCache();
+
+                this.$dispatch('directory-tree-renamed', {
+                    from: fromPath,
+                    to: toPath,
+                    type: 'directory',
+                    name: name,
+                    action: 'move',
+                });
+            } catch (err) {
+                console.error('Folder move failed:', err);
+                restoreSource();
+                this.$dispatch('directory-tree-error', { message: 'Move failed.' });
+            } finally {
+                this.isRenaming = false;
             }
         },
 
