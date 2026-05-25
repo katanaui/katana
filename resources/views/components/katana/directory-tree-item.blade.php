@@ -30,19 +30,27 @@
     $isImage = (bool) preg_match('/\.(png|jpe?g|gif|webp|avif|svg|bmp|ico)$/i', (string) $name);
 @endphp
 
-<div class="@if ($level !== 0) ml-2 @endif relative font-light transition-all duration-200" :class="{ 'opacity-20 scale-[0.98] pointer-events-none': deletingPath === '{{ $escapedPath }}' }" @if ($item['type'] === 'directory') data-dir-path="{{ $item['path'] }}"
+<div wire:key="dt-{{ $item['type'] === 'directory' ? 'd' : 'f' }}-{{ $item['path'] }}" class="@if ($level !== 0) ml-2 @endif relative font-light transition-all duration-200" :class="{ 'opacity-20 scale-[0.98] pointer-events-none': deletingPath === '{{ $escapedPath }}' }" @if ($item['type'] === 'directory') data-dir-path="{{ $item['path'] }}"
         @if ($isLazy) data-lazy="true" @endif @else data-file-path="{{ $item['path'] }}" @endif>
     @if ($item['type'] === 'directory')
-        <div x-on:click="selectDirectory('{{ $escapedPath }}'); toggle('{{ $escapedPath }}', {{ $isLazy ? 'true' : 'false' }}, {{ $isSymlink ? 'true' : 'false' }}, {{ $level + 1 }}, $el.parentElement.querySelector('[data-children-for=&quot;{{ $escapedPath }}&quot;]'))" @if (!$readonly) @contextmenu.prevent.stop="openContextMenu($event, '{{ $escapedPath }}', 'directory', '{{ e($name) }}')" @endif class="flex cursor-pointer items-center truncate px-2 py-1 rounded-lg text-zinc-700 transition-colors hover:bg-black/[0.08] hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 clean:rounded-md clean:hover:bg-zinc-100/70" :class="selectedDirectory === '{{ $escapedPath }}' ? '!bg-black/[0.08] !text-zinc-900 dark:!bg-zinc-700 dark:!text-zinc-100 clean:!bg-zinc-100' : ''">
+        <div x-on:click="selectDirectory('{{ $escapedPath }}'); toggle('{{ $escapedPath }}', {{ $isLazy ? 'true' : 'false' }}, {{ $isSymlink ? 'true' : 'false' }}, {{ $level + 1 }}, $el.parentElement.querySelector('[data-children-for=&quot;{{ $escapedPath }}&quot;]'))" @if (!$readonly) draggable="true" @dragstart.stop="onFolderDragStart($event, '{{ $escapedPath }}')" @dragend="onFolderDragEnd()" @contextmenu.prevent.stop="openContextMenu($event, '{{ $escapedPath }}', 'directory', '{{ e($name) }}')" @endif class="flex cursor-pointer items-center truncate px-2 py-1 rounded-lg text-zinc-700 transition-[opacity,background-color,color] duration-150 hover:bg-black/[0.08] hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 clean:rounded-md clean:hover:bg-zinc-100/70" :class="(selectedDirectory === '{{ $escapedPath }}' ? '!bg-black/[0.08] !text-zinc-900 dark:!bg-zinc-700 dark:!text-zinc-100 clean:!bg-zinc-100' : '') + (dragOverTarget === '{{ $escapedPath }}' && dragSource ? ' ring-2 ring-blue-500/50 ring-inset !bg-blue-500/[0.08]' : '') + (dragSource === '{{ $escapedPath }}' ? ' opacity-40' : '')">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 shrink-0 scale-110 stroke-current transition-all duration-150 ease-out" :class="{ 'rotate-90': expanded['{{ $escapedPath }}'] }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="m9 18 6-6-6-6" />
             </svg>
+            {{-- Single SVG with reactive `:d` (matches the chevron above).
+                 The previous two-SVG x-show pattern was fragile through
+                 Livewire morphs: when refreshTree() re-rendered a row whose
+                 children had changed (e.g. dragging a child folder out of
+                 its parent), the morph could leave both SVGs visible at
+                 once because the morph reconciles inline-style + x-cloak
+                 state in a way that x-show can't always recover from.
+                 Swapping a single path's `d` attribute sidesteps the entire
+                 class of "both visible" bugs — there is only one element. --}}
             <span class="ml-0.5 mr-1.5">
-                <svg x-show="!expanded['{{ $escapedPath }}']" xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 stroke-current" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" />
-                </svg>
-                <svg x-show="expanded['{{ $escapedPath }}']" xmlns="http://www.w3.org/2000/svg" x-cloak class="h-3 w-3 stroke-current" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2" />
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 stroke-current" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path :d="expanded['{{ $escapedPath }}']
+                        ? 'm6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2'
+                        : 'M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z'" />
                 </svg>
             </span>
 
@@ -106,7 +114,7 @@
             @endif
         </div>
     @else
-        <div class="flex cursor-pointer rounded-lg items-center truncate px-2 py-1 text-zinc-700 transition-colors dark:text-zinc-300" :class="selectedFile === '{{ $escapedPath }}' ? 'bg-[#171717] !text-white hover:bg-zinc-800 dark:bg-white dark:!text-[#171717] dark:hover:bg-zinc-100 clean:rounded-md clean:!bg-zinc-100 clean:!text-zinc-900' : 'hover:bg-black/[0.08] hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 clean:rounded-md clean:hover:bg-zinc-100/70'" @if (!$readonly) @contextmenu.prevent.stop="openContextMenu($event, '{{ $escapedPath }}', 'file', '{{ e($name) }}')" @endif @mouseover="
+        <div class="flex cursor-pointer rounded-lg items-center truncate px-2 py-1 text-zinc-700 transition-[opacity,background-color,color] duration-150 dark:text-zinc-300" :class="(selectedFile === '{{ $escapedPath }}' ? 'bg-[#171717] !text-white hover:bg-zinc-800 dark:bg-white dark:!text-[#171717] dark:hover:bg-zinc-100 clean:rounded-md clean:!bg-zinc-100 clean:!text-zinc-900' : 'hover:bg-black/[0.08] hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 clean:rounded-md clean:hover:bg-zinc-100/70') + (dragSource === '{{ $escapedPath }}' ? ' opacity-40' : '')" @if (!$readonly) draggable="true" @dragstart="onFileDragStart($event, '{{ $escapedPath }}')" @dragend="onFileDragEnd()" @contextmenu.prevent.stop="openContextMenu($event, '{{ $escapedPath }}', 'file', '{{ e($name) }}')" @endif @mouseover="
                 const fullPath = '{{ $escapedPath }}';
                 // Image files never get prefetched — /katana/file-content
                 // returns {binary: true} for them anyway, so the round-trip

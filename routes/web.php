@@ -708,11 +708,6 @@ Route::post('/katana/directory-rename', function (Request $request) {
     }
 
     $type = $validated['type'] ?? 'file';
-    if ($type === 'directory') {
-        return response()->json([
-            'error' => 'Renaming folders is not supported yet.',
-        ], 422);
-    }
 
     $disk = $validated['disk'];
     $baseDir = $validated['baseDir'] ?? '';
@@ -735,6 +730,65 @@ Route::post('/katana/directory-rename', function (Request $request) {
         return response()->json(['error' => 'Invalid path.'], 422);
     }
 
+    $fromDiskPath = katanaJoinDiskPath($baseDir, $from);
+    $toDiskPath = katanaJoinDiskPath($baseDir, $to);
+    if ($fromDiskPath === false || $toDiskPath === false) {
+        return response()->json(['error' => 'Invalid path.'], 422);
+    }
+
+    if ($type === 'directory') {
+        // Folder rename / move — recursive. ProjectStorage::moveFolder
+        // walks leaves, delegates each to moveFile (so SSG mirroring +
+        // cache headers come for free), then sweeps the empty source.
+        $storage = Storage::disk($disk);
+
+        // Cycle prevention runs FIRST. Dropping `assets/` onto
+        // `assets/icons/` would otherwise be misread as a name-collision
+        // (the target prefix exists because it's literally inside the
+        // source) — a "this would create a cycle" message is much more
+        // useful than "folder already exists" here.
+        if ($from === $to || str_starts_with($to.'/', $from.'/')) {
+            return response()->json([
+                'error' => 'You cannot move a folder into itself or its descendant.',
+            ], 422);
+        }
+
+        // Source folder must have at least one file under it. Flysystem
+        // has no real "folder exists" check; presence of any file under
+        // the prefix is the canonical signal.
+        if (count($storage->allFiles($fromDiskPath)) === 0) {
+            return response()->json(['error' => 'Source folder not found.'], 404);
+        }
+
+        // Target must not collide — same prefix-presence check.
+        if (count($storage->allFiles($toDiskPath)) > 0) {
+            return response()->json([
+                'error' => 'A folder with that name already exists.',
+                'exists' => true,
+            ], 409);
+        }
+
+        try {
+            $timestamp = app(ProjectStorage::class)->moveFolder($project, $from, $to);
+        } catch (InvalidArgumentException $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        } catch (FileTooLargeException $e) {
+            return response()->json(['error' => 'File too large.', 'tooLarge' => true], 413);
+        } catch (UnsupportedExtensionException $e) {
+            return response()->json(['error' => 'Unsupported extension inside folder.'], 422);
+        }
+
+        return response()->json([
+            'ok' => true,
+            'from' => $from,
+            'to' => $to,
+            'name' => $newName,
+            'type' => 'directory',
+            'timestamp' => $timestamp,
+        ]);
+    }
+
+    // File rename / move (default branch).
     // Extension allowlist on the target (ProjectStorage::writeFile catches
     // this too, but a friendly toast is better than the generic catch).
     $ext = strtolower(pathinfo($newName, PATHINFO_EXTENSION));
@@ -748,11 +802,6 @@ Route::post('/katana/directory-rename', function (Request $request) {
 
     // Source must exist; target must not — catch collisions before
     // ProjectStorage starts mutating disk state.
-    $fromDiskPath = katanaJoinDiskPath($baseDir, $from);
-    $toDiskPath = katanaJoinDiskPath($baseDir, $to);
-    if ($fromDiskPath === false || $toDiskPath === false) {
-        return response()->json(['error' => 'Invalid path.'], 422);
-    }
     if (! Storage::disk($disk)->exists($fromDiskPath)) {
         return response()->json(['error' => 'Source file not found.'], 404);
     }
@@ -778,6 +827,7 @@ Route::post('/katana/directory-rename', function (Request $request) {
         'from' => $from,
         'to' => $to,
         'name' => $newName,
+        'type' => 'file',
         'timestamp' => $timestamp,
     ]);
 })->middleware('web');
