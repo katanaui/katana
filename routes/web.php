@@ -17,32 +17,34 @@ use Illuminate\Support\Facades\Storage;
 const KATANA_MAX_FILE_CONTENT_SIZE = 1_000_000;
 const KATANA_MAX_BATCH_FILE_COUNT = 50;
 
-function validateWriteToken(Request $request): bool
-{
-    $token = $request->input('_write_token');
-    if (! $token) {
-        return false;
-    }
+if (! function_exists('validateWriteToken')) {
+    function validateWriteToken(Request $request): bool
+    {
+        $token = $request->input('_write_token');
+        if (! $token) {
+            return false;
+        }
 
-    try {
-        $payload = json_decode(Crypt::decryptString($token), true);
-    } catch (DecryptException $e) {
-        return false;
-    }
+        try {
+            $payload = json_decode(Crypt::decryptString($token), true);
+        } catch (DecryptException $e) {
+            return false;
+        }
 
-    if (! is_array($payload) || empty($payload['writable'])) {
-        return false;
-    }
+        if (! is_array($payload) || empty($payload['writable'])) {
+            return false;
+        }
 
-    // Verify the token is scoped to the same disk + baseDir
-    if (($payload['disk'] ?? '') !== ($request->input('disk') ?? '')) {
-        return false;
-    }
-    if (($payload['baseDir'] ?? '') !== ($request->input('baseDir') ?? '')) {
-        return false;
-    }
+        // Verify the token is scoped to the same disk + baseDir
+        if (($payload['disk'] ?? '') !== ($request->input('disk') ?? '')) {
+            return false;
+        }
+        if (($payload['baseDir'] ?? '') !== ($request->input('baseDir') ?? '')) {
+            return false;
+        }
 
-    return true;
+        return true;
+    }
 }
 
 /**
