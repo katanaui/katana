@@ -22,7 +22,7 @@
             $loaderClasses = 'size-3.5';
             break;
         case 'lg':
-            $sizeClasses = 'px-4 py-2.5 leading-5 text-sm rounded';
+            $sizeClasses = 'px-4 py-2 leading-5 text-sm rounded';
             $loaderClasses = 'size-4';
             break;
         case 'xl':

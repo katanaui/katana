@@ -14,35 +14,42 @@ use Illuminate\Support\Facades\Storage;
 // Bounds the payload of /katana/file-content and /katana/batch-file-content.
 // A batch of 50 × 1MB worst-case is 50MB — still JSON-safe, and in practice
 // batches are dominated by small source files well under 50KB each.
-const KATANA_MAX_FILE_CONTENT_SIZE = 1_000_000;
-const KATANA_MAX_BATCH_FILE_COUNT = 50;
+if (! defined('KATANA_MAX_FILE_CONTENT_SIZE')) {
+    define('KATANA_MAX_FILE_CONTENT_SIZE', 1_000_000);
+}
 
-function validateWriteToken(Request $request): bool
-{
-    $token = $request->input('_write_token');
-    if (! $token) {
-        return false;
-    }
+if (! defined('KATANA_MAX_BATCH_FILE_COUNT')) {
+    define('KATANA_MAX_BATCH_FILE_COUNT', 50);
+}
 
-    try {
-        $payload = json_decode(Crypt::decryptString($token), true);
-    } catch (DecryptException $e) {
-        return false;
-    }
+if (! function_exists('validateWriteToken')) {
+    function validateWriteToken(Request $request): bool
+    {
+        $token = $request->input('_write_token');
+        if (! $token) {
+            return false;
+        }
 
-    if (! is_array($payload) || empty($payload['writable'])) {
-        return false;
-    }
+        try {
+            $payload = json_decode(Crypt::decryptString($token), true);
+        } catch (DecryptException $e) {
+            return false;
+        }
 
-    // Verify the token is scoped to the same disk + baseDir
-    if (($payload['disk'] ?? '') !== ($request->input('disk') ?? '')) {
-        return false;
-    }
-    if (($payload['baseDir'] ?? '') !== ($request->input('baseDir') ?? '')) {
-        return false;
-    }
+        if (! is_array($payload) || empty($payload['writable'])) {
+            return false;
+        }
 
-    return true;
+        // Verify the token is scoped to the same disk + baseDir
+        if (($payload['disk'] ?? '') !== ($request->input('disk') ?? '')) {
+            return false;
+        }
+        if (($payload['baseDir'] ?? '') !== ($request->input('baseDir') ?? '')) {
+            return false;
+        }
+
+        return true;
+    }
 }
 
 /**
@@ -50,6 +57,7 @@ function validateWriteToken(Request $request): bool
  * collapses duplicate separators, and rejects any `.` or `..` segment.
  * Returns the cleaned path (possibly empty) or false if traversal was attempted.
  */
+if (! function_exists('katanaNormalizeDiskPath')) {
 function katanaNormalizeDiskPath(string $path): string|false
 {
     $path = str_replace('\\', '/', $path);
@@ -422,6 +430,7 @@ function katanaListChildrenViaStorage(string $diskName, string $baseDir, string 
     }
 
     return $items;
+}
 }
 
 Route::post('/katana/directory-create-file', function (Request $request) {
