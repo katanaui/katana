@@ -14,8 +14,13 @@ use Illuminate\Support\Facades\Storage;
 // Bounds the payload of /katana/file-content and /katana/batch-file-content.
 // A batch of 50 × 1MB worst-case is 50MB — still JSON-safe, and in practice
 // batches are dominated by small source files well under 50KB each.
-const KATANA_MAX_FILE_CONTENT_SIZE = 1_000_000;
-const KATANA_MAX_BATCH_FILE_COUNT = 50;
+if (! defined('KATANA_MAX_FILE_CONTENT_SIZE')) {
+    define('KATANA_MAX_FILE_CONTENT_SIZE', 1_000_000);
+}
+
+if (! defined('KATANA_MAX_BATCH_FILE_COUNT')) {
+    define('KATANA_MAX_BATCH_FILE_COUNT', 50);
+}
 
 if (! function_exists('validateWriteToken')) {
     function validateWriteToken(Request $request): bool
@@ -52,6 +57,7 @@ if (! function_exists('validateWriteToken')) {
  * collapses duplicate separators, and rejects any `.` or `..` segment.
  * Returns the cleaned path (possibly empty) or false if traversal was attempted.
  */
+if (! function_exists('katanaNormalizeDiskPath')) {
 function katanaNormalizeDiskPath(string $path): string|false
 {
     $path = str_replace('\\', '/', $path);
@@ -424,6 +430,7 @@ function katanaListChildrenViaStorage(string $diskName, string $baseDir, string 
     }
 
     return $items;
+}
 }
 
 Route::post('/katana/directory-create-file', function (Request $request) {
